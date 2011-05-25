@@ -45,7 +45,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_minimodem_OBJECTS = minimodem.$(OBJEXT)
+am_minimodem_OBJECTS = minimodem.$(OBJEXT) tscope_print.$(OBJEXT)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
 am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -156,7 +156,7 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
 INCLUDES = $(DEPS_CFLAGS)
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c
+minimodem_SOURCES = minimodem.c tscope_print.c
 tscope_LDADD = $(DEPS_LIBS)
 tscope_SOURCES = tscope.c tscope_print.c
 all: all-am

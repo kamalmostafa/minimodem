@@ -17,6 +17,7 @@
 
 #include <fftw3.h>
 
+#include "tscope_print.h"
 
 static inline
 float
@@ -150,6 +151,11 @@ int main(int argc, char*argv[]) {
     // float magscalar = 1.0 / (fftsize/2.0); /* normalize fftw output */
     float magscalar = 1.0 / (nsamples/2.0); /* normalize fftw output */
 
+    /* pulseaudio *adds* when downmixing 2 channels to 1; if we're using
+     * only one channel here, we blindly assume that pulseaudio downmixed
+     * from 2, and rescale magnitudes accordingly. */
+    if ( pa_nchannels == 1 )
+	magscalar /= 2.0;
 
     float actual_decode_rate = (float)sample_rate / nsamples;
     fprintf(stderr, "### baud=%.2f mark=%u space=%u ###\n",
@@ -234,11 +240,8 @@ reprocess_audio:
 
 	// Detect carrier
 	float mag_detect = 0.01;
-	/* pulseaudio *adds* when downmixing 2 channels to 1; if we're using only
-	 * one channel here, we blindly assume that pulseaudio downmixed from 2. */
-	if ( pa_nchannels == 1 )
-	    mag_detect *= 2.0;
-	unsigned char carrier_detect = mag_mark + mag_space > mag_detect ? 1 : 0;
+	unsigned char carrier_detect = mag_mark + mag_space > mag_detect
+					? 1 : 0;
 
 
 #ifdef TRICK
@@ -339,34 +342,21 @@ reprocess_audio:
 	carrier_detected = carrier_detect;
 
 	if ( textscope ) {
+
 	    printf("%s %c ",
 		    carrier_detected ? "CD" : "  ",
 		    carrier_detected ? ( bit ? '1' : '0' ) : ' ');
 
-	    float magmax = 0;
+	    int one_line_mode = 0;
+	    int show_maxmag = 1;
+	    int show_nbands = nbands < 40 ? nbands : 40;
+	    tscope_print(fftout, show_nbands, magscalar,
+				one_line_mode, show_maxmag);
 
-	    for ( i=0; i<nbands*pa_nchannels; i++ ) {
-		if ( i%nbands == 0 )
-		    printf("|");
-		float mag = band_mag(fftout, i, magscalar);
-		if ( mag > magmax )
-		    magmax = mag;
-		char *magchars = " .-=^";
-		if ( i%nbands == bfsk_mark_band )
-		    magchars = " mMM^";
-		if ( i%nbands == bfsk_space_band )
-		    magchars = " sSS^";
-		char c = magchars[0];
-		if ( mag > 0.10 ) c = magchars[1];
-		if ( mag > 0.25 ) c = magchars[2];
-		if ( mag > 0.50 ) c = magchars[3];
-		if ( mag > 1.00 ) c = magchars[4];
-		printf("%c", c);
-
-		if ( i > 30 )
-		    break;
-	    }
-	    printf("| in[%+4.2f %+4.2f] >mag %+.2f", inmin, inmax, magmax);
+//		if ( i%nbands == bfsk_mark_band )
+//		    magchars = " mMM^";
+//		if ( i%nbands == bfsk_space_band )
+//		    magchars = " sSS^";
 
 	    printf(" ");
 	    for ( i=15; i>=0; i-- )
