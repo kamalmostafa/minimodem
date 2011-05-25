@@ -32,7 +32,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = minimodem$(EXEEXT) miniscope$(EXEEXT)
+bin_PROGRAMS = minimodem$(EXEEXT) tscope$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -49,9 +49,9 @@ am_minimodem_OBJECTS = minimodem.$(OBJEXT)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
 am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_miniscope_OBJECTS = miniscope.$(OBJEXT)
-miniscope_OBJECTS = $(am_miniscope_OBJECTS)
-miniscope_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am_tscope_OBJECTS = tscope.$(OBJEXT)
+tscope_OBJECTS = $(am_tscope_OBJECTS)
+tscope_DEPENDENCIES = $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -60,8 +60,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(minimodem_SOURCES) $(miniscope_SOURCES)
-DIST_SOURCES = $(minimodem_SOURCES) $(miniscope_SOURCES)
+SOURCES = $(minimodem_SOURCES) $(tscope_SOURCES)
+DIST_SOURCES = $(minimodem_SOURCES) $(tscope_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -157,8 +157,8 @@ AM_CFLAGS = -Wall -Werror
 INCLUDES = $(DEPS_CFLAGS)
 minimodem_LDADD = $(DEPS_LIBS)
 minimodem_SOURCES = minimodem.c
-miniscope_LDADD = $(DEPS_LIBS)
-miniscope_SOURCES = miniscope.c
+tscope_LDADD = $(DEPS_LIBS)
+tscope_SOURCES = tscope.c
 all: all-am
 
 .SUFFIXES:
@@ -233,9 +233,9 @@ clean-binPROGRAMS:
 minimodem$(EXEEXT): $(minimodem_OBJECTS) $(minimodem_DEPENDENCIES) 
 	@rm -f minimodem$(EXEEXT)
 	$(LINK) $(minimodem_OBJECTS) $(minimodem_LDADD) $(LIBS)
-miniscope$(EXEEXT): $(miniscope_OBJECTS) $(miniscope_DEPENDENCIES) 
-	@rm -f miniscope$(EXEEXT)
-	$(LINK) $(miniscope_OBJECTS) $(miniscope_LDADD) $(LIBS)
+tscope$(EXEEXT): $(tscope_OBJECTS) $(tscope_DEPENDENCIES) 
+	@rm -f tscope$(EXEEXT)
+	$(LINK) $(tscope_OBJECTS) $(tscope_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -244,7 +244,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minimodem.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/miniscope.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tscope.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

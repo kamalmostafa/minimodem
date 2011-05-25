@@ -1,5 +1,5 @@
 /*
- * miniscope.c
+ * tscope.c
  *
  * Author: Kamal Mostafa <kamal@whence.com>
  *
@@ -40,7 +40,7 @@ band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
 
 
 void
-miniscope_print( fftwf_complex * const fftout, int nbands, float magscalar,
+tscope_print( fftwf_complex * const fftout, int nbands, float magscalar,
 	unsigned char one_line_mode, unsigned char show_maxmag )
 {
     char magchars[] = " .-=+#^";
@@ -94,7 +94,7 @@ main( int argc, char*argv[] )
 	    one_line_mode = 0;
 	} else {
 	    fprintf(stderr,
-		"usage: miniscope [-s] [ analysis_rate [ band_width ] ]\n");
+		"usage: tscope [-s] [ analysis_rate [ band_width ] ]\n");
 	    return 1;
 	}
 	argi++;
@@ -111,7 +111,7 @@ main( int argc, char*argv[] )
     /* Initiate the capture stream */
     int error;
     pa_simple *s;
-    s = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "spectrum scope",
+    s = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "text spectrum scope",
 	    &ss, NULL, NULL, &error);
     if ( !s ) {
         fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n",
@@ -197,7 +197,7 @@ main( int argc, char*argv[] )
 	/* display the spectrum magnitudes for each channel */
 	int n;
 	for ( n=0; n<pa_nchannels; n++ )
-	    miniscope_print(fftout+n*nbands, show_nbands, magscalar,
+	    tscope_print(fftout+n*nbands, show_nbands, magscalar,
 		    one_line_mode, show_maxmag);
 	printf( one_line_mode ? "\r" : "\n" );
 	fflush(stdout);
