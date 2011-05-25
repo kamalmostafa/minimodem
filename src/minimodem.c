@@ -237,26 +237,21 @@ reprocess_audio:
 
 	float msdelta = mag_mark - mag_space;
 
+#define TRICK_DETECT ( 0.5 * MAX(mag_mark,mag_space) )
 
 	// Detect carrier
-	float mag_detect = 0.01;
-	unsigned char carrier_detect = mag_mark + mag_space > mag_detect
-					? 1 : 0;
-
+	float mag_detect = 0.001;
+	unsigned char carrier_detect =
+	    mag_mark + mag_space > mag_detect
+		&&
+	    fabs(msdelta) >= TRICK_DETECT;
 
 #ifdef TRICK
-
-// #define TRICK_DETECT 0.0
-// #define TRICK_DETECT 0.4
-// #define TRICK_DETECT 0.1
-
-// #define TRICK_DETECT mag_detect
-#define TRICK_DETECT ( 0.1 * (float)decode_rate/300 )
 
 	// EXCELLENT trick -- fixes 300 baud perfectly
 	// shift the input window if the msdelta is small
 	static unsigned int skipped_frames = 0;
-	if ( carrier_detected && fabs(msdelta) <  TRICK_DETECT )
+	if ( carrier_detected && fabs(msdelta) < TRICK_DETECT )
 	{
 # if 0
 	    skipped_frames++;
@@ -303,7 +298,8 @@ reprocess_audio:
 
 	unsigned char bit;
 
-	if ( carrier_detect ) {
+	if ( carrier_detect )
+	{
 	    bit = signbit(msdelta) ? 0 : 1;
 
 #if 0
@@ -329,7 +325,8 @@ reprocess_audio:
 	//                   1dddddddd01
 	bfsk_bits = (bfsk_bits>>1) | (bit << 10);
 
-	if ( ! carrier_detect ) {
+	if ( ! carrier_detect )
+	{
 	    if ( carrier_detected ) {
 		printf( "###NOCARRIER###\n");
 		carrier_detected = 0;
