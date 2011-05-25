@@ -1,0 +1,407 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <assert.h>
+#include <errno.h>
+#include <math.h>
+
+#include <pulse/simple.h>
+#include <pulse/error.h>
+#include <pulse/gccmacro.h>
+
+#include <fftw3.h>
+
+
+static inline
+float
+band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
+{
+    float re = cplx[band][0];
+    float im = cplx[band][1];
+    float mag = hypot(re, im) * scalar;
+    return mag;
+}
+
+int main(int argc, char*argv[]) {
+    /* The sample type to use */
+    static const pa_sample_spec ss = {
+        .format = PA_SAMPLE_FLOAT32,
+        .rate = 48000,	// pulseaudio will resample its configured audio rate
+
+        // .channels = 2	// 2 channel stereo
+        .channels = 1	// pulseaudio will downmix (additively) to 1 channel
+        // .channels = 3	// 2 channel stereo + 1 mixed channel
+    };
+    int ret = 1;
+    int error;
+
+
+
+    /*
+     * Bell 103:     mark=1270 space=1070
+     * ITU-T V.21:   mark=1280 space=1080
+     */
+    unsigned int bfsk_mark_f  = 1270;
+    unsigned int bfsk_space_f = 1070;
+
+    if ( argc < 2 ) {
+	fprintf(stderr, "usage: minimodem baud_rate [ mark_hz space_hz ]\n");
+	return 1;
+    }
+
+    unsigned char textscope = 0;
+    int argi = 1;
+    if ( argi < argc && strcmp(argv[argi],"-s") == 0 )  {
+	textscope = 1;
+	argi++;
+    }
+
+    unsigned int decode_rate = atoi(argv[argi++]);
+
+    if ( argi < argc ) {
+	assert(argc-argi == 2);
+	bfsk_mark_f = atoi(argv[argi++]);
+	bfsk_space_f = atoi(argv[argi++]);
+    }
+
+    unsigned int sample_rate = ss.rate;
+
+    unsigned int band_width = decode_rate / 2;
+
+    unsigned int bfsk_mark_band  = (bfsk_mark_f  +(float)band_width/2) / band_width;
+    unsigned int bfsk_space_band = (bfsk_space_f +(float)band_width/2) / band_width;
+
+
+    if ( bfsk_mark_band == 0 || bfsk_space_band == 0 ) {
+        fprintf(stderr, __FILE__": mark or space band is at dsp DC\n");
+//	return 1;
+    }
+    if ( bfsk_mark_band == bfsk_space_band ) {
+        fprintf(stderr, __FILE__": inadequate mark/space separation\n");
+	return 1;
+    }
+
+
+    /* Create the recording stream */
+    pa_simple *s;
+    s = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "record", &ss, NULL, NULL, &error);
+    if ( !s ) {
+        fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n", pa_strerror(error));
+        return 1;
+    }
+
+    int pa_samplesize = pa_sample_size(&ss);
+    int pa_framesize = pa_frame_size(&ss);
+    int pa_nchannels = ss.channels;
+
+    assert( pa_framesize == pa_samplesize * pa_nchannels );
+
+
+    /* Create the FFT plan */
+    fftwf_plan	fftplan;
+
+    int fftsize = sample_rate / band_width;
+
+    if ( fftsize & 1 )
+        fprintf(stderr, __FILE__": WARNING: fftsize %u is not even\n", fftsize);
+
+    unsigned int nbands = fftsize / 2 + 1;
+
+    float *fftin = fftwf_malloc(fftsize * sizeof(float) * pa_nchannels);
+
+    fftwf_complex *fftout = fftwf_malloc(nbands * sizeof(fftwf_complex) * pa_nchannels);
+
+    /*
+     * works only for 1 channel:
+    fftplan = fftwf_plan_dft_r2c_1d(fftsize, fftin, fftout, FFTW_ESTIMATE);
+     */
+    /*
+     * works for N channels:
+     */
+    fftplan = fftwf_plan_many_dft_r2c(
+	    /*rank*/1, &fftsize, /*howmany*/pa_nchannels,
+	    fftin, NULL, /*istride*/pa_nchannels, /*idist*/1,
+	    fftout, NULL, /*ostride*/1, /*odist*/nbands,
+	    FFTW_ESTIMATE | FFTW_PRESERVE_INPUT );
+    /* Nb. FFTW_PRESERVE_INPUT is needed for the "shift the input window" trick */
+
+    if ( !fftplan ) {
+        fprintf(stderr, __FILE__": fftwf_plan_dft_r2c_1d() failed\n");
+        return 1;
+    }
+
+
+    void *pa_samples_in = fftin;	// read samples directly into fftin
+    assert( pa_samplesize == sizeof(float) );
+
+
+    /*
+     * Prepare the input sample chunk rate
+     */
+    int nsamples = sample_rate / decode_rate;
+    nsamples -= 1;	// BLACK MAGIC!
+
+    // float magscalar = 1.0 / (fftsize/2.0); /* normalize fftw output */
+    float magscalar = 1.0 / (nsamples/2.0); /* normalize fftw output */
+
+
+    float actual_decode_rate = (float)sample_rate / nsamples;
+    fprintf(stderr, "### baud=%.2f mark=%u space=%u ###\n",
+	    actual_decode_rate,
+	    bfsk_mark_band * band_width,
+	    bfsk_space_band * band_width
+	    );
+
+
+    /*
+     * Run the main loop
+     */
+
+    unsigned int bfsk_bits = 0xFFFFFFFF;
+    unsigned char carrier_detected = 0;
+
+    ret = 0;
+
+    while ( 1 ) {
+
+	size_t	nframes = nsamples;
+	size_t	nbytes = nframes * pa_framesize;
+
+	bzero(fftin, (fftsize * sizeof(float) * pa_nchannels));
+        if (pa_simple_read(s, pa_samples_in, nbytes, &error) < 0) {
+            fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n",
+		    pa_strerror(error));
+	    ret = 1;
+            break;
+        }
+
+#define TRICK
+
+#ifdef TRICK
+reprocess_audio:
+	{
+	}
+#endif
+#ifdef USE_PA_FORMAT_S16LE
+	{	// convert S16LE samples to float [-1.0:+1.0]
+	int j;
+	for ( j=0; j<fftsize; j++ )
+	    fftin[j] = s16le_buf[j] / (float)(1<<15);
+	}
+#endif
+
+	float inmax=0, inmin=0;
+	int i;
+	for ( i=0; i<fftsize; i++ ) {
+//	    if ( fftin[i] > 1.0 || fftin[i] < -1.0 )
+//		fprintf(stderr, __FILE__": WARNING input datum %.3f\n", fftin[i]);
+	    if ( inmin > fftin[i] )
+		 inmin = fftin[i];
+	    if ( inmax < fftin[i] )
+		 inmax = fftin[i];
+	}
+
+
+	fftwf_execute(fftplan);
+
+	/* examine channel 0 only */
+	float mag_mark  = band_mag(fftout, bfsk_mark_band, magscalar);
+	float mag_space = band_mag(fftout, bfsk_space_band, magscalar);
+
+
+	static unsigned char lastbit;
+
+#if 0	// TEST -- doesn't help?, sometimes gets it wrong
+	// "clarify" mag_mark and mag_space according to whether lastbit
+	// was a mark or a space ...  If lastbit was a mark, then enhance
+	// space and vice-versa
+	float clarify_factor = 2.0;
+	if ( lastbit ) {
+	    mag_space *= clarify_factor;
+	} else {
+	    mag_mark  *= clarify_factor;
+	}
+#endif
+
+	float msdelta = mag_mark - mag_space;
+
+
+	// Detect carrier
+	float mag_detect = 0.01;
+	/* pulseaudio *adds* when downmixing 2 channels to 1; if we're using only
+	 * one channel here, we blindly assume that pulseaudio downmixed from 2. */
+	if ( pa_nchannels == 1 )
+	    mag_detect *= 2.0;
+	unsigned char carrier_detect = mag_mark + mag_space > mag_detect ? 1 : 0;
+
+
+#ifdef TRICK
+
+// #define TRICK_DETECT 0.0
+// #define TRICK_DETECT 0.4
+// #define TRICK_DETECT 0.1
+
+// #define TRICK_DETECT mag_detect
+#define TRICK_DETECT ( 0.1 * (float)decode_rate/300 )
+
+	// EXCELLENT trick -- fixes 300 baud perfectly
+	// shift the input window if the msdelta is small
+	static unsigned int skipped_frames = 0;
+	if ( carrier_detected && fabs(msdelta) <  TRICK_DETECT )
+	{
+# if 0
+	    skipped_frames++;
+	    if ( skipped_frames >= nsamples )	// maybe nsamples/2 ??
+		nframes = 0;
+	    else
+		nframes = 1;
+	    printf( "*" );
+# else
+
+	    if ( nframes == nsamples ) {
+		// nframes = nsamples / 2;
+		// nframes = nsamples / 16;		// shift by 1/4 the bit width
+		nframes = 1;
+		nframes = nframes ? nframes : 1;
+	    }
+	    skipped_frames += nframes;
+	    if ( skipped_frames >= nsamples )	// maybe nsamples/2 ??
+		nframes = 0;
+# endif
+	    if ( nframes ) {
+		size_t	nbytes = nframes * pa_framesize;
+		size_t	reuse_bytes = nsamples*pa_framesize - nbytes;
+		memmove(pa_samples_in, pa_samples_in+nbytes, reuse_bytes);
+		void *in = pa_samples_in + reuse_bytes;
+		if (pa_simple_read(s, in, nbytes, &error) < 0) {
+		    fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n",
+			    pa_strerror(error));
+		    ret = 1;
+		    break;
+		}
+		goto reprocess_audio;
+	    }
+	}
+
+	if ( textscope ) {
+	    if ( skipped_frames )
+		printf( "<skipped %u (of %u) frames>\n",
+			skipped_frames, nsamples);
+	}
+
+	skipped_frames = 0;
+#endif
+
+	unsigned char bit;
+
+	if ( carrier_detect ) {
+	    bit = signbit(msdelta) ? 0 : 1;
+
+#if 0
+	    static unsigned char lastbit_strong = 0;
+	    if ( fabs(msdelta) < 0.5 ) {		// TEST
+		if ( lastbit_strong )
+		    bit = !lastbit;
+		lastbit_strong = 0;
+	    } else {
+		lastbit_strong = 1;
+	    }
+#endif
+
+	}
+	else
+	    bit = 1;
+
+	lastbit = bit;
+
+	// save 11 bits:
+	//           stop--- v        v--- start bit
+	//                   v         v--- prev stop bit
+	//                   1dddddddd01
+	bfsk_bits = (bfsk_bits>>1) | (bit << 10);
+
+	if ( ! carrier_detect ) {
+	    if ( carrier_detected ) {
+		printf( "###NOCARRIER###\n");
+		carrier_detected = 0;
+	    }
+	    continue;
+	}
+
+	if ( ! carrier_detected )
+	printf( "###CARRIER###\n");
+	carrier_detected = carrier_detect;
+
+	if ( textscope ) {
+	    printf("%s %c ",
+		    carrier_detected ? "CD" : "  ",
+		    carrier_detected ? ( bit ? '1' : '0' ) : ' ');
+
+	    float magmax = 0;
+
+	    for ( i=0; i<nbands*pa_nchannels; i++ ) {
+		if ( i%nbands == 0 )
+		    printf("|");
+		float mag = band_mag(fftout, i, magscalar);
+		if ( mag > magmax )
+		    magmax = mag;
+		char *magchars = " .-=^";
+		if ( i%nbands == bfsk_mark_band )
+		    magchars = " mMM^";
+		if ( i%nbands == bfsk_space_band )
+		    magchars = " sSS^";
+		char c = magchars[0];
+		if ( mag > 0.10 ) c = magchars[1];
+		if ( mag > 0.25 ) c = magchars[2];
+		if ( mag > 0.50 ) c = magchars[3];
+		if ( mag > 1.00 ) c = magchars[4];
+		printf("%c", c);
+
+		if ( i > 30 )
+		    break;
+	    }
+	    printf("| in[%+4.2f %+4.2f] >mag %+.2f", inmin, inmax, magmax);
+
+	    printf(" ");
+	    for ( i=15; i>=0; i-- )
+		printf("%c", bfsk_bits & (1<<i) ? '1' : '0');
+	    printf(" ");
+	}
+
+	if ( ! carrier_detected ) {
+	    if ( textscope )
+		printf("\n");
+	    continue;
+	}
+
+	//           stop--- v        v--- start bit
+	//                   v         v--- prev stop bit
+	if ( ( bfsk_bits & 0b10000000011 )
+			== 0b10000000001 ) {  // valid frame: start=space, stop=mark
+	    unsigned char byte = ( bfsk_bits >> 2) & 0xFF;
+	    if ( textscope )
+		printf("+");
+	    printf("%c", isspace(byte)||isprint(byte) ? byte : '.');
+	    fflush(stdout);
+	    bfsk_bits = 1 << 10;
+	}
+	if ( textscope )
+	    printf("\n");
+
+
+    }
+
+    pa_simple_free(s);
+
+    fftwf_free(fftin);
+    fftwf_free(fftout);
+    fftwf_destroy_plan(fftplan);
+
+    return ret;
+}
