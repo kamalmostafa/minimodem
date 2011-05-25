@@ -27,47 +27,7 @@
 
 #include <fftw3.h>
 
-
-static inline
-float
-band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
-{
-    float re = cplx[band][0];
-    float im = cplx[band][1];
-    float mag = hypot(re, im) * scalar;
-    return mag;
-}
-
-
-void
-tscope_print( fftwf_complex * const fftout, int nbands, float magscalar,
-	unsigned char one_line_mode, unsigned char show_maxmag )
-{
-    char magchars[] = " .-=+#^";
-    char *buf = alloca(nbands+1);
-    if ( one_line_mode )
-	magchars[0] = '_';
-    float maxmag = 0;
-    int i;
-    for ( i=0; i<nbands; i++ ) {
-	float mag = band_mag(fftout, i, magscalar);
-	if ( mag > maxmag )
-	    maxmag = mag;
-	char c;
-	     if ( mag <= 0.05 ) c = magchars[0];
-	else if ( mag <= 0.10 ) c = magchars[1];
-	else if ( mag <= 0.25 ) c = magchars[2];
-	else if ( mag <= 0.50 ) c = magchars[3];
-	else if ( mag <= 0.95 ) c = magchars[4];
-	else if ( mag <= 1.00 ) c = magchars[5];
-	else c = magchars[6];
-	buf[i] = c;
-    }
-    buf[i] = 0;
-    if ( show_maxmag )
-	printf(" %.2f", maxmag);
-    printf("|%s|", buf);
-}
+#include "tscope_print.h"
 
 
 int
@@ -86,6 +46,9 @@ main( int argc, char*argv[] )
 
     int			one_line_mode = 1;
     int			show_maxmag = 1;
+
+    if ( ! isatty(1) )
+	one_line_mode = 0;
 
     int argi = 1;
     while ( argi < argc && argv[argi][0] == '-' ) {
@@ -198,7 +161,7 @@ main( int argc, char*argv[] )
 	int n;
 	for ( n=0; n<pa_nchannels; n++ )
 	    tscope_print(fftout+n*nbands, show_nbands, magscalar,
-		    one_line_mode, show_maxmag);
+				one_line_mode, show_maxmag);
 	printf( one_line_mode ? "\r" : "\n" );
 	fflush(stdout);
     }

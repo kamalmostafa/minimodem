@@ -9,5 +9,5 @@ minimodem_LDADD = $(DEPS_LIBS)
 minimodem_SOURCES = minimodem.c
 
 tscope_LDADD = $(DEPS_LIBS)
-tscope_SOURCES = tscope.c
+tscope_SOURCES = tscope.c tscope_print.c
 

@@ -49,7 +49,7 @@ am_minimodem_OBJECTS = minimodem.$(OBJEXT)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
 am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_tscope_OBJECTS = tscope.$(OBJEXT)
+am_tscope_OBJECTS = tscope.$(OBJEXT) tscope_print.$(OBJEXT)
 tscope_OBJECTS = $(am_tscope_OBJECTS)
 tscope_DEPENDENCIES = $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -158,7 +158,7 @@ INCLUDES = $(DEPS_CFLAGS)
 minimodem_LDADD = $(DEPS_LIBS)
 minimodem_SOURCES = minimodem.c
 tscope_LDADD = $(DEPS_LIBS)
-tscope_SOURCES = tscope.c
+tscope_SOURCES = tscope.c tscope_print.c
 all: all-am
 
 .SUFFIXES:
@@ -245,6 +245,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minimodem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tscope.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tscope_print.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
