@@ -237,41 +237,37 @@ reprocess_audio:
 
 	float msdelta = mag_mark - mag_space;
 
-#define TRICK_DETECT ( 0.5 * MAX(mag_mark,mag_space) )
 
-	// Detect carrier
-	float mag_detect = 0.001;
-	unsigned char carrier_detect =
-	    mag_mark + mag_space > mag_detect
+#define CD_MIN_TONEMAG		0.001
+#define CD_MIN_MSDELTA_RATIO	0.5
+
+	/* Detect bfsk carrier */
+	int carrier_detect /*boolean*/ =
+	    mag_mark + mag_space > CD_MIN_TONEMAG
 		&&
-	    fabs(msdelta) >= TRICK_DETECT;
+	    fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space);
 
 #ifdef TRICK
 
 	// EXCELLENT trick -- fixes 300 baud perfectly
 	// shift the input window if the msdelta is small
 	static unsigned int skipped_frames = 0;
-	if ( carrier_detected && fabs(msdelta) < TRICK_DETECT )
+	if ( ! carrier_detect )
 	{
-# if 0
-	    skipped_frames++;
-	    if ( skipped_frames >= nsamples )	// maybe nsamples/2 ??
-		nframes = 0;
-	    else
-		nframes = 1;
-	    printf( "*" );
-# else
 
 	    if ( nframes == nsamples ) {
+#if  0
 		// nframes = nsamples / 2;
-		// nframes = nsamples / 16;		// shift by 1/4 the bit width
-		nframes = 1;
+		nframes = nsamples / 4;		// shift by 1/4 the bit width
 		nframes = nframes ? nframes : 1;
+#else
+		nframes = 1;
+#endif
 	    }
 	    skipped_frames += nframes;
 	    if ( skipped_frames >= nsamples )	// maybe nsamples/2 ??
 		nframes = 0;
-# endif
+
 	    if ( nframes ) {
 		size_t	nbytes = nframes * pa_framesize;
 		size_t	reuse_bytes = nsamples*pa_framesize - nbytes;
@@ -287,7 +283,7 @@ reprocess_audio:
 	    }
 	}
 
-	if ( textscope ) {
+	if ( carrier_detect && textscope ) {
 	    if ( skipped_frames )
 		printf( "<skipped %u (of %u) frames>\n",
 			skipped_frames, nsamples);
@@ -297,6 +293,7 @@ reprocess_audio:
 #endif
 
 	unsigned char bit;
+
 
 	if ( carrier_detect )
 	{
@@ -335,7 +332,7 @@ reprocess_audio:
 	}
 
 	if ( ! carrier_detected )
-	printf( "###CARRIER###\n");
+	    printf( "###CARRIER###\n");
 	carrier_detected = carrier_detect;
 
 	if ( textscope ) {
