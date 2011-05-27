@@ -74,6 +74,7 @@ int main(int argc, char*argv[]) {
     unsigned int sample_rate = ss.rate;
 
     unsigned int band_width = decode_rate / 2;
+    // unsigned int band_width = decode_rate;
 
     unsigned int bfsk_mark_band  = (bfsk_mark_f  +(float)band_width/2) / band_width;
     unsigned int bfsk_space_band = (bfsk_space_f +(float)band_width/2) / band_width;
@@ -146,7 +147,14 @@ int main(int argc, char*argv[]) {
      * Prepare the input sample chunk rate
      */
     int nsamples = sample_rate / decode_rate;
-    nsamples -= 1;	// BLACK MAGIC!
+
+#if 1
+    /* BLACK MAGIC! Run the decoder 1% slow ... */
+    int nsamples_speedup = nsamples * 0.01;
+    if ( nsamples_speedup == 0 )
+	nsamples_speedup = 1;
+    nsamples += nsamples_speedup;	// BLACK MAGIC!
+#endif
 
     // float magscalar = 1.0 / (fftsize/2.0); /* normalize fftw output */
     float magscalar = 1.0 / (nsamples/2.0); /* normalize fftw output */
@@ -158,6 +166,7 @@ int main(int argc, char*argv[]) {
 	magscalar /= 2.0;
 
     float actual_decode_rate = (float)sample_rate / nsamples;
+    fprintf(stderr, "### nsamples=%u ", nsamples);
     fprintf(stderr, "### baud=%.2f mark=%u space=%u ###\n",
 	    actual_decode_rate,
 	    bfsk_mark_band * band_width,
@@ -171,6 +180,9 @@ int main(int argc, char*argv[]) {
 
     unsigned int bfsk_bits = 0xFFFFFFFF;
     unsigned char carrier_detected = 0;
+
+    unsigned long long carrier_nsamples = 0;
+    unsigned long long carrier_nsymbits = 0;
 
     ret = 0;
 
@@ -238,7 +250,7 @@ reprocess_audio:
 	float msdelta = mag_mark - mag_space;
 
 
-#define CD_MIN_TONEMAG		0.001
+#define CD_MIN_TONEMAG		0.1
 #define CD_MIN_MSDELTA_RATIO	0.5
 
 	/* Detect bfsk carrier */
@@ -250,23 +262,29 @@ reprocess_audio:
 #ifdef TRICK
 
 	// EXCELLENT trick -- fixes 300 baud perfectly
-	// shift the input window if the msdelta is small
+	// shift the input window to "catch up" if the msdelta is small
 	static unsigned int skipped_frames = 0;
 	if ( ! carrier_detect )
 	{
 
 	    if ( nframes == nsamples ) {
-#if  0
-		// nframes = nsamples / 2;
-		nframes = nsamples / 4;		// shift by 1/4 the bit width
+#if  1
+		/* shift by 1/2 the width of one data bit */
+// any of these work ...
+//		nframes = nsamples / 2;
+		nframes = nsamples / 4;
+//		nframes = nsamples / 8;
+//		nframes = nsamples / 16;
+//		nframes = 1;
 		nframes = nframes ? nframes : 1;
-#else
-		nframes = 1;
 #endif
 	    }
-	    skipped_frames += nframes;
-	    if ( skipped_frames >= nsamples )	// maybe nsamples/2 ??
+
+	    // clamp the shift to half the bit width
+	    if ( skipped_frames + nframes > nsamples/2 )
 		nframes = 0;
+	    else
+		skipped_frames += nframes;
 
 	    if ( nframes ) {
 		size_t	nbytes = nframes * pa_framesize;
@@ -285,11 +303,10 @@ reprocess_audio:
 
 	if ( carrier_detect && textscope ) {
 	    if ( skipped_frames )
-		printf( "<skipped %u (of %u) frames>\n",
+		fprintf(stderr, "<skipped %u (of %u) frames>\n",
 			skipped_frames, nsamples);
 	}
 
-	skipped_frames = 0;
 #endif
 
 	unsigned char bit;
@@ -297,6 +314,9 @@ reprocess_audio:
 
 	if ( carrier_detect )
 	{
+	    // carrier_nsamples += nsamples + skipped_frames;
+	    carrier_nsamples += nsamples - skipped_frames;
+	    carrier_nsymbits++;
 	    bit = signbit(msdelta) ? 0 : 1;
 
 #if 0
@@ -314,6 +334,8 @@ reprocess_audio:
 	else
 	    bit = 1;
 
+	skipped_frames = 0;
+
 	lastbit = bit;
 
 	// save 11 bits:
@@ -325,14 +347,23 @@ reprocess_audio:
 	if ( ! carrier_detect )
 	{
 	    if ( carrier_detected ) {
-		printf( "###NOCARRIER###\n");
+		float samples_per_bit =
+			    (float)carrier_nsamples / carrier_nsymbits;
+		float rx_baud_rate =
+			    (float)sample_rate / samples_per_bit;
+		fprintf(stderr, "###NOCARRIER (bits=%llu rx=%.2f baud) ###\n",
+			carrier_nsymbits,
+			rx_baud_rate);
 		carrier_detected = 0;
 	    }
 	    continue;
 	}
 
-	if ( ! carrier_detected )
-	    printf( "###CARRIER###\n");
+	if ( ! carrier_detected ) {
+	    fprintf(stderr, "###CARRIER###\n");
+	    carrier_nsamples = 0;
+	    carrier_nsymbits = 0;
+	}
 	carrier_detected = carrier_detect;
 
 	if ( textscope ) {
@@ -356,12 +387,16 @@ reprocess_audio:
 	    for ( i=15; i>=0; i-- )
 		printf("%c", bfsk_bits & (1<<i) ? '1' : '0');
 	    printf(" ");
+	    fflush(stdout);
 	}
 
 	if ( ! carrier_detected ) {
-	    if ( textscope )
+	    if ( textscope ) {
 		printf("\n");
+		fflush(stdout);
+	    }
 	    continue;
+
 	}
 
 	//           stop--- v        v--- start bit
@@ -371,12 +406,23 @@ reprocess_audio:
 	    unsigned char byte = ( bfsk_bits >> 2) & 0xFF;
 	    if ( textscope )
 		printf("+");
-	    printf("%c", isspace(byte)||isprint(byte) ? byte : '.');
-	    fflush(stdout);
+	    if ( byte == 0xFF ) {
+
+		if ( textscope )
+		    printf("idle");
+
+	    } else {
+
+		printf("%c", isspace(byte)||isprint(byte) ? byte : '.');
+		fflush(stdout);
+
+	    }
 	    bfsk_bits = 1 << 10;
 	}
-	if ( textscope )
+	if ( textscope ) {
 	    printf("\n");
+	    fflush(stdout);
+	}
 
 
     }
