@@ -41,6 +41,13 @@ main( int argc, char*argv[] )
         //.channels = 3		// 2 channel stereo + 1 mixed channel
     };
 
+#if 1
+    static pa_buffer_attr pa_ba = {
+	.maxlength = (uint32_t)-1,
+	.fragsize = 0,	// filled in at runtime
+    };
+#endif
+
     unsigned int	decode_rate = 50;
     unsigned int	band_width = decode_rate;
 
@@ -71,11 +78,16 @@ main( int argc, char*argv[] )
 
     unsigned int sample_rate = ss.rate;
 
+    if ( isatty(1) )
+	pa_ba.fragsize = sample_rate / decode_rate;
+
     /* Initiate the capture stream */
     int error;
     pa_simple *s;
-    s = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "text spectrum scope",
-	    &ss, NULL, NULL, &error);
+    s = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL,
+	    "text spectrum scope",
+	    &ss, NULL, &pa_ba, &error);
+	    // &ss, NULL, NULL, &error);
     if ( !s ) {
         fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n",
 		pa_strerror(error));
