@@ -36,7 +36,7 @@ tscope_print( fftwf_complex * const fftout, int nbands, float magscalar,
 	int one_line_mode, int show_maxmag )
 {
     char *buf = alloca(nbands+1);
-    char magchars[] = " .-=+#^";
+    char magchars[] = " .-=^!";
     if ( one_line_mode )
 	magchars[0] = '_';
     float maxmag = 0;
@@ -47,12 +47,11 @@ tscope_print( fftwf_complex * const fftout, int nbands, float magscalar,
 	if ( maxmag < mag )
 	     maxmag = mag;
 	     if ( mag <= 0.05 ) c = magchars[0];
-	else if ( mag <= 0.10 ) c = magchars[1];
-	else if ( mag <= 0.25 ) c = magchars[2];
-	else if ( mag <= 0.50 ) c = magchars[3];
-	else if ( mag <= 0.95 ) c = magchars[4];
-	else if ( mag <= 1.00 ) c = magchars[5];
-	else c = magchars[6];
+	else if ( mag <= 0.25 ) c = magchars[1];
+	else if ( mag <= 0.50 ) c = magchars[2];
+	else if ( mag <= 0.75 ) c = magchars[3];
+	else if ( mag <= 1.00 ) c = magchars[4];
+	else c = magchars[5];
 	buf[i] = c;
     }
     buf[i] = 0;
