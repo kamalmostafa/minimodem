@@ -148,12 +148,18 @@ int main(int argc, char*argv[]) {
      */
     int nsamples = sample_rate / decode_rate;
 
-#if 1
+#if 0
     /* BLACK MAGIC! Run the decoder 1% slow ... */
-    int nsamples_speedup = nsamples * 0.01;
-    if ( nsamples_speedup == 0 )
-	nsamples_speedup = 1;
-    nsamples += nsamples_speedup;	// BLACK MAGIC!
+    int nsamples_adjust = nsamples * 0.01;
+    if ( nsamples_adjust == 0 )
+	nsamples_adjust = 1;
+    nsamples += nsamples_adjust;
+#elif 1
+    /* BLACK MAGIC! Run the decoder 1% fast ... */
+    int nsamples_adjust = nsamples * 0.01;
+    if ( nsamples_adjust == 0 )
+	nsamples_adjust = 1;
+    nsamples -= nsamples_adjust;
 #endif
 
     // float magscalar = 1.0 / (fftsize/2.0); /* normalize fftw output */
@@ -198,6 +204,7 @@ int main(int argc, char*argv[]) {
 	    ret = 1;
             break;
         }
+	carrier_nsamples += nframes;
 
 #define TRICK
 
@@ -258,6 +265,7 @@ reprocess_audio:
 	    mag_mark + mag_space > CD_MIN_TONEMAG
 		&&
 	    fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space);
+	    // MIN(mag_mark, mag_space) < 0.1;
 
 #ifdef TRICK
 
@@ -297,6 +305,7 @@ reprocess_audio:
 		    ret = 1;
 		    break;
 		}
+		carrier_nsamples += nframes;
 		goto reprocess_audio;
 	    }
 	}
@@ -314,8 +323,6 @@ reprocess_audio:
 
 	if ( carrier_detect )
 	{
-	    // carrier_nsamples += nsamples + skipped_frames;
-	    carrier_nsamples += nsamples - skipped_frames;
 	    carrier_nsymbits++;
 	    bit = signbit(msdelta) ? 0 : 1;
 
