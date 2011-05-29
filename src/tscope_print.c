@@ -36,7 +36,7 @@ tscope_print( fftwf_complex * const fftout, int nbands, float magscalar,
 	int one_line_mode, int show_maxmag )
 {
     char *buf = alloca(nbands+1);
-    char magchars[] = " .-=^!";
+    char magchars[] = " .-=#^";
     if ( one_line_mode )
 	magchars[0] = '_';
     float maxmag = 0;

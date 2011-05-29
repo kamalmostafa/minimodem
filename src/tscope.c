@@ -145,7 +145,7 @@ main( int argc, char*argv[] )
     // sadly, COLUMNS is not exported by default (?)
     char *columns_env = getenv("COLUMNS");
     int columns = columns_env ? atoi(columns_env) : 80;
-    int show_nbands = ( (columns - 2 - 9) / pa_nchannels ) - 1;
+    int show_nbands = ( (columns - 2 - 10) / pa_nchannels ) - 1;
     if ( show_nbands > nbands )
          show_nbands = nbands;
     char *magline = malloc(show_nbands+1);
