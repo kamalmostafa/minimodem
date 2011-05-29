@@ -284,8 +284,10 @@ reprocess_audio:
 	int carrier_detect /*boolean*/ =
 	    mag_mark + mag_space > CD_MIN_TONEMAG
 		&&
-	    fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space);
-	    // MIN(mag_mark, mag_space) < 0.1;
+	    fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space)
+//	    fabs(msdelta) > 0.4 * (mag_mark+mag_space)
+//	    fabs(msdelta) > 0.1
+	    ;
 
 #ifdef TRICK
 
@@ -298,12 +300,12 @@ reprocess_audio:
 	    if ( nframes == nsamples ) {
 #if  1
 		/* shift by 1/2 the width of one data bit */
-// any of these work ...
+// any of these could work ...
 //		nframes = nsamples / 2;
-		nframes = nsamples / 4;
+//		nframes = nsamples / 4;
 //		nframes = nsamples / 8;
 //		nframes = nsamples / 16;
-//		nframes = 1;
+		nframes = 1;
 		nframes = nframes ? nframes : 1;
 #endif
 	    }
