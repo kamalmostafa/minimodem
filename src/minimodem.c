@@ -44,13 +44,6 @@ int main(int argc, char*argv[]) {
 
 
 
-    /*
-     * Bell 103:     mark=1270 space=1070
-     * ITU-T V.21:   mark=1280 space=1080
-     */
-    unsigned int bfsk_mark_f  = 1270;
-    unsigned int bfsk_space_f = 1070;
-
     if ( argc < 2 ) {
 	fprintf(stderr, "usage: minimodem baud_rate [ mark_hz space_hz ]\n");
 	return 1;
@@ -65,6 +58,27 @@ int main(int argc, char*argv[]) {
 
     unsigned int decode_rate = atoi(argv[argi++]);
 
+    unsigned int band_width;
+    band_width = decode_rate;
+
+    /*
+     * Bell 103:     baud=300 mark=1270 space=1070
+     * ITU-T V.21:   baud=300 mark=1280 space=1080
+     */
+    unsigned int bfsk_mark_f  = 1270;
+    unsigned int bfsk_space_f = 1070;
+    band_width = 10;
+    // band_width = 50;	/* close enough? */
+
+    /*
+     * Bell 202:     baud=1200 mark=1200 space=2200
+     */
+    if ( decode_rate >= 400 ) {
+	bfsk_mark_f  = 1200;
+	bfsk_space_f = 2200;
+	band_width = 200;
+    }
+
     if ( argi < argc ) {
 	assert(argc-argi == 2);
 	bfsk_mark_f = atoi(argv[argi++]);
@@ -72,9 +86,6 @@ int main(int argc, char*argv[]) {
     }
 
     unsigned int sample_rate = ss.rate;
-
-    unsigned int band_width = decode_rate / 2;
-    // unsigned int band_width = decode_rate;
 
     unsigned int bfsk_mark_band  = (bfsk_mark_f  +(float)band_width/2) / band_width;
     unsigned int bfsk_space_band = (bfsk_space_f +(float)band_width/2) / band_width;
