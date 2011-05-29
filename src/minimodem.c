@@ -180,6 +180,15 @@ int main(int argc, char*argv[]) {
 	    );
 
 
+    /* Prepare the text scope output buffer */
+    // sadly, COLUMNS is not exported by default (?)
+    char *columns_env = getenv("COLUMNS");
+    int columns = columns_env ? atoi(columns_env) : 80;
+    int show_nbands = ( (columns - 2 - 10) / pa_nchannels ) - 1 - 10;
+    if ( show_nbands > nbands )
+         show_nbands = nbands;
+
+
     /*
      * Run the main loop
      */
@@ -375,13 +384,12 @@ reprocess_audio:
 
 	if ( textscope ) {
 
-	    printf("%s %c ",
-		    carrier_detected ? "CD" : "  ",
-		    carrier_detected ? ( bit ? '1' : '0' ) : ' ');
+//	    printf("%s %c ",
+//		    carrier_detected ? "CD" : "  ",
+//		    carrier_detected ? ( bit ? '1' : '0' ) : ' ');
 
 	    int one_line_mode = 0;
 	    int show_maxmag = 1;
-	    int show_nbands = nbands < 40 ? nbands : 40;
 	    tscope_print(fftout, show_nbands, magscalar,
 				one_line_mode, show_maxmag);
 
@@ -391,7 +399,7 @@ reprocess_audio:
 //		    magchars = " sSS^";
 
 	    printf(" ");
-	    for ( i=15; i>=0; i-- )
+	    for ( i=(11-1); i>=0; i-- )
 		printf("%c", bfsk_bits & (1<<i) ? '1' : '0');
 	    printf(" ");
 	    fflush(stdout);
