@@ -173,8 +173,8 @@ int main(int argc, char*argv[]) {
     nsamples -= nsamples_adjust;
 #endif
 
-    // float magscalar = 1.0 / (fftsize/2.0); /* normalize fftw output */
-    float magscalar = 1.0 / (nsamples/2.0); /* normalize fftw output */
+    /* normalize fftw output */
+    float magscalar = 1.0 / ((float)nsamples/2.0);
 
     /* pulseaudio *adds* when downmixing 2 channels to 1; if we're using
      * only one channel here, we blindly assume that pulseaudio downmixed
@@ -184,6 +184,7 @@ int main(int argc, char*argv[]) {
 
     float actual_decode_rate = (float)sample_rate / nsamples;
     fprintf(stderr, "### nsamples=%u ", nsamples);
+    // fprintf(stderr, "### magscalar=%f ", magscalar);
     fprintf(stderr, "### baud=%.2f mark=%u space=%u ###\n",
 	    actual_decode_rate,
 	    bfsk_mark_band * band_width,
@@ -233,25 +234,6 @@ reprocess_audio:
 	{
 	}
 #endif
-#ifdef USE_PA_FORMAT_S16LE
-	{	// convert S16LE samples to float [-1.0:+1.0]
-	int j;
-	for ( j=0; j<fftsize; j++ )
-	    fftin[j] = s16le_buf[j] / (float)(1<<15);
-	}
-#endif
-
-	float inmax=0, inmin=0;
-	int i;
-	for ( i=0; i<fftsize; i++ ) {
-//	    if ( fftin[i] > 1.0 || fftin[i] < -1.0 )
-//		fprintf(stderr, __FILE__": WARNING input datum %.3f\n", fftin[i]);
-	    if ( inmin > fftin[i] )
-		 inmin = fftin[i];
-	    if ( inmax < fftin[i] )
-		 inmax = fftin[i];
-	}
-
 
 	fftwf_execute(fftplan);
 
@@ -406,12 +388,8 @@ reprocess_audio:
 	    tscope_print(fftout, show_nbands, magscalar,
 				one_line_mode, show_maxmag);
 
-//		if ( i%nbands == bfsk_mark_band )
-//		    magchars = " mMM^";
-//		if ( i%nbands == bfsk_space_band )
-//		    magchars = " sSS^";
-
 	    printf(" ");
+	    int i;
 	    for ( i=(11-1); i>=0; i-- )
 		printf("%c", bfsk_bits & (1<<i) ? '1' : '0');
 	    printf(" ");
