@@ -22,12 +22,13 @@ sa_pulse_read( simpleaudio *sa, float *buf, size_t nframes )
     int error;
     pa_simple *s = (pa_simple *)sa->backend_handle;
     size_t nbytes = nframes * sa->backend_framesize;
-    int n;
-    if ((n = pa_simple_read(s, buf, nbytes, &error)) < 0) {
+    /* N.B. pa_simple_read always returns 0 or -1, not the number of
+     * read bytes!*/
+    if (pa_simple_read(s, buf, nbytes, &error) < 0) {
 	fprintf(stderr, "pa_simple_read: %s\n", pa_strerror(error));
 	return -1;
     }
-    return n;
+    return nframes;
 }
 
 
