@@ -154,19 +154,11 @@ int main(int argc, char*argv[]) {
      */
     int nsamples = sample_rate / decode_rate;
 
-#if 0
-    /* BLACK MAGIC! Run the decoder 1% slow ... */
-    int nsamples_adjust = nsamples * 0.01;
-    if ( nsamples_adjust == 0 )
-	nsamples_adjust = 1;
-    nsamples += nsamples_adjust;
-#elif 1
-    /* BLACK MAGIC! Run the decoder 1% fast ... */
-    int nsamples_adjust = nsamples * 0.01;
+    /* BLACK MAGIC! Run the decoder 2% fast ... */
+    int nsamples_adjust = nsamples * 0.02;
     if ( nsamples_adjust == 0 )
 	nsamples_adjust = 1;
     nsamples -= nsamples_adjust;
-#endif
 
     /* normalize fftw output */
     float magscalar = 1.0 / ((float)nsamples/2.0);
