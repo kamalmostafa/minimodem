@@ -11,13 +11,19 @@
 #include <errno.h>
 #include <math.h>
 
-#include <pulse/simple.h>
-#include <pulse/error.h>
-#include <pulse/gccmacro.h>
-
 #include <fftw3.h>
 
+#include "simpleaudio.h"
+
 #include "tscope_print.h"
+
+#ifndef MAX
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
+
+#ifndef MIN
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#endif
 
 static inline
 float
@@ -30,22 +36,11 @@ band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
 }
 
 int main(int argc, char*argv[]) {
-    /* The sample type to use */
-    static const pa_sample_spec ss = {
-        .format = PA_SAMPLE_FLOAT32,
-        .rate = 48000,	// pulseaudio will resample its configured audio rate
 
-        // .channels = 2	// 2 channel stereo
-        .channels = 1	// pulseaudio will downmix (additively) to 1 channel
-        // .channels = 3	// 2 channel stereo + 1 mixed channel
-    };
     int ret = 1;
-    int error;
-
-
 
     if ( argc < 2 ) {
-	fprintf(stderr, "usage: minimodem baud_rate [ mark_hz space_hz ]\n");
+	fprintf(stderr, "usage: minimodem [filename] baud_rate [ mark_hz space_hz ]\n");
 	return 1;
     }
 
@@ -56,7 +51,27 @@ int main(int argc, char*argv[]) {
 	argi++;
     }
 
-    unsigned int decode_rate = atoi(argv[argi++]);
+    simpleaudio *sa;
+
+    char *p;
+    for ( p=argv[argi]; *p; p++ )
+	if ( !isdigit(*p) )
+	    break;
+    if ( *p ) {
+	sa = simpleaudio_open_source_sndfile(argv[argi]);
+	argi++;
+    } else {
+	sa = simpleaudio_open_source_pulseaudio(argv[0], "bfsk demodulator");
+    }
+    if ( !sa )
+        return 1;
+
+    unsigned int sample_rate = simpleaudio_get_rate(sa);
+    unsigned int nchannels = simpleaudio_get_channels(sa);
+
+
+    unsigned int decode_rate;
+    decode_rate = atoi(argv[argi++]);
 
     unsigned int band_width;
     band_width = decode_rate;
@@ -85,8 +100,6 @@ int main(int argc, char*argv[]) {
 	bfsk_space_f = atoi(argv[argi++]);
     }
 
-    unsigned int sample_rate = ss.rate;
-
     unsigned int bfsk_mark_band  = (bfsk_mark_f  +(float)band_width/2) / band_width;
     unsigned int bfsk_space_band = (bfsk_space_f +(float)band_width/2) / band_width;
 
@@ -101,20 +114,6 @@ int main(int argc, char*argv[]) {
     }
 
 
-    /* Create the recording stream */
-    pa_simple *s;
-    s = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "record", &ss, NULL, NULL, &error);
-    if ( !s ) {
-        fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n", pa_strerror(error));
-        return 1;
-    }
-
-    int pa_samplesize = pa_sample_size(&ss);
-    int pa_framesize = pa_frame_size(&ss);
-    int pa_nchannels = ss.channels;
-
-    assert( pa_framesize == pa_samplesize * pa_nchannels );
-
 
     /* Create the FFT plan */
     fftwf_plan	fftplan;
@@ -126,9 +125,9 @@ int main(int argc, char*argv[]) {
 
     unsigned int nbands = fftsize / 2 + 1;
 
-    float *fftin = fftwf_malloc(fftsize * sizeof(float) * pa_nchannels);
+    float *fftin = fftwf_malloc(fftsize * sizeof(float) * nchannels);
 
-    fftwf_complex *fftout = fftwf_malloc(nbands * sizeof(fftwf_complex) * pa_nchannels);
+    fftwf_complex *fftout = fftwf_malloc(nbands * sizeof(fftwf_complex) * nchannels);
 
     /*
      * works only for 1 channel:
@@ -138,8 +137,8 @@ int main(int argc, char*argv[]) {
      * works for N channels:
      */
     fftplan = fftwf_plan_many_dft_r2c(
-	    /*rank*/1, &fftsize, /*howmany*/pa_nchannels,
-	    fftin, NULL, /*istride*/pa_nchannels, /*idist*/1,
+	    /*rank*/1, &fftsize, /*howmany*/nchannels,
+	    fftin, NULL, /*istride*/nchannels, /*idist*/1,
 	    fftout, NULL, /*ostride*/1, /*odist*/nbands,
 	    FFTW_ESTIMATE | FFTW_PRESERVE_INPUT );
     /* Nb. FFTW_PRESERVE_INPUT is needed for the "shift the input window" trick */
@@ -148,10 +147,6 @@ int main(int argc, char*argv[]) {
         fprintf(stderr, __FILE__": fftwf_plan_dft_r2c_1d() failed\n");
         return 1;
     }
-
-
-    void *pa_samples_in = fftin;	// read samples directly into fftin
-    assert( pa_samplesize == sizeof(float) );
 
 
     /*
@@ -179,8 +174,9 @@ int main(int argc, char*argv[]) {
     /* pulseaudio *adds* when downmixing 2 channels to 1; if we're using
      * only one channel here, we blindly assume that pulseaudio downmixed
      * from 2, and rescale magnitudes accordingly. */
-    if ( pa_nchannels == 1 )
-	magscalar /= 2.0;
+// but sndfile does not do that.
+//    if ( nchannels == 1 )
+//	magscalar /= 2.0;
 
     float actual_decode_rate = (float)sample_rate / nsamples;
     fprintf(stderr, "### nsamples=%u ", nsamples);
@@ -196,7 +192,7 @@ int main(int argc, char*argv[]) {
     // sadly, COLUMNS is not exported by default (?)
     char *columns_env = getenv("COLUMNS");
     int columns = columns_env ? atoi(columns_env) : 80;
-    int show_nbands = ( (columns - 2 - 10) / pa_nchannels ) - 1 - 10;
+    int show_nbands = ( (columns - 2 - 10) / nchannels ) - 1 - 10;
     if ( show_nbands > nbands )
          show_nbands = nbands;
 
@@ -215,16 +211,12 @@ int main(int argc, char*argv[]) {
 
     while ( 1 ) {
 
-	size_t	nframes = nsamples;
-	size_t	nbytes = nframes * pa_framesize;
+	bzero(fftin, (fftsize * sizeof(float) * nchannels));
 
-	bzero(fftin, (fftsize * sizeof(float) * pa_nchannels));
-        if (pa_simple_read(s, pa_samples_in, nbytes, &error) < 0) {
-            fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n",
-		    pa_strerror(error));
-	    ret = 1;
+	size_t	nframes = nsamples;
+	/* read samples directly into fftin */
+	if ((ret=simpleaudio_read(sa, fftin, nframes)) <= 0)
             break;
-        }
 	carrier_nsamples += nframes;
 
 #define TRICK
@@ -299,16 +291,15 @@ reprocess_audio:
 		skipped_frames += nframes;
 
 	    if ( nframes ) {
-		size_t	nbytes = nframes * pa_framesize;
-		size_t	reuse_bytes = nsamples*pa_framesize - nbytes;
-		memmove(pa_samples_in, pa_samples_in+nbytes, reuse_bytes);
-		void *in = pa_samples_in + reuse_bytes;
-		if (pa_simple_read(s, in, nbytes, &error) < 0) {
-		    fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n",
-			    pa_strerror(error));
-		    ret = 1;
+		size_t	framesize = nchannels * sizeof(float);
+		size_t	nbytes = nframes * framesize;
+		size_t	reuse_bytes = nsamples*framesize - nbytes;
+		memmove(fftin, fftin+nbytes, reuse_bytes);
+		void *in = fftin + reuse_bytes;
+
+		if ((ret=simpleaudio_read(sa, in, nframes)) <= 0)
 		    break;
-		}
+
 		carrier_nsamples += nframes;
 		goto reprocess_audio;
 	    }
@@ -433,7 +424,10 @@ reprocess_audio:
 
     }
 
-    pa_simple_free(s);
+    if ( ret != 0 )
+	fprintf(stderr, "simpleaudio_read: error\n");
+
+    simpleaudio_close(sa);
 
     fftwf_free(fftin);
     fftwf_free(fftout);
