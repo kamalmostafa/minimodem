@@ -273,8 +273,8 @@ reprocess_audio:
 
 	    if ( nframes == nsamples ) {
 #if  1
-		/* shift by 1/2 the width of one data bit */
-// any of these could work ...
+		/* shift by a fraction of the width of one data bit
+		 * any of these could work ... */
 //		nframes = nsamples / 2;
 //		nframes = nsamples / 4;
 //		nframes = nsamples / 8;
@@ -293,14 +293,23 @@ reprocess_audio:
 	    if ( nframes ) {
 		size_t	framesize = nchannels * sizeof(float);
 		size_t	nbytes = nframes * framesize;
-		size_t	reuse_bytes = nsamples*framesize - nbytes;
-		memmove(fftin, fftin+nbytes, reuse_bytes);
-		void *in = fftin + reuse_bytes;
-
+		size_t	reuse_bytes = (nsamples-nframes)*framesize;
+		void *in = fftin;
+		memmove(in, in+nbytes, reuse_bytes);
+		in += reuse_bytes;
+		/* read samples directly into fftin */
 		if ((ret=simpleaudio_read(sa, in, nframes)) <= 0)
 		    break;
-
 		carrier_nsamples += nframes;
+
+	if ( textscope ) {
+	    int one_line_mode = 0;
+	    int show_maxmag = 1;
+	    tscope_print(fftout, show_nbands, magscalar,
+				one_line_mode, show_maxmag);
+	    printf("\n");
+	}
+
 		goto reprocess_audio;
 	    }
 	}
