@@ -256,11 +256,15 @@ reprocess_audio:
 
 	/* Detect bfsk carrier */
 	int carrier_detect /*boolean*/ =
-	    mag_mark + mag_space > CD_MIN_TONEMAG
-		&&
-	    fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space)
-//	    fabs(msdelta) > 0.4 * (mag_mark+mag_space)
-//	    fabs(msdelta) > 0.1
+	    1
+	    && mag_mark + mag_space > CD_MIN_TONEMAG
+
+//	    && MIN(mag_mark, mag_space) < 0.30
+//	    && MAX(mag_mark, mag_space) > 0.80
+
+//	    && fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space)
+	    && fabs(msdelta) > 0.2 * (mag_mark+mag_space)
+//	    && fabs(msdelta) > 0.5
 	    ;
 
 #ifdef TRICK
