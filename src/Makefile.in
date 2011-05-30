@@ -45,7 +45,10 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_minimodem_OBJECTS = minimodem.$(OBJEXT) tscope_print.$(OBJEXT)
+am__objects_1 = simpleaudio.$(OBJEXT) simpleaudio-pulse.$(OBJEXT) \
+	simpleaudio-sndfile.$(OBJEXT)
+am_minimodem_OBJECTS = minimodem.$(OBJEXT) tscope_print.$(OBJEXT) \
+	$(am__objects_1)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
 am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -155,8 +158,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
 INCLUDES = $(DEPS_CFLAGS)
+SIMPLEAUDIO_SRC = \
+	simpleaudio.c		\
+	simpleaudio-pulse.c	\
+	simpleaudio-sndfile.c
+
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c tscope_print.c
+minimodem_SOURCES = minimodem.c tscope_print.c $(SIMPLEAUDIO_SRC)
 tscope_LDADD = $(DEPS_LIBS)
 tscope_SOURCES = tscope.c tscope_print.c
 all: all-am
@@ -244,6 +252,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minimodem.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-pulse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-sndfile.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tscope.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tscope_print.Po@am__quote@
 
