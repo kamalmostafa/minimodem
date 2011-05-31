@@ -82,8 +82,8 @@ int main(int argc, char*argv[]) {
      */
     unsigned int bfsk_mark_f  = 1270;
     unsigned int bfsk_space_f = 1070;
-    band_width = 10;
-    // band_width = 50;	/* close enough? */
+    // band_width = 10;
+    band_width = 50;	/* close enough */
 
     /*
      * Bell 202:     baud=1200 mark=1200 space=2200
