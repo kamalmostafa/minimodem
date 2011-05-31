@@ -331,8 +331,17 @@ reprocess_audio:
 
 	if ( carrier_detect )
 	{
+	    unsigned char physical_bit;
 	    carrier_nsymbits++;
-	    bit = signbit(msdelta) ? 0 : 1;
+	    physical_bit = signbit(msdelta) ? 0 : 1;
+
+#undef NRZI
+#ifdef NRZI
+	    bit = lastbit != physical_bit;
+	    lastbit = physical_bit;
+#else
+	    bit = physical_bit;
+#endif
 
 #if 0
 	    static unsigned char lastbit_strong = 0;
@@ -351,7 +360,9 @@ reprocess_audio:
 
 	skipped_frames = 0;
 
+#ifndef NRZI
 	lastbit = bit;
+#endif
 
 	// save 11 bits:
 	//           stop--- v        v--- start bit
