@@ -246,16 +246,24 @@ reprocess_audio:
 #define CD_MIN_TONEMAG		0.1
 #define CD_MIN_MSDELTA_RATIO	0.5
 
+	float cd_ms_delta;
+	if ( decode_rate > 600 )		// HORRIBLE HACK
+	    cd_ms_delta = 0.55;
+	else
+	    cd_ms_delta = 0.2;
+
 	/* Detect bfsk carrier */
 	int carrier_detect /*boolean*/ =
 	    1
 	    && mag_mark + mag_space > CD_MIN_TONEMAG
 
+	    && fabs(msdelta) > cd_ms_delta * (mag_mark+mag_space)
+
 //	    && MIN(mag_mark, mag_space) < 0.30
 //	    && MAX(mag_mark, mag_space) > 0.80
 
 //	    && fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space)
-	    && fabs(msdelta) > 0.2 * (mag_mark+mag_space)
+
 //	    && fabs(msdelta) > 0.5
 	    ;
 
