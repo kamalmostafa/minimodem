@@ -31,8 +31,23 @@ band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
 {
     float re = cplx[band][0];
     float im = cplx[band][1];
-    float mag = hypot(re, im) * scalar;
-    return mag;
+    float mag = hypot(re, im);
+    return mag * scalar;
+}
+
+static inline
+float
+band_mag_bw( fftwf_complex * const cplx, unsigned int band, unsigned int bw_nbands, float scalar )
+{
+    float mag = 0;
+    unsigned int i;
+    for ( i=0; i<bw_nbands; i++ ) {
+	float re, im;
+	re = cplx[band+i][0];
+	im = cplx[band+i][1];
+	mag += hypot(re, im);
+    }
+    return mag * scalar / bw_nbands;
 }
 
 int main(int argc, char*argv[]) {
@@ -94,16 +109,27 @@ int main(int argc, char*argv[]) {
 	band_width = 200;
     }
 
+//    unsigned int decode_filter_width = decode_rate / 2;
+//    unsigned int decode_filter_width = decode_rate * 1.5;
+    unsigned int decode_filter_width = decode_rate;
+
     if ( argi < argc ) {
 	assert(argc-argi == 2);
 	bfsk_mark_f = atoi(argv[argi++]);
 	bfsk_space_f = atoi(argv[argi++]);
     }
 
+    unsigned int bfsk_bw_nbands = (decode_filter_width + (float)band_width/2) / band_width;
+    unsigned int bfsk_bw_nbands_half = bfsk_bw_nbands / 2;
+
     unsigned int bfsk_mark_band  = (bfsk_mark_f  +(float)band_width/2) / band_width;
     unsigned int bfsk_space_band = (bfsk_space_f +(float)band_width/2) / band_width;
 
+    fprintf(stderr, "### mark_band=%u space_band=%u bw_nbands=%u\n",
+	    bfsk_mark_band, bfsk_space_band, bfsk_bw_nbands);
 
+
+    // FIXME -- need to account for bfsk_bw_nbands
     if ( bfsk_mark_band == 0 || bfsk_space_band == 0 ) {
         fprintf(stderr, __FILE__": mark or space band is at dsp DC\n");
 //	return 1;
@@ -222,8 +248,12 @@ reprocess_audio:
 	fftwf_execute(fftplan);
 
 	/* examine channel 0 only */
-	float mag_mark  = band_mag(fftout, bfsk_mark_band, magscalar);
-	float mag_space = band_mag(fftout, bfsk_space_band, magscalar);
+	float mag_mark  = band_mag_bw(fftout,
+					bfsk_mark_band - bfsk_bw_nbands_half,
+					bfsk_bw_nbands, magscalar);
+	float mag_space = band_mag_bw(fftout,
+					bfsk_space_band - bfsk_bw_nbands_half,
+					bfsk_bw_nbands, magscalar);
 
 
 	static unsigned char lastbit;
@@ -248,9 +278,9 @@ reprocess_audio:
 
 	float cd_ms_delta;
 	if ( decode_rate > 600 )		// HORRIBLE HACK
-	    cd_ms_delta = 0.55;
+	    cd_ms_delta = 0.3;
 	else
-	    cd_ms_delta = 0.2;
+	    cd_ms_delta = 0.1;
 
 	/* Detect bfsk carrier */
 	int carrier_detect /*boolean*/ =
