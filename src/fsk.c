@@ -180,7 +180,7 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
      * collect the n_data_bits
      */
 
-    float s_str, p_str, i_str, d_str;
+    float s_str, p_str, i_str;
     unsigned int bit;
 
     debug_log("\t\tstart   ");
@@ -213,18 +213,40 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     unsigned int bits_out = 0;
     int i;
+    float d_str[32];
     for ( i=0; i<fskp->n_data_bits; i++ ) {
 	debug_log("\t\tdata    ");
 	unsigned int begin_databit = (float)(samples_per_bit * (i+2) + 0.5);
 	fsk_bit_analyze(fskp, samples+begin_databit, bit_nsamples,
-							    &bit, &d_str);
-	v += d_str;
+							    &bit, &d_str[i]);
+	v += d_str[i];
 	bits_out |= bit << i;
     }
     *bits_outp = bits_out;
 
-debug_log( "v=%f\n", v );
-    return v;
+
+    /* Compute frame decode confidence as the inverse of the average
+     * bit-strength delta from the average bit-strength.  (whew).*/
+    v /= fskp->n_frame_bits;	/* v = average bit-strength */
+
+    /*
+     * Filter out noise below FSK_MIN_STRENGTH threshold
+     */
+#define FSK_MIN_STRENGTH	0.05
+    if ( v < FSK_MIN_STRENGTH )
+	return 0.0;
+
+    float confidence = 0;
+    confidence += 1.0 - fabs(i_str - v);
+    confidence += 1.0 - fabs(s_str - v);
+    confidence += 1.0 - fabs(p_str - v);
+    for ( i=0; i<fskp->n_data_bits; i++ ) {
+	confidence += 1.0 - fabs(d_str[i] - v);
+    }
+    confidence /= fskp->n_frame_bits;
+
+debug_log( "frame decode confidence=%f\n", confidence );
+    return confidence;
 }
 
 
@@ -239,17 +261,17 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 {
     unsigned int t;
     unsigned int best_t = 0;
-    float best_v = 0.0;
+    float best_c = 0.0;
     unsigned int best_bits = 0;
     for ( t=0; t<try_max_nsamples; t+=try_step_nsamples )
     {
-	float v;
+	float c;
 	unsigned int bits_out = 0;
     debug_log("try fsk_frame_decode(skip=%+d)\n", t);
-	v = fsk_frame_decode(fskp, samples+t, frame_nsamples, &bits_out);
-	if ( best_v < v ) {
+	c = fsk_frame_decode(fskp, samples+t, frame_nsamples, &bits_out);
+	if ( best_c < c ) {
 	    best_t = t;
-	    best_v = v;
+	    best_c = c;
 	    best_bits = bits_out;
 	}
     }
@@ -257,8 +279,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     *bits_outp = best_bits;
     *frame_start_outp = best_t;
 
-    /* The confidence equation */
-    float confidence =  best_v / fskp->n_frame_bits;
+    float confidence = best_c;
 
     debug_log("FSK_FRAME datum='%c' (0x%02x)   c=%f  t=%d\n",
 	    isprint(best_bits)||isspace(best_bits) ? best_bits : '.',
@@ -418,7 +439,7 @@ debug_log( "--------------------------\n");
 			&frame_start_sample
 			);
 
-#define FSK_MIN_CONFIDENCE	0.05
+#define FSK_MIN_CONFIDENCE	0.5	/* not critical */
 
 	unsigned int advance;
 
