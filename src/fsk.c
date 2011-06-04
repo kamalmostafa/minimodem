@@ -201,8 +201,9 @@ debug_log("\t\tstop    ");
 #ifdef AVOID_TRANSIENTS
     /* Compare strength of stop bit and start bit, to avoid detecting
      * a transient as a start bit, as often results in a single false
-     * character when the mark "leader" tone begins. */
-    if ( fabs( (sS - sM) - (pM - pS) ) > fabs(sS-sM) * AVOID_TRANSIENTS )
+     * character when the mark "leader" tone begins.  Require that the
+     * diff between start bit and stop bit strength not be "large". */
+    if ( fabs((sS-sM)-(pM-pS)) > fabs(sS-sM) * AVOID_TRANSIENTS )
 	return 0.0;
 #endif
 
@@ -378,7 +379,7 @@ main( int argc, char*argv[] )
     float	*read_bufptr = samples;
 
     float		confidence_total = 0;
-    unsigned int	nbytes_decoded = 0;
+    unsigned int	nframes_decoded = 0;
 
     int carrier = 0;
     unsigned int noconfidence = 0;
@@ -431,10 +432,10 @@ debug_log( "--------------------------\n");
 	      if ( ++noconfidence > 3 )	// FIXME: explain
 	      {
 		fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
-			nbytes_decoded, confidence_total / nbytes_decoded );
+			nframes_decoded, confidence_total / nframes_decoded );
 		carrier = 0;
 		confidence_total = 0;
-		nbytes_decoded = 0;
+		nframes_decoded = 0;
 	      }
 	    }
 
@@ -450,7 +451,7 @@ debug_log( "--------------------------\n");
 		carrier = 1;
 	    }
 	    confidence_total += confidence;
-	    nbytes_decoded++;
+	    nframes_decoded++;
 	    noconfidence = 0;
 
 	    /* Advance the sample stream forward past the decoded frame
@@ -488,7 +489,7 @@ debug_log( "--------------------------\n");
 
     if ( carrier ) {
 	fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
-		nbytes_decoded, confidence_total / nbytes_decoded );
+		nframes_decoded, confidence_total / nframes_decoded );
     }
 
     simpleaudio_close(sa);
