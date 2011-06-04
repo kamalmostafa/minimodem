@@ -30,6 +30,8 @@ struct fsk_plan {
     	float		f_space;
 	float		filter_bw;
 	unsigned int	n_data_bits;
+
+	unsigned int	n_frame_bits;
 #ifdef USE_FFT
 	int		fftsize;	// fftw wants this to be signed. why?
 	unsigned int	b_mark;
@@ -59,6 +61,9 @@ fsk_plan_new(
     fskp->f_space = f_space;
     fskp->filter_bw = filter_bw;
     fskp->n_data_bits = n_data_bits;
+
+    /* 1 prev_stop + n_data_bits + 1 start + 1 stop == n_data_bits + 3 */
+    fskp->n_frame_bits = fskp->n_data_bits + 3;
 
 #ifdef USE_FFT
     unsigned int fft_bw = filter_bw;
@@ -152,8 +157,7 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 {
     float v = 0;
 
-    /* 1 prev_stop + n_data_bits + 1 start + 1 stop == n_data_bits + 3 */
-    float samples_per_bit = (float)frame_nsamples / (fskp->n_data_bits + 3);
+    float samples_per_bit = (float)frame_nsamples / fskp->n_frame_bits;
 
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
@@ -218,11 +222,13 @@ debug_log( "v=%f\n", v );
 }
 
 
-int
+/* returns confidence value [0.0 to 1.0] */
+float
 fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	unsigned int try_max_nsamples,
 	unsigned int try_step_nsamples,
-	unsigned int *bits_outp
+	unsigned int *bits_outp,
+	unsigned int *frame_start_outp
 	)
 {
     unsigned int t;
@@ -241,19 +247,18 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	    best_bits = bits_out;
 	}
     }
-#define FSK_MINV	(11 * 0.2)
-    if ( best_v <= FSK_MINV ) {
-	debug_log( "no frame\n" );
-	return -1;
-    }
-
-    debug_log("DATA '%c' @ v=%f t=%d\n",
-	    isprint(best_bits)||isspace(best_bits) ? best_bits : '.',
-	    best_v, best_t);
 
     *bits_outp = best_bits;
+    *frame_start_outp = best_t;
 
-    return best_t;
+    float confidence =  best_v / fskp->n_frame_bits;
+
+    debug_log("FSK_FRAME datum='%c' (0x%02x)   c=%f  t=%d\n",
+	    isprint(best_bits)||isspace(best_bits) ? best_bits : '.',
+	    best_bits,
+	    confidence, best_t);
+
+    return confidence;
 }
 
 /****************************************************************************/
@@ -366,8 +371,10 @@ main( int argc, char*argv[] )
     size_t	read_nsamples = fill_nsamples;
     float	*read_bufptr = samples;
 
-    int carrier = 0;
+    float		confidence_total = 0;
+    unsigned int	nbytes_decoded = 0;
 
+    int carrier = 0;
     while ( 1 ) {
 
 	debug_log( "@read samples+%ld n=%lu\n",
@@ -388,24 +395,42 @@ main( int argc, char*argv[] )
 
 
 debug_log( "--------------------------\n");
-	int t =
-	fsk_find_frame(fskp, samples, frame_nsamples,
+
+
+	unsigned int t = 0;
+
+	float confidence;
+
+	confidence = fsk_find_frame(fskp, samples, frame_nsamples,
 			/*try_max_nsamples*/ nsamples_per_bit,
 			try_step_nsamples,
-			&bits
+			&bits,
+			&t
 			);
 
-	if ( t <= 0 ) {
-	    if ( carrier )
-		fprintf(stderr, "\n### NOCARRIER ###\n");
-	    carrier = 0;
+#define FSK_MIN_CONFIDENCE	0.41
+
+	if ( confidence <= FSK_MIN_CONFIDENCE ) {
+
+	    if ( carrier ) {
+		fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
+			nbytes_decoded,
+			confidence_total / nbytes_decoded );
+		carrier = 0;
+		confidence_total = 0;
+		nbytes_decoded = 0;
+	    }
 
 	    t = nsamples_per_bit;
 
 	} else {
-	    if ( !carrier )
-		fprintf(stderr, "\n### CARRIER ###\n");
-	    carrier = 1;
+
+	    if ( !carrier ) {
+		fprintf(stderr, "### CARRIER ###\n");
+		carrier = 1;
+	    }
+	    confidence_total += confidence;
+	    nbytes_decoded++;
 
 	    // t += nsamples_per_bit * 10;
 	    t += nsamples_per_bit * 9.5;
