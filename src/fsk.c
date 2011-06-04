@@ -134,20 +134,21 @@ band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
 
 static void
 fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
-	float *mag_mark_outp, float *mag_space_outp)
+	unsigned int *bit_outp, float *bit_strength_outp)
 {
     unsigned int pa_nchannels = 1;
     bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
     memcpy(fskp->fftin, samples, bit_nsamples * sizeof(float));
     fftwf_execute(fskp->fftplan);
     float magscalar = 1.0 / ((float)bit_nsamples/2.0);
-    *mag_mark_outp  = band_mag(fskp->fftout, fskp->b_mark,  magscalar);
-    *mag_space_outp = band_mag(fskp->fftout, fskp->b_space, magscalar);
-    debug_log( "\t%.2f  %.2f  %s  sig=%.2f\n",
+    float mag_mark  = band_mag(fskp->fftout, fskp->b_mark,  magscalar);
+    float mag_space = band_mag(fskp->fftout, fskp->b_space, magscalar);
+    *bit_outp = mag_mark > mag_space ? 1 : 0;	// mark==1, space==0
+    *bit_strength_outp = fabs(mag_mark - mag_space);
+    debug_log( "\t%.2f  %.2f  %s  bit=%u bit_strength=%.2f\n",
 	    *mag_mark_outp, *mag_space_outp,
 	    *mag_mark_outp > *mag_space_outp ? "mark      " : "     space",
-	    fabs(*mag_mark_outp - *mag_space_outp)
-	    );
+	    *bit_outp, *bit_strength_outp);
 }
 
 
@@ -168,9 +169,9 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     //			p == stop bit
     // MSddddddddM  <-- expected mark/space framing pattern
 
-    unsigned int begin_i_idlebit = 0;
-    unsigned int begin_s_startbit = (float)(samples_per_bit * 1 + 0.5);
-    unsigned int begin_p_stopbit  = (float)(samples_per_bit * 10 + 0.5);
+    unsigned int begin_idlebit = 0;
+    unsigned int begin_startbit = (float)(samples_per_bit * 1 + 0.5);
+    unsigned int begin_stopbit  = (float)(samples_per_bit * 10 + 0.5);
 
     /*
      * To optimize performance for a streaming scenario, check start bit first,
@@ -179,23 +180,20 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
      * collect the n_data_bits
      */
 
-    float sM, sS, pM, pS, iM, iS;
-
+    float s_str, p_str, i_str, d_str;
     unsigned int bit;
 
-debug_log("\t\tstart   ");
-    fsk_bit_analyze(fskp, samples+begin_s_startbit, bit_nsamples, &sM, &sS);
-    bit = sM > sS;
+    debug_log("\t\tstart   ");
+    fsk_bit_analyze(fskp, samples+begin_startbit, bit_nsamples, &bit, &s_str);
     if ( bit != 0 )
 	return 0.0;
-    v += sS - sM;
+    v += s_str;
 
-debug_log("\t\tstop    ");
-    fsk_bit_analyze(fskp, samples+begin_p_stopbit,  bit_nsamples, &pM, &pS);
-    bit = pM > pS;
+    debug_log("\t\tstop    ");
+    fsk_bit_analyze(fskp, samples+begin_stopbit, bit_nsamples, &bit, &p_str);
     if ( bit != 1 )
 	return 0.0;
-    v += pM - pS;
+    v += p_str;
 
 #define AVOID_TRANSIENTS	0.7
 #ifdef AVOID_TRANSIENTS
@@ -203,26 +201,24 @@ debug_log("\t\tstop    ");
      * a transient as a start bit, as often results in a single false
      * character when the mark "leader" tone begins.  Require that the
      * diff between start bit and stop bit strength not be "large". */
-    if ( fabs((sS-sM)-(pM-pS)) > fabs(sS-sM) * AVOID_TRANSIENTS )
+    if ( fabs(s_str-p_str) > (s_str * AVOID_TRANSIENTS) )
 	return 0.0;
 #endif
 
-debug_log("\t\tidle    ");
-    fsk_bit_analyze(fskp, samples+begin_i_idlebit,  bit_nsamples, &iM, &iS);
-    bit = iM > iS;
+    debug_log("\t\tidle    ");
+    fsk_bit_analyze(fskp, samples+begin_idlebit, bit_nsamples, &bit, &i_str);
     if ( bit != 1 )
 	return 0.0;
-    v += iM - iS;
+    v += i_str;
 
     unsigned int bits_out = 0;
     int i;
     for ( i=0; i<fskp->n_data_bits; i++ ) {
-	unsigned int begin = (float)(samples_per_bit * (i+2) + 0.5);
-	float dM, dS;
-debug_log("\t\tdata    ");
-	fsk_bit_analyze(fskp, samples+begin, bit_nsamples, &dM, &dS);
-	bit = dM > dS;
-	v += fabs(dM - dS);
+	debug_log("\t\tdata    ");
+	unsigned int begin_databit = (float)(samples_per_bit * (i+2) + 0.5);
+	fsk_bit_analyze(fskp, samples+begin_databit, bit_nsamples,
+							    &bit, &d_str);
+	v += d_str;
 	bits_out |= bit << i;
     }
     *bits_outp = bits_out;
