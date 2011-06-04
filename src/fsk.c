@@ -162,7 +162,7 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
     // 0123456789A
-    // isddddddddp	i == idle bit (a.k.a. previous stop bit)
+    // isddddddddp	i == idle bit (a.k.a. prev_stop bit)
     //			s == start bit
     //			d == data bits
     //			p == stop bit
@@ -251,6 +251,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     *bits_outp = best_bits;
     *frame_start_outp = best_t;
 
+    /* The confidence equation */
     float confidence =  best_v / fskp->n_frame_bits;
 
     debug_log("FSK_FRAME datum='%c' (0x%02x)   c=%f  t=%d\n",
@@ -273,9 +274,6 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 int
 main( int argc, char*argv[] )
 {
-
-    int ret = 1;
-
     if ( argc < 2 ) {
 	fprintf(stderr, "usage: fsk [filename] baud_rate [ mark_hz space_hz ]\n");
 	return 1;
@@ -344,14 +342,8 @@ main( int argc, char*argv[] )
 
 
     /*
-     * Run the main loop
+     * Prepare the fsk plan
      */
-
-    ret = 0;
-
-
-
-
 
     fsk_plan *fskp = fsk_plan_new(sample_rate,
 				    bfsk_mark_f, bfsk_space_f,
@@ -362,6 +354,11 @@ main( int argc, char*argv[] )
         return 1;
     }
 
+    /*
+     * Run the main loop
+     */
+
+    int ret = 0;
 
     size_t	fill_nsamples = nsamples_per_bit * 12;
 
@@ -375,6 +372,7 @@ main( int argc, char*argv[] )
     unsigned int	nbytes_decoded = 0;
 
     int carrier = 0;
+    unsigned int noconfidence = 0;
     while ( 1 ) {
 
 	debug_log( "@read samples+%ld n=%lu\n",
@@ -385,43 +383,54 @@ main( int argc, char*argv[] )
 //	carrier_nsamples += read_nsamples;
 
 
+debug_log( "--------------------------\n");
+
+	// FIXME: explain
 	unsigned int frame_nsamples = nsamples_per_bit * 11;
 
-	unsigned int bits = 0;
+	// FIXME: explain
+	unsigned int try_max_nsamples = nsamples_per_bit;
 
+	// FIXME: explain
 	unsigned int try_step_nsamples = nsamples_per_bit / 4;
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
 
-
-debug_log( "--------------------------\n");
-
-
-	unsigned int t = 0;
-
 	float confidence;
+	unsigned int bits = 0;
+	/* Note: frame_start_sample is actually the sample where the
+	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
+	unsigned int frame_start_sample = 0;
 
 	confidence = fsk_find_frame(fskp, samples, frame_nsamples,
-			/*try_max_nsamples*/ nsamples_per_bit,
+			try_max_nsamples,
 			try_step_nsamples,
 			&bits,
-			&t
+			&frame_start_sample
 			);
 
 #define FSK_MIN_CONFIDENCE	0.41
+// #define FSK_MIN_CONFIDENCE	0.13
+
+	unsigned int advance;
 
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {
 
 	    if ( carrier ) {
+	      if ( ++noconfidence > 3 )	// FIXME: explain
+	      {
 		fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
-			nbytes_decoded,
-			confidence_total / nbytes_decoded );
+			nbytes_decoded, confidence_total / nbytes_decoded );
 		carrier = 0;
 		confidence_total = 0;
 		nbytes_decoded = 0;
+	      }
 	    }
 
-	    t = nsamples_per_bit;
+	    /* Advance the sample stream forward by try_max_nsamples so the
+	     * next time around the loop we continue searching from where
+	     * we left off this time.		*/
+	    advance = try_max_nsamples;
 
 	} else {
 
@@ -431,20 +440,32 @@ debug_log( "--------------------------\n");
 	    }
 	    confidence_total += confidence;
 	    nbytes_decoded++;
+	    noconfidence = 0;
 
-	    // t += nsamples_per_bit * 10;
-	    t += nsamples_per_bit * 9.5;
-	    debug_log( "@ t=%u\n", t);
+	    /* Advance the sample stream forward past the decoded frame
+	     * but not past the stop bit, since we want it to appear as
+	     * the prev_stop bit of the next frame, so ...
+	     *
+	     * advance = 1 prev_stop + 1 start + 8 data bits == 10 bits
+	     *
+	     * but actually advance just a bit less than that to allow
+	     * for clock skew, so ...
+	     *
+	     * advance = 9.5 bits		*/
+	    advance = frame_start_sample + nsamples_per_bit * 9.5;
+
+	    debug_log( "@ frame_start=%u  advance=%u\n", frame_start_sample, advance);
 
 	    char the_byte = isprint(bits)||isspace(bits) ? bits : '.';
 	    printf( "%c", the_byte );
 	    fflush(stdout);
 
-	} 
+	}
 
-	memmove(samples, samples+t, (fill_nsamples-t)*sizeof(float));
-	read_bufptr = samples + (fill_nsamples-t);
-	read_nsamples = t;
+	memmove(samples, samples+advance,
+		(fill_nsamples-advance)*sizeof(float));
+	read_bufptr = samples + (fill_nsamples-advance);
+	read_nsamples = advance;
 
 	assert ( read_nsamples <= buf_nsamples );
 	assert ( read_nsamples > 0 );
@@ -453,6 +474,11 @@ debug_log( "--------------------------\n");
 
     if ( ret != 0 )
 	fprintf(stderr, "simpleaudio_read: error\n");
+
+    if ( carrier ) {
+	fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
+		nbytes_decoded, confidence_total / nbytes_decoded );
+    }
 
     simpleaudio_close(sa);
 
