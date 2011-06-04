@@ -1,0 +1,35 @@
+#!/bin/bash
+
+TMPDIR=/tmp/run-test-$$
+mkdir "$TMPDIR" || exit
+trap "rm -rf $TMPDIR" 0
+
+let nfail=0
+
+for i in ../testdata/*/*.wav
+do
+    f="${i##*/}"
+    rate="${f#*-}"
+    rate="${rate%%-*}"
+
+    echo TEST	./fsk "$i" "$rate" 
+    ./fsk "$i" "$rate" >$TMPDIR/out 2>$TMPDIR/err
+
+    t="${f%%-*}"
+
+    grep "confidence=" $TMPDIR/err
+#    sum -r ../testdata/$t-*.txt $TMPDIR/out
+    cmp ../testdata/$t-*.txt $TMPDIR/out
+    if [ $? -eq 0 ]
+    then
+	echo "@@@ PASS $f"
+    else
+	echo "						@@@ FAIL $f"
+	let nfail=nfail+1
+    fi
+
+    echo
+done
+
+exit $nfail
+
