@@ -26,7 +26,7 @@ band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
 {
     float re = cplx[band][0];
     float im = cplx[band][1];
-    float mag = hypot(re, im) * scalar;
+    float mag = hypotf(re, im) * scalar;
     return mag;
 }
 
