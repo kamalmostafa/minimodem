@@ -197,6 +197,15 @@ debug_log("\t\tstop    ");
 	return 0.0;
     v += pM - pS;
 
+#define AVOID_TRANSIENTS	0.7
+#ifdef AVOID_TRANSIENTS
+    /* Compare strength of stop bit and start bit, to avoid detecting
+     * a transient as a start bit, as often results in a single false
+     * character when the mark "leader" tone begins. */
+    if ( fabs( (sS - sM) - (pM - pS) ) > fabs(sS-sM) * AVOID_TRANSIENTS )
+	return 0.0;
+#endif
+
 debug_log("\t\tidle    ");
     fsk_bit_analyze(fskp, samples+begin_i_idlebit,  bit_nsamples, &iM, &iS);
     bit = iM > iS;
@@ -392,7 +401,10 @@ debug_log( "--------------------------\n");
 	unsigned int try_max_nsamples = nsamples_per_bit;
 
 	// FIXME: explain
-	unsigned int try_step_nsamples = nsamples_per_bit / 4;
+	// THIS BREAKS ONE OF THE 1200 TESTS, WHEN I USE AVOID_TRANSIENTS...
+	//unsigned int try_step_nsamples = nsamples_per_bit / 4;
+	// BUT THIS FIXES IT AGAIN:
+	unsigned int try_step_nsamples = nsamples_per_bit / 8;
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
 
@@ -409,8 +421,7 @@ debug_log( "--------------------------\n");
 			&frame_start_sample
 			);
 
-#define FSK_MIN_CONFIDENCE	0.41
-// #define FSK_MIN_CONFIDENCE	0.13
+#define FSK_MIN_CONFIDENCE	0.05
 
 	unsigned int advance;
 
