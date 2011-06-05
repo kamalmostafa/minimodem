@@ -34,6 +34,8 @@ struct fsk_plan {
 	unsigned int	n_frame_bits;
 #ifdef USE_FFT
 	int		fftsize;	// fftw wants this to be signed. why?
+	unsigned int	nbands;
+	unsigned int	band_width;
 	unsigned int	b_mark;
 	unsigned int	b_space;
 	fftwf_plan	fftplan;
@@ -66,17 +68,17 @@ fsk_plan_new(
     fskp->n_frame_bits = fskp->n_data_bits + 3;
 
 #ifdef USE_FFT
-    unsigned int fft_bw = filter_bw;
+    fskp->band_width = filter_bw;
 
-    float fft_half_bw = (float)fft_bw / 2.0;
-    fskp->fftsize = (sample_rate + fft_half_bw) / fft_bw;
-    unsigned int nbands = fskp->fftsize / 2 + 1;
+    float fft_half_bw = (float)fskp->band_width / 2.0;
+    fskp->fftsize = (sample_rate + fft_half_bw) / fskp->band_width;
+    fskp->nbands = fskp->fftsize / 2 + 1;
 
-    fskp->b_mark  = (f_mark  + fft_half_bw) / fft_bw;
-    fskp->b_space = (f_space + fft_half_bw) / fft_bw;
-    if ( fskp->b_mark >= nbands || fskp->b_space >= nbands ) {
+    fskp->b_mark  = (f_mark  + fft_half_bw) / fskp->band_width;
+    fskp->b_space = (f_space + fft_half_bw) / fskp->band_width;
+    if ( fskp->b_mark >= fskp->nbands || fskp->b_space >= fskp->nbands ) {
         fprintf(stderr, "b_mark=%u or b_space=%u is invalid (nbands=%u)\n",
-		fskp->b_mark, fskp->b_space, nbands);
+		fskp->b_mark, fskp->b_space, fskp->nbands);
 	free(fskp);
 	errno = EINVAL;
 	return NULL;
@@ -90,13 +92,13 @@ fsk_plan_new(
 
     // FIXME check these:
     fskp->fftin  = fftwf_malloc(fskp->fftsize * sizeof(float) * pa_nchannels);
-    fskp->fftout = fftwf_malloc(nbands * sizeof(fftwf_complex) * pa_nchannels);
+    fskp->fftout = fftwf_malloc(fskp->nbands * sizeof(fftwf_complex) * pa_nchannels);
 
     /* complex fftw plan, works for N channels: */
     fskp->fftplan = fftwf_plan_many_dft_r2c(
 	    /*rank*/1, &fskp->fftsize, /*howmany*/pa_nchannels,
 	    fskp->fftin, NULL, /*istride*/pa_nchannels, /*idist*/1,
-	    fskp->fftout, NULL, /*ostride*/1, /*odist*/nbands,
+	    fskp->fftout, NULL, /*ostride*/1, /*odist*/fskp->nbands,
 	    FFTW_ESTIMATE);
 
     if ( !fskp->fftplan ) {
@@ -136,7 +138,7 @@ static void
 fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 	unsigned int *bit_outp, float *bit_strength_outp)
 {
-    unsigned int pa_nchannels = 1;
+    unsigned int pa_nchannels = 1;	// FIXME
     bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
     memcpy(fskp->fftin, samples, bit_nsamples * sizeof(float));
     fftwf_execute(fskp->fftplan);
@@ -146,8 +148,8 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
     *bit_outp = mag_mark > mag_space ? 1 : 0;	// mark==1, space==0
     *bit_strength_outp = fabs(mag_mark - mag_space);
     debug_log( "\t%.2f  %.2f  %s  bit=%u bit_strength=%.2f\n",
-	    *mag_mark_outp, *mag_space_outp,
-	    *mag_mark_outp > *mag_space_outp ? "mark      " : "     space",
+	    mag_mark, mag_space,
+	    mag_mark > mag_space ? "mark      " : "     space",
 	    *bit_outp, *bit_strength_outp);
 }
 
@@ -407,7 +409,6 @@ main( int argc, char*argv[] )
 
 	if ((ret=simpleaudio_read(sa, read_bufptr, read_nsamples)) <= 0)
             break;
-//	carrier_nsamples += read_nsamples;
 
 
 debug_log( "--------------------------\n");
