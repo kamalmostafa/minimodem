@@ -291,6 +291,71 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     return confidence;
 }
 
+#include <assert.h>		// FIXME
+
+// #define FSK_AUTODETECT_MIN_FREQ		600
+// #define FSK_AUTODETECT_MAX_FREQ		5000
+
+int
+fsk_detect_carrier(fsk_plan *fskp, float *samples, unsigned int nsamples,
+	float min_mag_threshold )
+{
+    assert( nsamples <= fskp->fftsize );
+
+    unsigned int pa_nchannels = 1;	// FIXME
+    bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
+    memcpy(fskp->fftin, samples, nsamples * sizeof(float));
+    fftwf_execute(fskp->fftplan);
+    float magscalar = 1.0 / ((float)nsamples/2.0);
+    float max_mag = 0.0;
+    int max_mag_band = -1;
+    int i = 1;	/* start detection at the first non-DC band */
+    int nbands = fskp->nbands;
+#ifdef FSK_AUTODETECT_MIN_FREQ
+    i = (FSK_AUTODETECT_MIN_FREQ + (fskp->band_width/2))
+			    / fskp->band_width;
+#endif
+#ifdef FSK_AUTODETECT_MAX_FREQ
+    nbands = (FSK_AUTODETECT_MAX_FREQ + (fskp->band_width/2))
+			    / fskp->band_width;
+    if ( nbands > fskp->nbands )
+	 nbands = fskp->nbands:
+#endif
+    for ( ; i<nbands; i++ ) {
+	float mag = band_mag(fskp->fftout, i,  magscalar);
+	if ( mag < min_mag_threshold )
+	    continue;
+	if ( max_mag < mag ) {
+	    max_mag = mag;
+	    max_mag_band = i;
+	}
+    }
+    if ( max_mag_band < 0 )
+	return -1;
+
+    fprintf(stderr, "### TONE freq=%u mag=%.2f ###\n",
+	    max_mag_band * fskp->band_width, max_mag);
+
+    return max_mag_band;
+}
+
+
+void
+fsk_set_tones_by_bandshift( fsk_plan *fskp, unsigned int b_mark, int b_shift )
+{
+    assert( b_shift != 0 );
+    assert( b_mark < fskp->nbands ); 
+
+    int b_space = b_mark + b_shift;
+    assert( b_space >= 0 );
+    assert( b_space < fskp->nbands ); 
+
+    fskp->b_mark = b_mark;
+    fskp->b_space = b_space;
+    fskp->f_mark = b_mark * fskp->band_width;
+    fskp->f_space = b_space * fskp->band_width;
+}
+
 /****************************************************************************/
 
 
@@ -410,6 +475,35 @@ main( int argc, char*argv[] )
 	if ((ret=simpleaudio_read(sa, read_bufptr, read_nsamples)) <= 0)
             break;
 
+#define CARRIER_AUTODETECT_THRESHOLD	0.10
+
+#ifdef CARRIER_AUTODETECT_THRESHOLD
+	static int carrier_band = -1;
+	// FIXME?: hardcoded 300 baud trigger for carrier autodetect
+	if ( decode_rate <= 300 && carrier_band < 0 ) {
+	    unsigned int i;
+	    for ( i=0; i<read_nsamples; i+=fskp->fftsize ) {
+		carrier_band = fsk_detect_carrier(fskp,
+				    samples+i, fskp->fftsize,
+				    CARRIER_AUTODETECT_THRESHOLD);
+		if ( carrier_band >= 0 )
+		    break;
+	    }
+	    if ( carrier_band < 0 )
+		continue;
+
+	    // FIXME: hardcoded -200 Hz shift here (appropriate for 300 baud)
+	    int b_shift = - (float)(200 + fskp->band_width/2.0)
+						/ fskp->band_width;
+	    /* only accept a carrier as b_mark if it will not result
+	     * in a b_space band which is "too low". */
+	    if ( carrier_band + b_shift < 1 ) {
+		carrier_band = -1;
+		continue;
+	    }
+	    fsk_set_tones_by_bandshift(fskp, /*b_mark*/carrier_band, b_shift);
+	}
+#endif
 
 debug_log( "--------------------------\n");
 
@@ -456,6 +550,9 @@ debug_log( "--------------------------\n");
 		carrier = 0;
 		confidence_total = 0;
 		nframes_decoded = 0;
+#ifdef CARRIER_AUTODETECT_THRESHOLD
+		carrier_band = -1;
+#endif
 	      }
 	    }
 
