@@ -446,7 +446,9 @@ debug_log( "--------------------------\n");
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {
 
 	    if ( carrier ) {
-	      if ( ++noconfidence > 3 )	// FIXME: explain
+	      // FIXME: explain
+#define FSK_MAX_NOCONFIDENCE_BITS	20
+	      if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
 	      {
 		fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
 			nframes_decoded, confidence_total / nframes_decoded );
