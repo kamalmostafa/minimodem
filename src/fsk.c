@@ -470,10 +470,22 @@ main( int argc, char*argv[] )
 
     int carrier = 0;
     unsigned int noconfidence = 0;
+    unsigned int advance = 0;
+
     while ( 1 ) {
+
+	if ( advance ) {
+	    memmove(samples, samples+advance,
+		    (fill_nsamples-advance)*sizeof(float));
+	    read_bufptr = samples + (fill_nsamples-advance);
+	    read_nsamples = advance;
+	}
 
 	debug_log( "@read samples+%ld n=%lu\n",
 		read_bufptr - samples, read_nsamples);
+
+	assert ( read_nsamples <= buf_nsamples );
+	assert ( read_nsamples > 0 );
 
 	if ((ret=simpleaudio_read(sa, read_bufptr, read_nsamples)) <= 0)
             break;
@@ -540,8 +552,6 @@ debug_log( "--------------------------\n");
 
 #define FSK_MIN_CONFIDENCE	0.5	/* not critical */
 
-	unsigned int advance;
-
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {
 
 	    if ( carrier ) {
@@ -585,7 +595,7 @@ debug_log( "--------------------------\n");
 	     * for clock skew, so ...
 	     *
 	     * advance = 9.5 bits		*/
-	    advance = frame_start_sample + nsamples_per_bit * 9.5;
+	    advance = frame_start_sample + nsamples_per_bit * (float)(fskp->n_data_bits + 1.5);
 
 	    debug_log( "@ frame_start=%u  advance=%u\n", frame_start_sample, advance);
 
@@ -593,16 +603,9 @@ debug_log( "--------------------------\n");
 	    printf( "%c", the_byte );
 	    fflush(stdout);
 
+
 	}
 
-	memmove(samples, samples+advance,
-		(fill_nsamples-advance)*sizeof(float));
-	read_bufptr = samples + (fill_nsamples-advance);
-	read_nsamples = advance;
-
-	assert ( read_nsamples <= buf_nsamples );
-	assert ( read_nsamples > 0 );
-	
     }
 
     if ( ret != 0 )
