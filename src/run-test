@@ -17,7 +17,7 @@ do
 
     t="${f%%-*}"
 
-    grep "confidence=" $TMPDIR/err
+    egrep 'CARRIER|TONE' $TMPDIR/err
 #    sum -r ../testdata/$t-*.txt $TMPDIR/out
     cmp ../testdata/$t-*.txt $TMPDIR/out
     if [ $? -eq 0 ]
