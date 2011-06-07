@@ -203,8 +203,10 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
      * a transient as a start bit, as often results in a single false
      * character when the mark "leader" tone begins.  Require that the
      * diff between start bit and stop bit strength not be "large". */
-    if ( fabs(s_str-p_str) > (s_str * AVOID_TRANSIENTS) )
+    if ( fabs(s_str-p_str) > (s_str * AVOID_TRANSIENTS) ) {
+	debug_log("avoid_transient\n");
 	return 0.0;
+    }
 #endif
 
     debug_log("\t\tidle    ");
@@ -411,6 +413,7 @@ main( int argc, char*argv[] )
      */
     unsigned int bfsk_mark_f  = 1270;
     unsigned int bfsk_space_f = 1070;
+    unsigned int autodetect_shift = 200;
     // band_width = 10;
     band_width = 100;	/* close enough */
 
@@ -482,18 +485,19 @@ main( int argc, char*argv[] )
 	// FIXME?: hardcoded 300 baud trigger for carrier autodetect
 	if ( decode_rate <= 300 && carrier_band < 0 ) {
 	    unsigned int i;
-	    for ( i=0; i<read_nsamples; i+=fskp->fftsize ) {
+	    for ( i=0; i+fskp->fftsize<=buf_nsamples; i+=fskp->fftsize ) {
 		carrier_band = fsk_detect_carrier(fskp,
 				    samples+i, fskp->fftsize,
 				    CARRIER_AUTODETECT_THRESHOLD);
 		if ( carrier_band >= 0 )
 		    break;
 	    }
+	    advance = i;	/* set advance, in case we end up continuing */
 	    if ( carrier_band < 0 )
 		continue;
 
-	    // FIXME: hardcoded -200 Hz shift here (appropriate for 300 baud)
-	    int b_shift = - (float)(200 + fskp->band_width/2.0)
+	    // FIXME: hardcoded negative shift
+	    int b_shift = - (float)(autodetect_shift + fskp->band_width/2.0)
 						/ fskp->band_width;
 	    /* only accept a carrier as b_mark if it will not result
 	     * in a b_space band which is "too low". */
@@ -508,7 +512,7 @@ main( int argc, char*argv[] )
 debug_log( "--------------------------\n");
 
 	// FIXME: explain
-	unsigned int frame_nsamples = nsamples_per_bit * 11;
+	unsigned int frame_nsamples = nsamples_per_bit * fskp->n_frame_bits;
 
 	// FIXME: explain
 	unsigned int try_max_nsamples = nsamples_per_bit;
