@@ -21,7 +21,7 @@ struct simpleaudio {
 };
 
 struct simpleaudio_backend {
-	size_t
+	ssize_t
 	(*simpleaudio_read)( simpleaudio *sa, float *buf, size_t nframes );
 	void
 	(*simpleaudio_close)( simpleaudio *sa );

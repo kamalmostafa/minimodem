@@ -14,7 +14,7 @@ simpleaudio_get_channels( simpleaudio *sa )
     return sa->channels;
 }
 
-size_t
+ssize_t
 simpleaudio_read( simpleaudio *sa, float *buf, size_t nframes )
 {
     return sa->backend->simpleaudio_read(sa, buf, nframes);

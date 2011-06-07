@@ -16,7 +16,7 @@
  */
 
 
-static size_t
+static ssize_t
 sa_pulse_read( simpleaudio *sa, float *buf, size_t nframes )
 {
     int error;

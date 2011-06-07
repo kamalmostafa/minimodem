@@ -14,7 +14,7 @@
  */
 
 
-static size_t
+static ssize_t
 sa_sndfile_read( simpleaudio *sa, float *buf, size_t nframes )
 {
     SNDFILE *s = (SNDFILE *)sa->backend_handle;

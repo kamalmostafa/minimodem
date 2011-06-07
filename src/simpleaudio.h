@@ -30,7 +30,7 @@ simpleaudio_get_rate( simpleaudio *sa );
 unsigned int
 simpleaudio_get_channels( simpleaudio *sa );
 
-size_t
+ssize_t
 simpleaudio_read( simpleaudio *sa, float *buf, size_t nframes );
 
 void
