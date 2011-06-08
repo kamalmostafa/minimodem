@@ -1,3 +1,12 @@
+/*
+ * minimodem.c
+ *
+ * Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>
+ *
+ * NO LICENSE HAS BEEN SPECIFIED OR GRANTED FOR THIS WORK.
+ *
+ */
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,8 +63,7 @@ main( int argc, char*argv[] )
 #ifdef CARRIER_AUTODETECT_THRESHOLD
     unsigned int autodetect_shift = 200;
 #endif
-    // band_width = 10;
-    band_width = 100;	/* close enough */
+    band_width = 50;	/* close enough */
 
     /*
      * Bell 202:     baud=1200 mark=1200 space=2200

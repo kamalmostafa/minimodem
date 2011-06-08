@@ -15,6 +15,15 @@
 
 @SET_MAKE@
 
+# 
+# Makefile.am
+# 
+# Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>
+# 
+# NO LICENSE HAS BEEN SPECIFIED OR GRANTED FOR THIS WORK.
+# 
+# 
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -32,7 +41,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = minimodem$(EXEEXT) tscope$(EXEEXT)
+bin_PROGRAMS = minimodem$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -45,16 +54,14 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = simpleaudio.$(OBJEXT) simpleaudio-pulse.$(OBJEXT) \
+am__objects_1 = fsk.$(OBJEXT)
+am__objects_2 = simpleaudio.$(OBJEXT) simpleaudio-pulse.$(OBJEXT) \
 	simpleaudio-sndfile.$(OBJEXT)
-am_minimodem_OBJECTS = minimodem.$(OBJEXT) fsk.$(OBJEXT) \
-	$(am__objects_1)
+am_minimodem_OBJECTS = minimodem.$(OBJEXT) $(am__objects_1) \
+	$(am__objects_2)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
 am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_tscope_OBJECTS = tscope.$(OBJEXT) tscope_print.$(OBJEXT)
-tscope_OBJECTS = $(am_tscope_OBJECTS)
-tscope_DEPENDENCIES = $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -63,8 +70,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(minimodem_SOURCES) $(tscope_SOURCES)
-DIST_SOURCES = $(minimodem_SOURCES) $(tscope_SOURCES)
+SOURCES = $(minimodem_SOURCES)
+DIST_SOURCES = $(minimodem_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -158,15 +165,17 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
 INCLUDES = $(DEPS_CFLAGS)
+EXTRA_DIST = run-test
 SIMPLEAUDIO_SRC = \
+	simpleaudio.h		\
+	simpleaudio_internal.h	\
 	simpleaudio.c		\
 	simpleaudio-pulse.c	\
 	simpleaudio-sndfile.c
 
+FSK_SRC = fsk.h fsk.c
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c fsk.c $(SIMPLEAUDIO_SRC)
-tscope_LDADD = $(DEPS_LIBS)
-tscope_SOURCES = tscope.c tscope_print.c
+minimodem_SOURCES = minimodem.c $(FSK_SRC) $(SIMPLEAUDIO_SRC)
 all: all-am
 
 .SUFFIXES:
@@ -241,9 +250,6 @@ clean-binPROGRAMS:
 minimodem$(EXEEXT): $(minimodem_OBJECTS) $(minimodem_DEPENDENCIES) 
 	@rm -f minimodem$(EXEEXT)
 	$(LINK) $(minimodem_OBJECTS) $(minimodem_LDADD) $(LIBS)
-tscope$(EXEEXT): $(tscope_OBJECTS) $(tscope_DEPENDENCIES) 
-	@rm -f tscope$(EXEEXT)
-	$(LINK) $(tscope_OBJECTS) $(tscope_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -256,8 +262,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-pulse.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-sndfile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tscope.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tscope_print.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

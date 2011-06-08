@@ -1,17 +1,32 @@
+# 
+# Makefile.am
+# 
+# Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>
+# 
+# NO LICENSE HAS BEEN SPECIFIED OR GRANTED FOR THIS WORK.
+# 
+# 
+
 AM_CFLAGS = -Wall -Werror
 
 INCLUDES = $(DEPS_CFLAGS)
 
 
-bin_PROGRAMS = minimodem tscope
+bin_PROGRAMS = minimodem
 
-SIMPLEAUDIO_SRC=\
+EXTRA_DIST = run-test
+
+
+SIMPLEAUDIO_SRC = \
+	simpleaudio.h		\
+	simpleaudio_internal.h	\
 	simpleaudio.c		\
 	simpleaudio-pulse.c	\
 	simpleaudio-sndfile.c
 
-minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c fsk.c $(SIMPLEAUDIO_SRC)
+FSK_SRC = fsk.h fsk.c
 
-tscope_LDADD = $(DEPS_LIBS)
-tscope_SOURCES = tscope.c tscope_print.c
+minimodem_LDADD = $(DEPS_LIBS)
+minimodem_SOURCES = minimodem.c $(FSK_SRC) $(SIMPLEAUDIO_SRC)
+
+

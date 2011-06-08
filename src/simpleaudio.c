@@ -1,3 +1,12 @@
+/*
+ * simpleaudio.c
+ *
+ * Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>
+ *
+ * NO LICENSE HAS BEEN SPECIFIED OR GRANTED FOR THIS WORK.
+ *
+ */
+
 #include "simpleaudio.h"
 #include "simpleaudio_internal.h"
 #include "malloc.h"
