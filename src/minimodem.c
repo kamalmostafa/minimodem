@@ -1,70 +1,23 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
 
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
-#include <errno.h>
-#include <math.h>
-
-#include <fftw3.h>
 
 #include "simpleaudio.h"
+#include "fsk.h"
 
-#include "tscope_print.h"
-
-#ifndef MAX
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#endif
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#endif
-
-static inline
-float
-band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
+int
+main( int argc, char*argv[] )
 {
-    float re = cplx[band][0];
-    float im = cplx[band][1];
-    float mag = hypotf(re, im);
-    return mag * scalar;
-}
-
-static inline
-float
-band_mag_bw( fftwf_complex * const cplx, unsigned int band, unsigned int bw_nbands, float scalar )
-{
-    float mag = 0;
-    unsigned int i;
-    for ( i=0; i<bw_nbands; i++ ) {
-	float re, im;
-	re = cplx[band+i][0];
-	im = cplx[band+i][1];
-	mag += hypot(re, im);
-    }
-    return mag * scalar / bw_nbands;
-}
-
-int main(int argc, char*argv[]) {
-
-    int ret = 1;
-
     if ( argc < 2 ) {
-	fprintf(stderr, "usage: minimodem [filename] baud_rate [ mark_hz space_hz ]\n");
+	fprintf(stderr, "usage: minimodem [filename] baud_rate "
+					"[ mark_hz space_hz ]\n");
 	return 1;
     }
 
-    unsigned char textscope = 0;
     int argi = 1;
-    if ( argi < argc && strcmp(argv[argi],"-s") == 0 )  {
-	textscope = 1;
-	argi++;
-    }
 
     simpleaudio *sa;
 
@@ -76,13 +29,13 @@ int main(int argc, char*argv[]) {
 	sa = simpleaudio_open_source_sndfile(argv[argi]);
 	argi++;
     } else {
-	sa = simpleaudio_open_source_pulseaudio(argv[0], "bfsk demodulator");
+	sa = simpleaudio_open_source_pulseaudio(argv[0], "FSK demodulator");
     }
     if ( !sa )
         return 1;
 
     unsigned int sample_rate = simpleaudio_get_rate(sa);
-    unsigned int nchannels = simpleaudio_get_channels(sa);
+//    unsigned int nchannels = simpleaudio_get_channels(sa);
 
 
     unsigned int decode_rate;
@@ -97,8 +50,12 @@ int main(int argc, char*argv[]) {
      */
     unsigned int bfsk_mark_f  = 1270;
     unsigned int bfsk_space_f = 1070;
+#define CARRIER_AUTODETECT_THRESHOLD	0.10
+#ifdef CARRIER_AUTODETECT_THRESHOLD
+    unsigned int autodetect_shift = 200;
+#endif
     // band_width = 10;
-    band_width = 50;	/* close enough */
+    band_width = 100;	/* close enough */
 
     /*
      * Bell 202:     baud=1200 mark=1200 space=2200
@@ -109,383 +66,231 @@ int main(int argc, char*argv[]) {
 	band_width = 200;
     }
 
-//    unsigned int decode_filter_width = decode_rate / 2;
-//    unsigned int decode_filter_width = decode_rate * 1.5;
-    unsigned int decode_filter_width = decode_rate;
-
     if ( argi < argc ) {
 	assert(argc-argi == 2);
 	bfsk_mark_f = atoi(argv[argi++]);
 	bfsk_space_f = atoi(argv[argi++]);
     }
 
-    unsigned int bfsk_bw_nbands = (decode_filter_width + (float)band_width/2) / band_width;
-    unsigned int bfsk_bw_nbands_half = bfsk_bw_nbands / 2;
-
-    unsigned int bfsk_mark_band  = (bfsk_mark_f  +(float)band_width/2) / band_width;
-    unsigned int bfsk_space_band = (bfsk_space_f +(float)band_width/2) / band_width;
-
-    fprintf(stderr, "### mark_band=%u space_band=%u bw_nbands=%u\n",
-	    bfsk_mark_band, bfsk_space_band, bfsk_bw_nbands);
-
-
-    // FIXME -- need to account for bfsk_bw_nbands
-    if ( bfsk_mark_band == 0 || bfsk_space_band == 0 ) {
-        fprintf(stderr, __FILE__": mark or space band is at dsp DC\n");
-//	return 1;
-    }
-    if ( bfsk_mark_band == bfsk_space_band ) {
-        fprintf(stderr, __FILE__": inadequate mark/space separation\n");
-	return 1;
-    }
-
-
-
-    /* Create the FFT plan */
-    fftwf_plan	fftplan;
-
-    int fftsize = sample_rate / band_width;
-
-    if ( fftsize & 1 )
-        fprintf(stderr, __FILE__": WARNING: fftsize %u is not even\n", fftsize);
-
-    unsigned int nbands = fftsize / 2 + 1;
-
-    float *fftin = fftwf_malloc(fftsize * sizeof(float) * nchannels);
-
-    fftwf_complex *fftout = fftwf_malloc(nbands * sizeof(fftwf_complex) * nchannels);
-
-    /*
-     * works only for 1 channel:
-    fftplan = fftwf_plan_dft_r2c_1d(fftsize, fftin, fftout, FFTW_ESTIMATE);
-     */
-    /*
-     * works for N channels:
-     */
-    fftplan = fftwf_plan_many_dft_r2c(
-	    /*rank*/1, &fftsize, /*howmany*/nchannels,
-	    fftin, NULL, /*istride*/nchannels, /*idist*/1,
-	    fftout, NULL, /*ostride*/1, /*odist*/nbands,
-	    FFTW_ESTIMATE | FFTW_PRESERVE_INPUT );
-    /* Nb. FFTW_PRESERVE_INPUT is needed for the "shift the input window" trick */
-
-    if ( !fftplan ) {
-        fprintf(stderr, __FILE__": fftwf_plan_dft_r2c_1d() failed\n");
-        return 1;
-    }
-
-
     /*
      * Prepare the input sample chunk rate
      */
-    int nsamples = sample_rate / decode_rate;
-
-    /* BLACK MAGIC! Run the decoder 2% fast ... */
-    int nsamples_adjust = nsamples * 0.02;
-    if ( nsamples_adjust == 0 )
-	nsamples_adjust = 1;
-    nsamples -= nsamples_adjust;
-
-    /* normalize fftw output */
-    float magscalar = 1.0 / ((float)nsamples/2.0);
-
-    /* pulseaudio *adds* when downmixing 2 channels to 1; if we're using
-     * only one channel here, we blindly assume that pulseaudio downmixed
-     * from 2, and rescale magnitudes accordingly. */
-// but sndfile does not do that.
-//    if ( nchannels == 1 )
-//	magscalar /= 2.0;
-
-    float actual_decode_rate = (float)sample_rate / nsamples;
-    fprintf(stderr, "### nsamples=%u ", nsamples);
-    // fprintf(stderr, "### magscalar=%f ", magscalar);
-    fprintf(stderr, "### baud=%.2f mark=%u space=%u ###\n",
-	    actual_decode_rate,
-	    bfsk_mark_band * band_width,
-	    bfsk_space_band * band_width
-	    );
+    int nsamples_per_bit = sample_rate / decode_rate;
 
 
-    /* Prepare the text scope output buffer */
-    // sadly, COLUMNS is not exported by default (?)
-    char *columns_env = getenv("COLUMNS");
-    int columns = columns_env ? atoi(columns_env) : 80;
-    int show_nbands = ( (columns - 2 - 10) / nchannels ) - 1 - 10;
-    if ( show_nbands > nbands )
-         show_nbands = nbands;
+    /*
+     * Prepare the fsk plan
+     */
 
+    fsk_plan *fskp = fsk_plan_new(sample_rate,
+				    bfsk_mark_f, bfsk_space_f,
+				    band_width, 8);
+    if ( !fskp ) {
+        fprintf(stderr, "fsk_plan_new() failed\n");
+        return 1;
+    }
+
+    /*
+     * Prepare the input sample buffer.  For 8-bit frames with prev/start/stop
+     * we need 11 data-bits worth of samples, and we will scan through one bits
+     * worth at a time, hence we need a minimum total input buffer size of 12
+     * data-bits.  */
+    size_t	samplebuf_size = nsamples_per_bit * 12;
+    float	*samplebuf = malloc(samplebuf_size * sizeof(float));
+    float	*samples_readptr = samplebuf;
+    size_t	read_nsamples = samplebuf_size;
+    size_t	samples_nvalid = 0;
+    debug_log("samplebuf_size=%lu\n", samplebuf_size);
 
     /*
      * Run the main loop
      */
 
-    unsigned int bfsk_bits = 0xFFFFFFFF;
-    unsigned char carrier_detected = 0;
+    int			ret = 0;
 
-    unsigned long long carrier_nsamples = 0;
-    unsigned long long carrier_nsymbits = 0;
+    int			carrier = 0;
+    float		confidence_total = 0;
+    unsigned int	nframes_decoded = 0;
 
-    ret = 0;
+    unsigned int	noconfidence = 0;
+    unsigned int	advance = 0;
 
     while ( 1 ) {
 
-	bzero(fftin, (fftsize * sizeof(float) * nchannels));
+	debug_log("advance=%u\n", advance);
+	
+	/* Shift the samples in samplebuf by 'advance' samples */
+	assert( advance <= samplebuf_size );
+	if ( advance == samplebuf_size ) {
+	    samples_nvalid = 0;
+	    samples_readptr = samplebuf;
+	    read_nsamples = samplebuf_size;
+	    advance = 0;
+	}
+	if ( advance ) {
+	    if ( advance > samples_nvalid )
+		break;
+	    memmove(samplebuf, samplebuf+advance,
+		    (samplebuf_size-advance)*sizeof(float));
+	    samples_nvalid -= advance;
+	    samples_readptr = samplebuf + (samplebuf_size-advance);
+	    read_nsamples = advance;
+	}
 
-	size_t	nframes = nsamples;
-	/* read samples directly into fftin */
-	if ((ret=simpleaudio_read(sa, fftin, nframes)) <= 0)
+	/* Read more samples into samplebuf (fill it) */
+	assert ( read_nsamples > 0 );
+	assert ( samples_nvalid + read_nsamples <= samplebuf_size );
+	ssize_t r;
+	r = simpleaudio_read(sa, samples_readptr, read_nsamples);
+	debug_log("simpleaudio_read(samplebuf+%ld, n=%lu) returns %ld\n",
+		samples_readptr - samplebuf, samples_nvalid, r);
+	if ( r < 0 ) {
+	    fprintf(stderr, "simpleaudio_read: error\n");
+	    ret = -1;
             break;
-	carrier_nsamples += nframes;
-
-#define TRICK
-
-#ifdef TRICK
-reprocess_audio:
-	{
 	}
-#endif
+	else if ( r > 0 )
+	    samples_nvalid += r;
 
-	fftwf_execute(fftplan);
+	if ( samples_nvalid == 0 )
+	    break;
 
-	/* examine channel 0 only */
-	float mag_mark  = band_mag_bw(fftout,
-					bfsk_mark_band - bfsk_bw_nbands_half,
-					bfsk_bw_nbands, magscalar);
-	float mag_space = band_mag_bw(fftout,
-					bfsk_space_band - bfsk_bw_nbands_half,
-					bfsk_bw_nbands, magscalar);
-
-
-	static unsigned char lastbit;
-
-#if 0	// TEST -- doesn't help?, sometimes gets it wrong
-	// "clarify" mag_mark and mag_space according to whether lastbit
-	// was a mark or a space ...  If lastbit was a mark, then enhance
-	// space and vice-versa
-	float clarify_factor = 2.0;
-	if ( lastbit ) {
-	    mag_space *= clarify_factor;
-	} else {
-	    mag_mark  *= clarify_factor;
-	}
-#endif
-
-	float msdelta = mag_mark - mag_space;
-
-
-#define CD_MIN_TONEMAG		0.1
-#define CD_MIN_MSDELTA_RATIO	0.5
-
-	float cd_ms_delta;
-	if ( decode_rate > 600 )		// HORRIBLE HACK
-	    cd_ms_delta = 0.3;
-	else
-	    cd_ms_delta = 0.1;
-
-	/* Detect bfsk carrier */
-	int carrier_detect /*boolean*/ =
-	    1
-	    && mag_mark + mag_space > CD_MIN_TONEMAG
-
-	    && fabs(msdelta) > cd_ms_delta * (mag_mark+mag_space)
-
-//	    && MIN(mag_mark, mag_space) < 0.30
-//	    && MAX(mag_mark, mag_space) > 0.80
-
-//	    && fabs(msdelta) > CD_MIN_MSDELTA_RATIO * MAX(mag_mark, mag_space)
-
-//	    && fabs(msdelta) > 0.5
-	    ;
-
-#ifdef TRICK
-
-	// EXCELLENT trick -- fixes 300 baud perfectly
-	// shift the input window to "catch up" if the msdelta is small
-	static unsigned int skipped_frames = 0;
-	if ( ! carrier_detect )
-	{
-
-	    if ( nframes == nsamples ) {
-#if  1
-		/* shift by a fraction of the width of one data bit
-		 * any of these could work ... */
-//		nframes = nsamples / 2;
-//		nframes = nsamples / 4;
-//		nframes = nsamples / 8;
-//		nframes = nsamples / 16;
-		nframes = 1;
-		nframes = nframes ? nframes : 1;
-#endif
-	    }
-
-	    // clamp the shift to half the bit width
-	    if ( skipped_frames + nframes > nsamples/2 )
-		nframes = 0;
-	    else
-		skipped_frames += nframes;
-
-	    if ( nframes ) {
-		size_t	framesize = nchannels * sizeof(float);
-		size_t	nbytes = nframes * framesize;
-		size_t	reuse_bytes = (nsamples-nframes)*framesize;
-		void *in = fftin;
-		memmove(in, in+nbytes, reuse_bytes);
-		in += reuse_bytes;
-		/* read samples directly into fftin */
-		if ((ret=simpleaudio_read(sa, in, nframes)) <= 0)
+#ifdef CARRIER_AUTODETECT_THRESHOLD
+	/* Auto-detect carrier frequency */
+	static int carrier_band = -1;
+	// FIXME?: hardcoded 300 baud trigger for carrier autodetect
+	if ( decode_rate <= 300 && carrier_band < 0 ) {
+	    unsigned int i;
+	    for ( i=0; i+fskp->fftsize<=samples_nvalid; i+=fskp->fftsize ) {
+		carrier_band = fsk_detect_carrier(fskp,
+				    samplebuf+i, fskp->fftsize,
+				    CARRIER_AUTODETECT_THRESHOLD);
+		if ( carrier_band >= 0 )
 		    break;
-		carrier_nsamples += nframes;
-
-	if ( textscope ) {
-	    int one_line_mode = 0;
-	    int show_maxmag = 1;
-	    tscope_print(fftout, show_nbands, magscalar,
-				one_line_mode, show_maxmag);
-	    printf("\n");
-	}
-
-		goto reprocess_audio;
 	    }
-	}
-
-	if ( carrier_detect && textscope ) {
-	    if ( skipped_frames )
-		fprintf(stderr, "<skipped %u (of %u) frames>\n",
-			skipped_frames, nsamples);
-	}
-
-#endif
-
-	unsigned char bit;
-
-
-	if ( carrier_detect )
-	{
-	    unsigned char physical_bit;
-	    carrier_nsymbits++;
-	    physical_bit = signbit(msdelta) ? 0 : 1;
-
-#undef NRZI
-#ifdef NRZI
-	    bit = lastbit != physical_bit;
-	    lastbit = physical_bit;
-#else
-	    bit = physical_bit;
-#endif
-
-#if 0
-	    static unsigned char lastbit_strong = 0;
-	    if ( fabs(msdelta) < 0.5 ) {		// TEST
-		if ( lastbit_strong )
-		    bit = !lastbit;
-		lastbit_strong = 0;
-	    } else {
-		lastbit_strong = 1;
+	    advance = i + fskp->fftsize;
+	    if ( advance > samples_nvalid )
+		advance = samples_nvalid;
+	    if ( carrier_band < 0 ) {
+		debug_log("autodetected carrier band not found\n");
+		continue;
 	    }
-#endif
 
-	}
-	else
-	    bit = 1;
-
-	skipped_frames = 0;
-
-#ifndef NRZI
-	lastbit = bit;
-#endif
-
-	// save 11 bits:
-	//           stop--- v        v--- start bit
-	//                   v         v--- prev stop bit
-	//                   1dddddddd01
-	bfsk_bits = (bfsk_bits>>1) | (bit << 10);
-
-	if ( ! carrier_detect )
-	{
-	    if ( carrier_detected ) {
-		float samples_per_bit =
-			    (float)carrier_nsamples / carrier_nsymbits;
-		float rx_baud_rate =
-			    (float)sample_rate / samples_per_bit;
-		fprintf(stderr, "###NOCARRIER (bits=%llu rx=%.2f baud) ###\n",
-			carrier_nsymbits,
-			rx_baud_rate);
-		carrier_detected = 0;
+	    // FIXME: hardcoded negative shift
+	    int b_shift = - (float)(autodetect_shift + fskp->band_width/2.0)
+						/ fskp->band_width;
+	    /* only accept a carrier as b_mark if it will not result
+	     * in a b_space band which is "too low". */
+	    if ( carrier_band + b_shift < 1 ) {
+		debug_log("autodetected space band too low\n" );
+		carrier_band = -1;
+		continue;
 	    }
+
+	    fprintf(stderr, "### TONE freq=%u ###\n",
+		    carrier_band * fskp->band_width);
+
+	    fsk_set_tones_by_bandshift(fskp, /*b_mark*/carrier_band, b_shift);
+	}
+#endif
+
+	/*
+	 * The main processing algorithm: scan samplesbuf for FSK frames,
+	 * looking at an entire frame at once.
+	 */
+
+	debug_log( "--------------------------\n");
+
+	unsigned int frame_nsamples = nsamples_per_bit * fskp->n_frame_bits;
+
+	if ( samples_nvalid < frame_nsamples )
+	    break;
+
+	// FIXME: explain
+	unsigned int try_max_nsamples = nsamples_per_bit;
+	unsigned int try_step_nsamples = nsamples_per_bit / 8;
+	if ( try_step_nsamples == 0 )
+	    try_step_nsamples = 1;
+
+	float confidence;
+	unsigned int bits = 0;
+	/* Note: frame_start_sample is actually the sample where the
+	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
+	unsigned int frame_start_sample = 0;
+
+	confidence = fsk_find_frame(fskp, samplebuf, frame_nsamples,
+			try_max_nsamples,
+			try_step_nsamples,
+			&bits,
+			&frame_start_sample
+			);
+
+#define FSK_MIN_CONFIDENCE		0.5	/* not critical */
+#define FSK_MAX_NOCONFIDENCE_BITS	20
+
+	if ( confidence <= FSK_MIN_CONFIDENCE ) {
+	    if ( carrier ) {
+	      // FIXME: explain
+	      if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
+	      {
+		fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
+			nframes_decoded, confidence_total / nframes_decoded );
+		carrier = 0;
+		confidence_total = 0;
+		nframes_decoded = 0;
+#ifdef CARRIER_AUTODETECT_THRESHOLD
+		carrier_band = -1;
+#endif
+	      }
+	    }
+
+	    /* Advance the sample stream forward by try_max_nsamples so the
+	     * next time around the loop we continue searching from where
+	     * we left off this time.		*/
+	    advance = try_max_nsamples;
 	    continue;
 	}
 
-	if ( ! carrier_detected ) {
-	    fprintf(stderr, "###CARRIER###\n");
-	    carrier_nsamples = 0;
-	    carrier_nsymbits = 0;
-	}
-	carrier_detected = carrier_detect;
 
-	if ( textscope ) {
-
-//	    printf("%s %c ",
-//		    carrier_detected ? "CD" : "  ",
-//		    carrier_detected ? ( bit ? '1' : '0' ) : ' ');
-
-	    int one_line_mode = 0;
-	    int show_maxmag = 1;
-	    tscope_print(fftout, show_nbands, magscalar,
-				one_line_mode, show_maxmag);
-
-	    printf(" ");
-	    int i;
-	    for ( i=(11-1); i>=0; i-- )
-		printf("%c", bfsk_bits & (1<<i) ? '1' : '0');
-	    printf(" ");
-	    fflush(stdout);
+	if ( !carrier ) {
+	    fprintf(stderr, "### CARRIER ###\n");
+	    carrier = 1;
 	}
 
-	if ( ! carrier_detected ) {
-	    if ( textscope ) {
-		printf("\n");
-		fflush(stdout);
-	    }
-	    continue;
+	confidence_total += confidence;
+	nframes_decoded++;
+	noconfidence = 0;
 
-	}
+	/* Advance the sample stream forward past the decoded frame
+	 * but not past the stop bit, since we want it to appear as
+	 * the prev_stop bit of the next frame, so ...
+	 *
+	 * advance = 1 prev_stop + 1 start + 8 data bits == 10 bits
+	 *
+	 * but actually advance just a bit less than that to allow
+	 * for clock skew, so ...
+	 *
+	 * advance = 9.5 bits		*/
+	advance = frame_start_sample +
+		    nsamples_per_bit * (float)(fskp->n_data_bits + 1.5);
 
-	//           stop--- v        v--- start bit
-	//                   v         v--- prev stop bit
-	if ( ( bfsk_bits & 0b10000000011 )
-			== 0b10000000001 ) {  // valid frame: start=space, stop=mark
-	    unsigned char byte = ( bfsk_bits >> 2) & 0xFF;
-	    if ( textscope )
-		printf("+");
-	    if ( byte == 0xFF ) {
+	debug_log( "@ frame_start=%u  advance=%u\n",
+		    frame_start_sample, advance);
 
-		if ( textscope )
-		    printf("idle");
+	char the_byte = isprint(bits)||isspace(bits) ? bits : '.';
+	printf( "%c", the_byte );
+	fflush(stdout);
 
-	    } else {
+    } /* end of the main loop */
 
-		printf("%c", isspace(byte)||isprint(byte) ? byte : '.');
-		fflush(stdout);
-
-	    }
-	    bfsk_bits = 1 << 10;
-	}
-	if ( textscope ) {
-	    printf("\n");
-	    fflush(stdout);
-	}
-
-
+    if ( carrier ) {
+	fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
+		nframes_decoded, confidence_total / nframes_decoded );
     }
-
-    if ( ret != 0 )
-	fprintf(stderr, "simpleaudio_read: error\n");
 
     simpleaudio_close(sa);
 
-    fftwf_free(fftin);
-    fftwf_free(fftout);
-    fftwf_destroy_plan(fftplan);
+    fsk_plan_destroy(fskp);
 
     return ret;
 }

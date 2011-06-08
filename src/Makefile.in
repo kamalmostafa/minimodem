@@ -32,7 +32,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = minimodem$(EXEEXT) tscope$(EXEEXT) fsk$(EXEEXT)
+bin_PROGRAMS = minimodem$(EXEEXT) tscope$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -47,13 +47,10 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 = simpleaudio.$(OBJEXT) simpleaudio-pulse.$(OBJEXT) \
 	simpleaudio-sndfile.$(OBJEXT)
-am_fsk_OBJECTS = fsk.$(OBJEXT) tscope_print.$(OBJEXT) $(am__objects_1)
-fsk_OBJECTS = $(am_fsk_OBJECTS)
-am__DEPENDENCIES_1 =
-fsk_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_minimodem_OBJECTS = minimodem.$(OBJEXT) tscope_print.$(OBJEXT) \
+am_minimodem_OBJECTS = minimodem.$(OBJEXT) fsk.$(OBJEXT) \
 	$(am__objects_1)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
+am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_tscope_OBJECTS = tscope.$(OBJEXT) tscope_print.$(OBJEXT)
 tscope_OBJECTS = $(am_tscope_OBJECTS)
@@ -66,8 +63,8 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(fsk_SOURCES) $(minimodem_SOURCES) $(tscope_SOURCES)
-DIST_SOURCES = $(fsk_SOURCES) $(minimodem_SOURCES) $(tscope_SOURCES)
+SOURCES = $(minimodem_SOURCES) $(tscope_SOURCES)
+DIST_SOURCES = $(minimodem_SOURCES) $(tscope_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -167,9 +164,7 @@ SIMPLEAUDIO_SRC = \
 	simpleaudio-sndfile.c
 
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c tscope_print.c $(SIMPLEAUDIO_SRC)
-fsk_LDADD = $(DEPS_LIBS)
-fsk_SOURCES = fsk.c tscope_print.c $(SIMPLEAUDIO_SRC)
+minimodem_SOURCES = minimodem.c fsk.c $(SIMPLEAUDIO_SRC)
 tscope_LDADD = $(DEPS_LIBS)
 tscope_SOURCES = tscope.c tscope_print.c
 all: all-am
@@ -243,9 +238,6 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-fsk$(EXEEXT): $(fsk_OBJECTS) $(fsk_DEPENDENCIES) 
-	@rm -f fsk$(EXEEXT)
-	$(LINK) $(fsk_OBJECTS) $(fsk_LDADD) $(LIBS)
 minimodem$(EXEEXT): $(minimodem_OBJECTS) $(minimodem_DEPENDENCIES) 
 	@rm -f minimodem$(EXEEXT)
 	$(LINK) $(minimodem_OBJECTS) $(minimodem_LDADD) $(LIBS)

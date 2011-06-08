@@ -12,8 +12,8 @@ do
     rate="${f#*-}"
     rate="${rate%%-*}"
 
-    echo TEST	./fsk "$i" "$rate" 
-    ./fsk "$i" "$rate" >$TMPDIR/out 2>$TMPDIR/err
+    echo TEST	./minimodem "$i" "$rate" 
+    ./minimodem "$i" "$rate" >$TMPDIR/out 2>$TMPDIR/err
 
     t="${f%%-*}"
 
