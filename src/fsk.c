@@ -146,7 +146,7 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     unsigned int begin_idlebit = 0;
     unsigned int begin_startbit = (float)(samples_per_bit * 1 + 0.5);
-    unsigned int begin_stopbit  = (float)(samples_per_bit * 10 + 0.5);
+    unsigned int begin_stopbit  = (float)(samples_per_bit * (fskp->n_data_bits+2) + 0.5);
 
     /*
      * To optimize performance for a streaming scenario, check start bit first,
