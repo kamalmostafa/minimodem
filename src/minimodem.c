@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 #include <assert.h>
 
 #include "simpleaudio.h"
@@ -21,34 +22,40 @@ int
 main( int argc, char*argv[] )
 {
     if ( argc < 2 ) {
-	fprintf(stderr, "usage: minimodem [filename] baud_rate "
+	fprintf(stderr, "usage: minimodem {baud|mode} [filename] "
 					"[ mark_hz space_hz ]\n");
 	return 1;
     }
 
     int argi = 1;
 
-    simpleaudio *sa;
+    float decode_rate;
 
-    char *p;
-    for ( p=argv[argi]; *p; p++ )
-	if ( !isdigit(*p) )
-	    break;
-    if ( *p ) {
-	sa = simpleaudio_open_source_sndfile(argv[argi]);
-	argi++;
-    } else {
+    decode_rate = atof(argv[argi]);
+    argi++;
+
+    simpleaudio *sa = NULL;
+    if ( argi < argc ) {
+	char *p;
+	for ( p=argv[argi]; *p; p++ )
+	    if ( !(isdigit(*p) || *p == '.') )
+		break;
+	if ( *p ) {
+	    sa = simpleaudio_open_source_sndfile(argv[argi++]);
+	    if ( !sa )
+		return 1;
+	}
+    }
+    if ( ! sa ) {
 	sa = simpleaudio_open_source_pulseaudio(argv[0], "FSK demodulator");
     }
     if ( !sa )
         return 1;
 
     unsigned int sample_rate = simpleaudio_get_rate(sa);
-//    unsigned int nchannels = simpleaudio_get_channels(sa);
+    unsigned int nchannels = simpleaudio_get_channels(sa);
 
-
-    unsigned int decode_rate;
-    decode_rate = atoi(argv[argi++]);
+    assert( nchannels == 1 );
 
     unsigned int band_width;
     band_width = decode_rate;
@@ -83,7 +90,7 @@ main( int argc, char*argv[] )
     /*
      * Prepare the input sample chunk rate
      */
-    int nsamples_per_bit = sample_rate / decode_rate;
+    float nsamples_per_bit = sample_rate / decode_rate;
 
 
     /*
@@ -103,7 +110,10 @@ main( int argc, char*argv[] )
      * we need 11 data-bits worth of samples, and we will scan through one bits
      * worth at a time, hence we need a minimum total input buffer size of 12
      * data-bits.  */
-    size_t	samplebuf_size = nsamples_per_bit * 12;
+// FIXME I should be able to reduce this to * 9 for 5-bit data, but
+// it SOMETIMES crashes -- probably due to non-integer nsamples_per_bit
+// FIXME by passing it down into the fsk code?
+    size_t	samplebuf_size = ceilf(nsamples_per_bit) * 12;
     float	*samplebuf = malloc(samplebuf_size * sizeof(float));
     float	*samples_readptr = samplebuf;
     size_t	read_nsamples = samplebuf_size;
@@ -169,14 +179,17 @@ main( int argc, char*argv[] )
 	// FIXME?: hardcoded 300 baud trigger for carrier autodetect
 	if ( decode_rate <= 300 && carrier_band < 0 ) {
 	    unsigned int i;
-	    for ( i=0; i+fskp->fftsize<=samples_nvalid; i+=fskp->fftsize ) {
+//	    float nsamples_per_scan = fskp->fftsize;
+	    float nsamples_per_scan = nsamples_per_bit;
+	    for ( i=0; i+nsamples_per_scan<=samples_nvalid;
+						 i+=nsamples_per_scan ) {
 		carrier_band = fsk_detect_carrier(fskp,
-				    samplebuf+i, fskp->fftsize,
+				    samplebuf+i, nsamples_per_scan,
 				    CARRIER_AUTODETECT_THRESHOLD);
 		if ( carrier_band >= 0 )
 		    break;
 	    }
-	    advance = i + fskp->fftsize;
+	    advance = i + nsamples_per_scan;
 	    if ( advance > samples_nvalid )
 		advance = samples_nvalid;
 	    if ( carrier_band < 0 ) {
@@ -195,7 +208,7 @@ main( int argc, char*argv[] )
 		continue;
 	    }
 
-	    fprintf(stderr, "### TONE freq=%u ###\n",
+	    debug_log("### TONE freq=%u ###\n",
 		    carrier_band * fskp->band_width);
 
 	    fsk_set_tones_by_bandshift(fskp, /*b_mark*/carrier_band, b_shift);
@@ -237,18 +250,18 @@ main( int argc, char*argv[] )
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {
+	  // FIXME: explain
+	  if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
+	  {
+#ifdef CARRIER_AUTODETECT_THRESHOLD
+	    carrier_band = -1;
+#endif
 	    if ( carrier ) {
-	      // FIXME: explain
-	      if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
-	      {
 		fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
 			nframes_decoded, confidence_total / nframes_decoded );
 		carrier = 0;
 		confidence_total = 0;
 		nframes_decoded = 0;
-#ifdef CARRIER_AUTODETECT_THRESHOLD
-		carrier_band = -1;
-#endif
 	      }
 	    }
 
@@ -261,7 +274,9 @@ main( int argc, char*argv[] )
 
 
 	if ( !carrier ) {
-	    fprintf(stderr, "### CARRIER ###\n");
+	    fprintf(stderr, "### CARRIER %u @ %u Hz ###\n",
+		    (unsigned int)(decode_rate + 0.5),
+		    fskp->b_mark * fskp->band_width);
 	    carrier = 1;
 	}
 
@@ -282,7 +297,9 @@ main( int argc, char*argv[] )
 	advance = frame_start_sample +
 		    nsamples_per_bit * (float)(fskp->n_data_bits + 1.5);
 
-	debug_log( "@ frame_start=%u  advance=%u\n",
+	debug_log("@ nsamples_per_bit=%.3f n_data_bits=%u "
+			" frame_start=%u advance=%u\n",
+		    nsamples_per_bit, fskp->n_data_bits,
 		    frame_start_sample, advance);
 
 	char the_byte = isprint(bits)||isspace(bits) ? bits : '.';
