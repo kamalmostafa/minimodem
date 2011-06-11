@@ -17,37 +17,78 @@
 
 #include "simpleaudio.h"
 #include "fsk.h"
+#include "baudot.h"
 
 int
 main( int argc, char*argv[] )
 {
     if ( argc < 2 ) {
 	fprintf(stderr, "usage: minimodem {baud|mode} [filename] "
+					"[ band_width ] "
 					"[ mark_hz space_hz ]\n");
 	return 1;
     }
 
     int argi = 1;
 
-    float decode_rate;
+    float	decode_rate;
+    int		decode_n_data_bits;
 
-    decode_rate = atof(argv[argi]);
+    if ( strncasecmp(argv[argi],"rtty",5)==0 ) {
+	decode_rate = 45.45;
+	decode_n_data_bits = 5;
+    } else {
+	decode_rate = atof(argv[argi]);
+	decode_n_data_bits = 8;
+    }
     argi++;
 
+
+    unsigned int band_width;
+    unsigned int bfsk_mark_f;
+    unsigned int bfsk_space_f;
+    unsigned int autodetect_shift;
+
+    if ( decode_rate >= 400 ) {
+	/*
+	 * Bell 202:     baud=1200 mark=1200 space=2200
+	 */
+	bfsk_mark_f  = 1200;
+	bfsk_space_f = 2200;
+	band_width = 200;
+	autodetect_shift = 0;	// not used
+    } else if ( decode_rate >= 100 ) {
+	/*
+	 * Bell 103:     baud=300 mark=1270 space=1070
+	 * ITU-T V.21:   baud=300 mark=1280 space=1080
+	 */
+	bfsk_mark_f  = 1270;
+	bfsk_space_f = 1070;
+	band_width = 50;	// close enough
+	autodetect_shift = 200;
+    } else {
+	/*
+	 * RTTY:     baud=45.45 mark/space=variable shift=-170
+	 */
+	bfsk_mark_f  = 0;
+	bfsk_space_f = 0;
+	band_width = 10;
+//	band_width = 68;	// FIXME FIXME FIXME -- causes assert crash
+	autodetect_shift = 170;
+    }
+
+
+    /*
+     * Open the input audio stream
+     */
     simpleaudio *sa = NULL;
-    if ( argi < argc ) {
-	char *p;
-	for ( p=argv[argi]; *p; p++ )
-	    if ( !(isdigit(*p) || *p == '.') )
-		break;
-	if ( *p ) {
-	    sa = simpleaudio_open_source_sndfile(argv[argi++]);
-	    if ( !sa )
-		return 1;
-	}
+    if ( argi < argc && strncmp(argv[argi],"-",2)!=0 ) {
+	sa = simpleaudio_open_source_sndfile(argv[argi++]);
+	if ( !sa )
+	    return 1;
     }
     if ( ! sa ) {
-	sa = simpleaudio_open_source_pulseaudio(argv[0], "FSK demodulator");
+	sa = simpleaudio_open_source_pulseaudio(argv[0], "input audio");
     }
     if ( !sa )
         return 1;
@@ -57,28 +98,13 @@ main( int argc, char*argv[] )
 
     assert( nchannels == 1 );
 
-    unsigned int band_width;
-    band_width = decode_rate;
-
     /*
-     * Bell 103:     baud=300 mark=1270 space=1070
-     * ITU-T V.21:   baud=300 mark=1280 space=1080
+     * Alloc for band_width and tone frequency overrides
+     * FIXME -- tone override doesn't work with autodetect carrier
      */
-    unsigned int bfsk_mark_f  = 1270;
-    unsigned int bfsk_space_f = 1070;
-#define CARRIER_AUTODETECT_THRESHOLD	0.10
-#ifdef CARRIER_AUTODETECT_THRESHOLD
-    unsigned int autodetect_shift = 200;
-#endif
-    band_width = 50;	/* close enough */
 
-    /*
-     * Bell 202:     baud=1200 mark=1200 space=2200
-     */
-    if ( decode_rate >= 400 ) {
-	bfsk_mark_f  = 1200;
-	bfsk_space_f = 2200;
-	band_width = 200;
+    if ( argi < argc ) {
+	band_width = atoi(argv[argi++]);	// FIXME make band_width float?
     }
 
     if ( argi < argc ) {
@@ -97,9 +123,9 @@ main( int argc, char*argv[] )
      * Prepare the fsk plan
      */
 
-    fsk_plan *fskp = fsk_plan_new(sample_rate,
-				    bfsk_mark_f, bfsk_space_f,
-				    band_width, 8);
+    fsk_plan *fskp;
+    fskp = fsk_plan_new(sample_rate, bfsk_mark_f, bfsk_space_f,
+				band_width, decode_n_data_bits);
     if ( !fskp ) {
         fprintf(stderr, "fsk_plan_new() failed\n");
         return 1;
@@ -173,6 +199,7 @@ main( int argc, char*argv[] )
 	if ( samples_nvalid == 0 )
 	    break;
 
+#define CARRIER_AUTODETECT_THRESHOLD	0.03
 #ifdef CARRIER_AUTODETECT_THRESHOLD
 	/* Auto-detect carrier frequency */
 	static int carrier_band = -1;
@@ -278,6 +305,7 @@ main( int argc, char*argv[] )
 		    (unsigned int)(decode_rate + 0.5),
 		    fskp->b_mark * fskp->band_width);
 	    carrier = 1;
+	    baudot_reset();		// FIXME -- lame here
 	}
 
 	confidence_total += confidence;
@@ -302,7 +330,19 @@ main( int argc, char*argv[] )
 		    nsamples_per_bit, fskp->n_data_bits,
 		    frame_start_sample, advance);
 
-	char the_byte = isprint(bits)||isspace(bits) ? bits : '.';
+	char the_byte;
+
+	if ( fskp->n_data_bits == 5 ) {
+	    /* Baudot (RTTY) */
+	    assert( (bits & ~0x1F) == 0 );
+	    int got_char;
+	    got_char = baudot(bits, &the_byte);
+	    if ( ! got_char )
+		continue;
+	} else {
+	    /* ASCII */
+	    the_byte = isprint(bits)||isspace(bits) ? bits : '.';
+	}
 	printf( "%c", the_byte );
 	fflush(stdout);
 

@@ -26,7 +26,9 @@ SIMPLEAUDIO_SRC = \
 
 FSK_SRC = fsk.h fsk.c
 
+BAUDOT_SRC = baudot.h baudot.c
+
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c $(FSK_SRC) $(SIMPLEAUDIO_SRC)
+minimodem_SOURCES = minimodem.c $(BAUDOT_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
 
 

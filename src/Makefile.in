@@ -54,11 +54,12 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = fsk.$(OBJEXT)
-am__objects_2 = simpleaudio.$(OBJEXT) simpleaudio-pulse.$(OBJEXT) \
+am__objects_1 = baudot.$(OBJEXT)
+am__objects_2 = fsk.$(OBJEXT)
+am__objects_3 = simpleaudio.$(OBJEXT) simpleaudio-pulse.$(OBJEXT) \
 	simpleaudio-sndfile.$(OBJEXT)
 am_minimodem_OBJECTS = minimodem.$(OBJEXT) $(am__objects_1) \
-	$(am__objects_2)
+	$(am__objects_2) $(am__objects_3)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
 am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -174,8 +175,9 @@ SIMPLEAUDIO_SRC = \
 	simpleaudio-sndfile.c
 
 FSK_SRC = fsk.h fsk.c
+BAUDOT_SRC = baudot.h baudot.c
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c $(FSK_SRC) $(SIMPLEAUDIO_SRC)
+minimodem_SOURCES = minimodem.c $(BAUDOT_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
 all: all-am
 
 .SUFFIXES:
@@ -257,6 +259,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/baudot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minimodem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-pulse.Po@am__quote@
