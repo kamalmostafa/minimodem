@@ -17,18 +17,22 @@ let nfail=0
 
 for i in ../testdata/*/*.wav
 do
+    dir="${i%/*}"
+
     f="${i##*/}"
     rate="${f#*-}"
     rate="${rate%%-*}"
 
-    echo TEST	./minimodem "$i" "$rate" 
-    ./minimodem "$i" "$rate" >$TMPDIR/out 2>$TMPDIR/err
+    txtnum="${i##*/}"
+    txtnum="${txtnum%%-*}"
+
+    echo TEST	./minimodem "$rate"  "$i"
+    ./minimodem "$rate" "$i" >$TMPDIR/out 2>$TMPDIR/err
 
     t="${f%%-*}"
 
     egrep 'CARRIER|TONE' $TMPDIR/err
-#    sum -r ../testdata/$t-*.txt $TMPDIR/out
-    cmp ../testdata/$t-*.txt $TMPDIR/out
+    cmp $dir/${txtnum}-*.txt $TMPDIR/out
     if [ $? -eq 0 ]
     then
 	echo "@@@ PASS $f"
