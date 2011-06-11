@@ -15,7 +15,7 @@ trap "rm -rf $TMPDIR" 0
 
 let nfail=0
 
-for i in ../testdata/*/*.wav
+for i in ../testdata/*/*.flac
 do
     dir="${i%/*}"
 
