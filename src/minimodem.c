@@ -323,7 +323,7 @@ main( int argc, char*argv[] )
 	    carrier_band = -1;
 #endif
 	    if ( carrier ) {
-		fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
+		fprintf(stderr, "### NOCARRIER ndata=%u confidence=%f ###\n",
 			nframes_decoded, confidence_total / nframes_decoded );
 		carrier = 0;
 		confidence_total = 0;
@@ -398,7 +398,7 @@ main( int argc, char*argv[] )
     } /* end of the main loop */
 
     if ( carrier ) {
-	fprintf(stderr, "### NOCARRIER nbytes=%u confidence=%f ###\n",
+	fprintf(stderr, "### NOCARRIER ndata=%u confidence=%f ###\n",
 		nframes_decoded, confidence_total / nframes_decoded );
     }
 
