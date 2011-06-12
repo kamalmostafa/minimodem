@@ -127,13 +127,57 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 }
 
 
+/* returns confidence value [0.0 to 1.0] */
 static float
-fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
+fsk_bits_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
+	unsigned int *bits_outp )
+{
+    unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
+    unsigned int nbits = fskp->n_data_bits;
+
+    float v = 0;
+    unsigned int bits_out = 0;
+    int i;
+    float d_str[32];
+    for ( i=0; i<nbits; i++ ) {
+	unsigned int begin_databit = (float)(samples_per_bit * i + 0.5);
+	unsigned int bit;
+	debug_log("\t\tdata  begin_data_bit=%u  ", begin_databit);
+	fsk_bit_analyze(fskp, samples+begin_databit, bit_nsamples,
+							    &bit, &d_str[i]);
+	v += d_str[i];
+	bits_out |= bit << i;
+    }
+    *bits_outp = bits_out;
+
+    /* Compute frame decode confidence as the inverse of the average
+     * bit-strength delta from the average bit-strength.  (whew).*/
+    v /= nbits;	/* v = average bit-strength */
+
+    /*
+     * Filter out noise below FSK_MIN_STRENGTH threshold
+     */
+#define FSK_MIN_STRENGTH	0.05
+    if ( v < FSK_MIN_STRENGTH )
+	return 0.0;
+
+    float confidence = 0;
+    for ( i=0; i<nbits; i++ ) {
+	confidence += 1.0 - fabs(d_str[i] - v);
+    }
+    confidence /= nbits;
+
+    debug_log(__func__ " confidence=%f\n", confidence );
+    return confidence;
+}
+
+
+/* returns confidence value [0.0 to 1.0] */
+static float
+fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	unsigned int *bits_outp )
 {
     float v = 0;
-
-    float samples_per_bit = (float)frame_nsamples / fskp->n_frame_bits;
 
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
@@ -146,6 +190,7 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     unsigned int begin_idlebit = 0;
     unsigned int begin_startbit = (float)(samples_per_bit * 1 + 0.5);
+    unsigned int begin_databits = (float)(samples_per_bit * 2 + 0.5);
     unsigned int begin_stopbit  = (float)(samples_per_bit * (fskp->n_data_bits+2) + 0.5);
 
     /*
@@ -188,44 +233,15 @@ fsk_frame_decode( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	return 0.0;
     v += i_str;
 
-    unsigned int bits_out = 0;
-    int i;
-    float d_str[32];
-    for ( i=0; i<fskp->n_data_bits; i++ ) {
-	debug_log("\t\tdata    ");
-	unsigned int begin_databit = (float)(samples_per_bit * (i+2) + 0.5);
-	fsk_bit_analyze(fskp, samples+begin_databit, bit_nsamples,
-							    &bit, &d_str[i]);
-	v += d_str[i];
-	bits_out |= bit << i;
-    }
-    *bits_outp = bits_out;
+    // FIXME -- we're not actually even using 'v' from above 
 
+    // Analyze the actual data payload bits
+    float confidence;
+    confidence = fsk_bits_analyze(fskp, samples+begin_databits,
+				samples_per_bit, bits_outp);
 
-    /* Compute frame decode confidence as the inverse of the average
-     * bit-strength delta from the average bit-strength.  (whew).*/
-    v /= fskp->n_frame_bits;	/* v = average bit-strength */
-
-    /*
-     * Filter out noise below FSK_MIN_STRENGTH threshold
-     */
-#define FSK_MIN_STRENGTH	0.05
-    if ( v < FSK_MIN_STRENGTH )
-	return 0.0;
-
-    float confidence = 0;
-    confidence += 1.0 - fabs(i_str - v);
-    confidence += 1.0 - fabs(s_str - v);
-    confidence += 1.0 - fabs(p_str - v);
-    for ( i=0; i<fskp->n_data_bits; i++ ) {
-	confidence += 1.0 - fabs(d_str[i] - v);
-    }
-    confidence /= fskp->n_frame_bits;
-
-debug_log( "frame decode confidence=%f\n", confidence );
     return confidence;
 }
-
 
 /* returns confidence value [0.0 to 1.0] */
 float
@@ -236,6 +252,8 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	unsigned int *frame_start_outp
 	)
 {
+    float samples_per_bit = (float)frame_nsamples / fskp->n_frame_bits;
+
     unsigned int t;
     unsigned int best_t = 0;
     float best_c = 0.0;
@@ -244,8 +262,8 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     {
 	float c;
 	unsigned int bits_out = 0;
-    debug_log("try fsk_frame_decode(skip=%+d)\n", t);
-	c = fsk_frame_decode(fskp, samples+t, frame_nsamples, &bits_out);
+	debug_log("try fsk_frame_analyze(skip=%+d)\n", t);
+	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit, &bits_out);
 	if ( best_c < c ) {
 	    best_t = t;
 	    best_c = c;
