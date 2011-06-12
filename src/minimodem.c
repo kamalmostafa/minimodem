@@ -19,6 +19,40 @@
 #include "fsk.h"
 #include "baudot.h"
 
+
+/*
+ * ASCII 8-bit data frame processor (passthrough)
+ */
+static unsigned int
+frame_process_ascii8( char *dataout_p, unsigned int dataout_size,
+	unsigned int bits )
+{
+    if ( dataout_p == NULL )	// frame processor reset: noop
+	return 0;
+    assert( (bits & ~0xFF) == 0 );
+    assert( dataout_size >= 1);
+    *dataout_p = bits;
+    return 1;
+}
+
+
+/*
+ * Baudot 5-bit data frame processor
+ */
+static unsigned int
+frame_process_baudot( char *dataout_p, unsigned int dataout_size,
+	unsigned int bits )
+{
+    if ( dataout_p == NULL ) {	// frame processor reset: reset Baudot state
+	    baudot_reset();
+	    return 0;
+    }
+    assert( (bits & ~0x1F) == 0 );
+    assert( dataout_size >= 1);
+    return baudot(bits, dataout_p);
+}
+
+
 int
 main( int argc, char*argv[] )
 {
@@ -34,12 +68,17 @@ main( int argc, char*argv[] )
     float	decode_rate;
     int		decode_n_data_bits;
 
+    unsigned int (*frame_process)( char *dataout_p, unsigned int dataout_size,
+					unsigned int bits );
+
     if ( strncasecmp(argv[argi],"rtty",5)==0 ) {
 	decode_rate = 45.45;
 	decode_n_data_bits = 5;
+	frame_process = frame_process_baudot;
     } else {
 	decode_rate = atof(argv[argi]);
 	decode_n_data_bits = 8;
+	frame_process = frame_process_ascii8;
     }
     argi++;
 
@@ -305,7 +344,7 @@ main( int argc, char*argv[] )
 		    (unsigned int)(decode_rate + 0.5),
 		    fskp->b_mark * fskp->band_width);
 	    carrier = 1;
-	    baudot_reset();		// FIXME -- lame here
+	    frame_process(0, 0, 0);	/* reset the frame processor */
 	}
 
 	confidence_total += confidence;
@@ -330,21 +369,31 @@ main( int argc, char*argv[] )
 		    nsamples_per_bit, fskp->n_data_bits,
 		    frame_start_sample, advance);
 
-	char the_byte;
 
-	if ( fskp->n_data_bits == 5 ) {
-	    /* Baudot (RTTY) */
-	    assert( (bits & ~0x1F) == 0 );
-	    int got_char;
-	    got_char = baudot(bits, &the_byte);
-	    if ( ! got_char )
-		continue;
-	} else {
-	    /* ASCII */
-	    the_byte = isprint(bits)||isspace(bits) ? bits : '.';
+	/*
+	 * Send the raw data frame bits to the backend frame processor
+	 * for final conversion to output data bytes.
+	 */
+
+	unsigned int dataout_size = 4096;
+	char dataoutbuf[4096];
+	unsigned int dataout_nbytes = 0;
+
+	dataout_nbytes += frame_process(dataoutbuf + dataout_nbytes,
+						dataout_size - dataout_nbytes,
+						bits);
+
+	/*
+	 * Print the output buffer to stdout
+	 */
+	if ( dataout_nbytes ) {
+	    char *p = dataoutbuf;
+	    for ( ; dataout_nbytes; p++,dataout_nbytes-- ) {
+		char printable_char = isprint(*p)||isspace(*p) ? *p : '.';
+		printf( "%c", printable_char );
+	    }
+	    fflush(stdout);
 	}
-	printf( "%c", the_byte );
-	fflush(stdout);
 
     } /* end of the main loop */
 
