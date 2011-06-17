@@ -127,7 +127,8 @@ main( int argc, char*argv[] )
 	    return 1;
     }
     if ( ! sa ) {
-	sa = simpleaudio_open_source_pulseaudio(argv[0], "input audio");
+	sa = simpleaudio_open_stream_pulseaudio(SA_STREAM_RECORD,
+				argv[0], "input audio");
     }
     if ( !sa )
         return 1;

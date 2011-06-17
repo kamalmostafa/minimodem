@@ -47,6 +47,7 @@ sa_sndfile_close( simpleaudio *sa )
 
 static const struct simpleaudio_backend simpleaudio_backend_pulse = {
     sa_sndfile_read,
+    NULL,			// FIXME -- implement this
     sa_sndfile_close,
 };
 

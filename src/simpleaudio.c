@@ -29,6 +29,12 @@ simpleaudio_read( simpleaudio *sa, float *buf, size_t nframes )
     return sa->backend->simpleaudio_read(sa, buf, nframes);
 }
 
+ssize_t
+simpleaudio_write( simpleaudio *sa, float *buf, size_t nframes )
+{
+    return sa->backend->simpleaudio_write(sa, buf, nframes);
+}
+
 void
 simpleaudio_close( simpleaudio *sa )
 {

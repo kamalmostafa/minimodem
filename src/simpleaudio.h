@@ -21,9 +21,15 @@ typedef struct simpleaudio simpleaudio;
  *
  */
 
+enum {
+    SA_STREAM_PLAYBACK,
+    SA_STREAM_RECORD,
+};
+
 simpleaudio *
-simpleaudio_open_source_pulseaudio(
+simpleaudio_open_stream_pulseaudio(
 		// unsigned int rate, unsigned int channels,
+		int sa_stream_direction,
 		char *app_name, char *stream_name );
 
 simpleaudio *
@@ -41,6 +47,9 @@ simpleaudio_get_channels( simpleaudio *sa );
 
 ssize_t
 simpleaudio_read( simpleaudio *sa, float *buf, size_t nframes );
+
+ssize_t
+simpleaudio_write( simpleaudio *sa, float *buf, size_t nframes );
 
 void
 simpleaudio_close( simpleaudio *sa );
