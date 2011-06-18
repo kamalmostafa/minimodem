@@ -55,4 +55,15 @@ void
 simpleaudio_close( simpleaudio *sa );
 
 
+/*
+ * simpleaudio tone generator
+ */
+
+void
+simpleaudio_tone_reset();
+
+void
+simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur);
+
+
 #endif

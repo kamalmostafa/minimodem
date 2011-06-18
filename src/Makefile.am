@@ -21,6 +21,7 @@ SIMPLEAUDIO_SRC = \
 	simpleaudio.h		\
 	simpleaudio_internal.h	\
 	simpleaudio.c		\
+	simple-tone-generator.c \
 	simpleaudio-pulse.c	\
 	simpleaudio-sndfile.c
 
