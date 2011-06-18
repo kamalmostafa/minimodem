@@ -23,6 +23,7 @@
 /*
  * ASCII 8-bit data framebits decoder (passthrough)
  */
+/* returns nbytes decoded */
 static unsigned int
 framebits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
 	unsigned int bits )
@@ -39,6 +40,7 @@ framebits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
 /*
  * Baudot 5-bit data framebits decoder
  */
+/* returns nbytes decoded */
 static unsigned int
 framebits_decode_baudot( char *dataout_p, unsigned int dataout_size,
 	unsigned int bits )
@@ -49,7 +51,7 @@ framebits_decode_baudot( char *dataout_p, unsigned int dataout_size,
     }
     assert( (bits & ~0x1F) == 0 );
     assert( dataout_size >= 1);
-    return baudot(bits, dataout_p);
+    return baudot_decode(dataout_p, bits);
 }
 
 

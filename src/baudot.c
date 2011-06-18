@@ -67,10 +67,12 @@ baudot_reset()
 
 
 /*
- * returns nonzero if *char_outp was stuffed with an output character
+ * Returns 1 if *char_outp was stuffed with an output character
+ * or 0 if no output character was stuffed (in other words, returns
+ * the count of characters decoded and stuffed).
  */
 int
-baudot( unsigned char databits, char *char_outp )
+baudot_decode( char *char_outp, unsigned char databits )
 {
     /* Baudot (RTTY) */
     assert( (databits & ~0x1F) == 0 );

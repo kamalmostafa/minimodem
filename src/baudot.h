@@ -16,4 +16,4 @@ baudot_reset();
  * returns nonzero if *char_outp was stuffed with an output character
  */
 int
-baudot( unsigned char databits, char *char_outp );
+baudot_decode( char *char_outp, unsigned char databits );
