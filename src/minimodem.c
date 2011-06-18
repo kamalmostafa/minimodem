@@ -21,10 +21,10 @@
 
 
 /*
- * ASCII 8-bit data frame processor (passthrough)
+ * ASCII 8-bit data framebits decoder (passthrough)
  */
 static unsigned int
-frame_process_ascii8( char *dataout_p, unsigned int dataout_size,
+framebits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
 	unsigned int bits )
 {
     if ( dataout_p == NULL )	// frame processor reset: noop
@@ -37,10 +37,10 @@ frame_process_ascii8( char *dataout_p, unsigned int dataout_size,
 
 
 /*
- * Baudot 5-bit data frame processor
+ * Baudot 5-bit data framebits decoder
  */
 static unsigned int
-frame_process_baudot( char *dataout_p, unsigned int dataout_size,
+framebits_decode_baudot( char *dataout_p, unsigned int dataout_size,
 	unsigned int bits )
 {
     if ( dataout_p == NULL ) {	// frame processor reset: reset Baudot state
@@ -109,20 +109,20 @@ main( int argc, char*argv[] )
     }
 
 
-    float	decode_rate;
-    int		decode_n_data_bits;
+    float	bfsk_data_rate;
+    int		bfsk_n_data_bits;
 
-    unsigned int (*frame_process)( char *dataout_p, unsigned int dataout_size,
+    unsigned int (*bfsk_framebits_decode)( char *dataout_p, unsigned int dataout_size,
 					unsigned int bits );
 
     if ( strncasecmp(argv[argi],"rtty",5)==0 ) {
-	decode_rate = 45.45;
-	decode_n_data_bits = 5;
-	frame_process = frame_process_baudot;
+	bfsk_data_rate = 45.45;
+	bfsk_n_data_bits = 5;
+	bfsk_framebits_decode = framebits_decode_baudot;
     } else {
-	decode_rate = atof(argv[argi]);
-	decode_n_data_bits = 8;
-	frame_process = frame_process_ascii8;
+	bfsk_data_rate = atof(argv[argi]);
+	bfsk_n_data_bits = 8;
+	bfsk_framebits_decode = framebits_decode_ascii8;
     }
     argi++;
 
@@ -132,7 +132,7 @@ main( int argc, char*argv[] )
     unsigned int bfsk_space_f;
     unsigned int autodetect_shift;
 
-    if ( decode_rate >= 400 ) {
+    if ( bfsk_data_rate >= 400 ) {
 	/*
 	 * Bell 202:     baud=1200 mark=1200 space=2200
 	 */
@@ -140,7 +140,7 @@ main( int argc, char*argv[] )
 	bfsk_space_f = 2200;
 	band_width = 200;
 	autodetect_shift = 0;	// not used
-    } else if ( decode_rate >= 100 ) {
+    } else if ( bfsk_data_rate >= 100 ) {
 	/*
 	 * Bell 103:     baud=300 mark=1270 space=1070
 	 * ITU-T V.21:   baud=300 mark=1280 space=1080
@@ -167,9 +167,9 @@ main( int argc, char*argv[] )
 				argv[0], "output audio");
 	assert( sa_out );
 	fsk_transmit_stdin(sa_out,
-				decode_rate,
+				bfsk_data_rate,
 				bfsk_mark_f, bfsk_space_f,
-				decode_n_data_bits
+				bfsk_n_data_bits
 				);
 	return 0;
     }
@@ -213,7 +213,7 @@ main( int argc, char*argv[] )
     /*
      * Prepare the input sample chunk rate
      */
-    float nsamples_per_bit = sample_rate / decode_rate;
+    float nsamples_per_bit = sample_rate / bfsk_data_rate;
 
 
     /*
@@ -222,7 +222,7 @@ main( int argc, char*argv[] )
 
     fsk_plan *fskp;
     fskp = fsk_plan_new(sample_rate, bfsk_mark_f, bfsk_space_f,
-				band_width, decode_n_data_bits);
+				band_width, bfsk_n_data_bits);
     if ( !fskp ) {
         fprintf(stderr, "fsk_plan_new() failed\n");
         return 1;
@@ -301,7 +301,7 @@ main( int argc, char*argv[] )
 	/* Auto-detect carrier frequency */
 	static int carrier_band = -1;
 	// FIXME?: hardcoded 300 baud trigger for carrier autodetect
-	if ( decode_rate <= 300 && carrier_band < 0 ) {
+	if ( bfsk_data_rate <= 300 && carrier_band < 0 ) {
 	    unsigned int i;
 //	    float nsamples_per_scan = fskp->fftsize;
 	    float nsamples_per_scan = nsamples_per_bit;
@@ -399,10 +399,10 @@ main( int argc, char*argv[] )
 
 	if ( !carrier ) {
 	    fprintf(stderr, "### CARRIER %u @ %u Hz ###\n",
-		    (unsigned int)(decode_rate + 0.5),
+		    (unsigned int)(bfsk_data_rate + 0.5),
 		    fskp->b_mark * fskp->band_width);
 	    carrier = 1;
-	    frame_process(0, 0, 0);	/* reset the frame processor */
+	    bfsk_framebits_decode(0, 0, 0);	/* reset the frame processor */
 	}
 
 	confidence_total += confidence;
@@ -437,7 +437,7 @@ main( int argc, char*argv[] )
 	char dataoutbuf[4096];
 	unsigned int dataout_nbytes = 0;
 
-	dataout_nbytes += frame_process(dataoutbuf + dataout_nbytes,
+	dataout_nbytes += bfsk_framebits_decode(dataoutbuf + dataout_nbytes,
 						dataout_size - dataout_nbytes,
 						bits);
 
