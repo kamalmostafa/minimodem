@@ -53,17 +53,61 @@ frame_process_baudot( char *dataout_p, unsigned int dataout_size,
 }
 
 
+/*
+ * rudimentary BFSK transmitter
+ */
+static void fsk_transmit_stdin(
+	simpleaudio *sa_out,
+	float data_rate,
+	float bfsk_mark_f,
+	float bfsk_space_f,
+	int n_data_bits
+	)
+{
+    size_t sample_rate = simpleaudio_get_rate(sa_out);
+    size_t bit_nsamples = sample_rate / data_rate + 0.5;
+    int c;
+
+    simpleaudio_tone(sa_out, bfsk_mark_f, sample_rate/2);    // 0.5 sec leader
+    while ( (c = getchar()) != EOF )
+    {
+	simpleaudio_tone(sa_out, bfsk_space_f, bit_nsamples);	// start
+	int i;
+	for ( i=0; i<n_data_bits; i++ ) {			// data
+	    unsigned int bit = ( c >> i ) & 1;
+	    float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
+	    simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
+	}
+	simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);	// stop
+    }
+    simpleaudio_tone(sa_out, bfsk_mark_f, sample_rate/2);    // 0.5 sec tail
+
+    // 0.5 sec of zero samples to flush - FIXME lame
+    simpleaudio_tone(sa_out, 0, sample_rate/2);
+
+}
+
 int
 main( int argc, char*argv[] )
 {
-    if ( argc < 2 ) {
+    int TX_mode = 0;
+
+    int argi = 1;
+
+    if ( argi < argc && strncmp(argv[argi],"-T",3)==0 ) {
+	TX_mode = 1;
+	argi++;
+    }
+
+    if ( argi >= argc ) {
 	fprintf(stderr, "usage: minimodem {baud|mode} [filename] "
 					"[ band_width ] "
-					"[ mark_hz space_hz ]\n");
+					"[ mark_hz space_hz ]\n"
+			"       minimodem -T {baud}\n"
+					);
 	return 1;
     }
 
-    int argi = 1;
 
     float	decode_rate;
     int		decode_n_data_bits;
@@ -109,13 +153,26 @@ main( int argc, char*argv[] )
 	/*
 	 * RTTY:     baud=45.45 mark/space=variable shift=-170
 	 */
-	bfsk_mark_f  = 0;
-	bfsk_space_f = 0;
+	bfsk_mark_f  = 1500;
+	bfsk_space_f = 1500 - 170;
 	band_width = 10;
 //	band_width = 68;	// FIXME FIXME FIXME -- causes assert crash
 	autodetect_shift = 170;
     }
 
+
+    if ( TX_mode ) {
+	simpleaudio *sa_out = NULL;
+	sa_out = simpleaudio_open_stream_pulseaudio(SA_STREAM_PLAYBACK,
+				argv[0], "output audio");
+	assert( sa_out );
+	fsk_transmit_stdin(sa_out,
+				decode_rate,
+				bfsk_mark_f, bfsk_space_f,
+				decode_n_data_bits
+				);
+	return 0;
+    }
 
     /*
      * Open the input audio stream
