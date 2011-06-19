@@ -189,10 +189,20 @@ main( int argc, char*argv[] )
 
 
     if ( TX_mode ) {
+
 	simpleaudio *sa_out = NULL;
-	sa_out = simpleaudio_open_stream_pulseaudio(SA_STREAM_PLAYBACK,
-				argv[0], "output audio");
+
+	if ( argi < argc && strncmp(argv[argi],"-",2)!=0 ) {
+	    sa_out = simpleaudio_open_stream_sndfile(SA_STREAM_PLAYBACK,
+					argv[argi++]);
+	    if ( ! sa_out )
+		return 1;
+	}
+	if ( ! sa_out )
+	    sa_out = simpleaudio_open_stream_pulseaudio(SA_STREAM_PLAYBACK,
+					argv[0], "output audio");
 	assert( sa_out );
+
 	fsk_transmit_stdin(sa_out,
 				bfsk_data_rate,
 				bfsk_mark_f, bfsk_space_f,
@@ -207,14 +217,14 @@ main( int argc, char*argv[] )
      */
     simpleaudio *sa = NULL;
     if ( argi < argc && strncmp(argv[argi],"-",2)!=0 ) {
-	sa = simpleaudio_open_source_sndfile(argv[argi++]);
-	if ( !sa )
+	sa = simpleaudio_open_stream_sndfile(SA_STREAM_RECORD,
+				    argv[argi++]);
+	if ( ! sa )
 	    return 1;
     }
-    if ( ! sa ) {
+    if ( ! sa )
 	sa = simpleaudio_open_stream_pulseaudio(SA_STREAM_RECORD,
-				argv[0], "input audio");
-    }
+				    argv[0], "input audio");
     if ( !sa )
         return 1;
 

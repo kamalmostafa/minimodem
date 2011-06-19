@@ -33,7 +33,9 @@ simpleaudio_open_stream_pulseaudio(
 		char *app_name, char *stream_name );
 
 simpleaudio *
-simpleaudio_open_source_sndfile(char *path);
+simpleaudio_open_stream_sndfile(
+		int sa_stream_direction,
+		char *path );
 
 /*
  * common simpleaudio_ API routines available to any backend:

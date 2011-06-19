@@ -33,7 +33,22 @@ sa_sndfile_read( simpleaudio *sa, float *buf, size_t nframes )
 	sf_perror(s);
 	return -1;
     }
-//fprintf(stderr, "sf_read_float: nframes=%ld n=%d\n", nframes, n);
+//fprintf(stderr, "sf_readf_float: nframes=%ld n=%d\n", nframes, n);
+    return n;
+}
+
+
+static ssize_t
+sa_sndfile_write( simpleaudio *sa, float *buf, size_t nframes )
+{
+//fprintf(stderr, "sf_writef_float: nframes=%ld\n", nframes);
+    SNDFILE *s = (SNDFILE *)sa->backend_handle;
+    int n;
+    if ((n = sf_writef_float(s, buf, nframes)) < 0) {
+	fprintf(stderr, "sf_read_float: ");
+	sf_perror(s);
+	return -1;
+    }
     return n;
 }
 
@@ -47,20 +62,30 @@ sa_sndfile_close( simpleaudio *sa )
 
 static const struct simpleaudio_backend simpleaudio_backend_pulse = {
     sa_sndfile_read,
-    NULL,			// FIXME -- implement this
+    sa_sndfile_write,
     sa_sndfile_close,
 };
 
 simpleaudio *
-simpleaudio_open_source_sndfile(char *path)
+simpleaudio_open_stream_sndfile(
+		int sa_stream_direction,
+		char *path )
 {
+    /* setting for SA_STREAM_PLAYBACK (file write) */
     SF_INFO sfinfo = {
-	.format = 0
+	.format = SF_FORMAT_FLAC | SF_FORMAT_PCM_16,	// FIXME - hardcoded
+	.samplerate = 48000,
+	.channels = 1,
     };
+
+    if ( sa_stream_direction == SA_STREAM_RECORD )
+	sfinfo.format = 0;
 
     /* Create the recording stream */
     SNDFILE *s;
-    s = sf_open(path, SFM_READ, &sfinfo);
+    s = sf_open(path,
+	    sa_stream_direction == SA_STREAM_RECORD ? SFM_READ : SFM_WRITE,
+	    &sfinfo);
     if ( !s ) {
 	fprintf(stderr, "%s: ", path);
 	sf_perror(s);
