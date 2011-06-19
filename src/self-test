@@ -1,0 +1,17 @@
+#!/bin/bash
+
+[ $# -eq 2 ] || {
+    echo "usage: self-test baudmode textfile" 1>&2
+    exit 1
+}
+baudmode="$1"
+textfile="$2"
+
+TMPF="/tmp/minimodem-test-$$.flac"
+trap "rm -f $TMPF" 0
+
+set -e
+./minimodem -T "$baudmode" $TMPF < "$textfile"
+ls -l $TMPF
+./minimodem "$baudmode" $TMPF | diff "$textfile" -
+

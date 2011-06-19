@@ -14,7 +14,7 @@ INCLUDES = $(DEPS_CFLAGS)
 
 bin_PROGRAMS = minimodem
 
-EXTRA_DIST = run-test
+EXTRA_DIST = run-test self-test
 
 
 SIMPLEAUDIO_SRC = \
