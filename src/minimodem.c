@@ -21,8 +21,17 @@
 
 
 /*
- * ASCII 8-bit data framebits decoder (passthrough)
+ * ASCII 8-bit data framebits decoder/encoder (passthrough)
  */
+
+/* returns the number of datawords stuffed into *databits_outp */
+int
+framebits_encode_ascii8( unsigned int *databits_outp, char char_out )
+{
+    *databits_outp = char_out;
+    return 1;
+}
+
 /* returns nbytes decoded */
 static unsigned int
 framebits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
@@ -38,8 +47,11 @@ framebits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
 
 
 /*
- * Baudot 5-bit data framebits decoder
+ * Baudot 5-bit data framebits decoder/encoder
  */
+
+#define framebits_encode_baudot baudot_encode
+
 /* returns nbytes decoded */
 static unsigned int
 framebits_decode_baudot( char *dataout_p, unsigned int dataout_size,
@@ -63,7 +75,8 @@ static void fsk_transmit_stdin(
 	float data_rate,
 	float bfsk_mark_f,
 	float bfsk_space_f,
-	int n_data_bits
+	int n_data_bits,
+	int (*framebits_encoder)( unsigned int *databits_outp, char char_out )
 	)
 {
     size_t sample_rate = simpleaudio_get_rate(sa_out);
@@ -73,14 +86,23 @@ static void fsk_transmit_stdin(
     simpleaudio_tone(sa_out, bfsk_mark_f, sample_rate/2);    // 0.5 sec leader
     while ( (c = getchar()) != EOF )
     {
-	simpleaudio_tone(sa_out, bfsk_space_f, bit_nsamples);	// start
-	int i;
-	for ( i=0; i<n_data_bits; i++ ) {			// data
-	    unsigned int bit = ( c >> i ) & 1;
-	    float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
-	    simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
+
+	// HACK - baudot
+	unsigned int nwords;
+	unsigned int bits[2];
+	nwords = framebits_encoder(bits, c);
+
+	unsigned int j;
+	for ( j=0; j<nwords; j++ ) {
+	    simpleaudio_tone(sa_out, bfsk_space_f, bit_nsamples);	// start
+	    int i;
+	    for ( i=0; i<n_data_bits; i++ ) {				// data
+		unsigned int bit = ( bits[j] >> i ) & 1;
+		float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
+		simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
+	    }
+	    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);	// stop
 	}
-	simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);	// stop
     }
     simpleaudio_tone(sa_out, bfsk_mark_f, sample_rate/2);    // 0.5 sec tail
 
@@ -113,6 +135,7 @@ main( int argc, char*argv[] )
 
     float	bfsk_data_rate;
     int		bfsk_n_data_bits;
+    int (*bfsk_framebits_encode)( unsigned int *databits_outp, char char_out );
 
     unsigned int (*bfsk_framebits_decode)( char *dataout_p, unsigned int dataout_size,
 					unsigned int bits );
@@ -121,10 +144,12 @@ main( int argc, char*argv[] )
 	bfsk_data_rate = 45.45;
 	bfsk_n_data_bits = 5;
 	bfsk_framebits_decode = framebits_decode_baudot;
+	bfsk_framebits_encode = framebits_encode_baudot;
     } else {
 	bfsk_data_rate = atof(argv[argi]);
 	bfsk_n_data_bits = 8;
 	bfsk_framebits_decode = framebits_decode_ascii8;
+	bfsk_framebits_encode = framebits_encode_ascii8;
     }
     argi++;
 
@@ -171,7 +196,8 @@ main( int argc, char*argv[] )
 	fsk_transmit_stdin(sa_out,
 				bfsk_data_rate,
 				bfsk_mark_f, bfsk_space_f,
-				bfsk_n_data_bits
+				bfsk_n_data_bits,
+				bfsk_framebits_encode
 				);
 	return 0;
     }
