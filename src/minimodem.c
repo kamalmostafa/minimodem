@@ -8,6 +8,7 @@
  */
 
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -111,96 +112,215 @@ static void fsk_transmit_stdin(
 
 }
 
+void
+usage()
+{
+    fprintf(stderr,
+    "usage: minimodem [--tx|--rx] [options] {baudmode}\n"
+    "		    -t, --tx, --transmit, --write\n"
+    "		    -r, --rx, --receive,  --read     (default)\n"
+    "		[options]\n"
+    "		    -8, --ascii		ASCII  8-N-1\n"
+    "		    -5, --baudot	Baudot 5-N-1\n"
+    "		    -f, --file {filename.flac}\n"
+    "		    -b, --bandwidth {rx_bandwidth}\n"
+    "		    -M, --mark {mark_freq}\n"
+    "		    -S, --space {space_freq}\n"
+    "		{baudmode}\n"
+    "		    1200 : Bell202  1200 bps --ascii\n"
+    "		     300 : Bell103   300 bps --ascii (auto-rx-carrier)\n"
+    "		  N>=100 : Bellxxx     N bps --ascii\n"
+    "		   N<100 : RTTY        N bps --baudot\n"
+    "		    rtty : RTTY    45.45 bps --baudot\n"
+    );
+    exit(1);
+}
+
 int
 main( int argc, char*argv[] )
 {
-    int TX_mode = 0;
+    char *modem_mode = NULL;
+    int TX_mode = -1;
+    unsigned int band_width = 0;
+    unsigned int bfsk_mark_f = 0;
+    unsigned int bfsk_space_f = 0;
+    unsigned int bfsk_n_data_bits = 0;
+    unsigned int autodetect_shift;
+    char *filename = NULL;
+    char *program_name;
 
-    int argi = 1;
+    program_name = strrchr(argv[0], '/');
+    if ( program_name )
+	program_name++;
+    else
+	program_name = argv[0];
 
-    if ( argi < argc && strncmp(argv[argi],"-T",3)==0 ) {
-	TX_mode = 1;
-	argi++;
+    int c;
+    int option_index;
+    
+    while ( 1 ) {
+	static struct option long_options[] = {
+	    { "tx",		0, 0, 't' },
+	    { "transmit",	0, 0, 't' },
+	    { "write",		0, 0, 't' },
+	    { "rx",		0, 0, 'r' },
+	    { "receive",	0, 0, 'r' },
+	    { "read",		0, 0, 'r' },
+	    { "ascii",		0, 0, '8' },
+	    { "baudot",		0, 0, '5' },
+	    { "file",		1, 0, 'f' },
+	    { "bandwidth",	1, 0, 'b' },
+	    { "mark",		1, 0, 'M' },
+	    { "space",		1, 0, 'S' },
+	};
+	c = getopt_long(argc, argv, "tr85f:b:M:S:",
+		long_options, &option_index);
+	if ( c == -1 )
+	    break;
+	switch( c ) {
+	    case 't':
+			if ( TX_mode == 0 )
+			    usage();
+			TX_mode = 1;
+			break;
+	    case 'r':
+			if ( TX_mode == 1 )
+			    usage();
+			TX_mode = 0;
+			break;
+	    case 'f':
+			filename = optarg;
+			break;
+	    case '8':
+			bfsk_n_data_bits = 8;
+			break;
+	    case '5':
+			bfsk_n_data_bits = 5;
+			break;
+	    case 'b':
+			// FIXME make band_width float?
+			band_width = atoi(optarg);
+			assert( band_width != 0 );
+			break;
+	    case 'M':
+			bfsk_mark_f = atoi(optarg);
+			assert( bfsk_mark_f > 0 );
+			break;
+	    case 'S':
+			bfsk_space_f = atoi(optarg);
+			assert( bfsk_space_f > 0 );
+			break;
+	    default:
+			usage();
+	}
+    }
+    if ( TX_mode == -1 )
+	TX_mode = 0;
+
+#if 0
+    if (optind < argc) {
+	printf("non-option ARGV-elements: ");
+	while (optind < argc)
+	    printf("%s ", argv[optind++]);
+	printf("\n");
+    }
+#endif
+
+    if (optind + 1 !=  argc) {
+	fprintf(stderr, "E: *** Must specify {baudmode} (try \"300\") ***\n");
+	usage();
     }
 
-    if ( argi >= argc ) {
-	fprintf(stderr, "usage: minimodem {baud|mode} [filename] "
-					"[ band_width ] "
-					"[ mark_hz space_hz ]\n"
-			"       minimodem -T {baud}\n"
-					);
-	return 1;
-    }
+    modem_mode = argv[optind++];
 
 
-    float	bfsk_data_rate;
-    int		bfsk_n_data_bits;
+    float	bfsk_data_rate = 0.0;
     int (*bfsk_framebits_encode)( unsigned int *databits_outp, char char_out );
 
     unsigned int (*bfsk_framebits_decode)( char *dataout_p, unsigned int dataout_size,
 					unsigned int bits );
 
-    if ( strncasecmp(argv[argi],"rtty",5)==0 ) {
+    if ( strncasecmp(modem_mode, "rtty",5)==0 ) {
 	bfsk_data_rate = 45.45;
-	bfsk_n_data_bits = 5;
+	if ( bfsk_n_data_bits == 0 )
+	    bfsk_n_data_bits = 5;
+    } else {
+	bfsk_data_rate = atof(modem_mode);
+	if ( bfsk_n_data_bits == 0 )
+	    bfsk_n_data_bits = 8;
+    }
+    if ( bfsk_data_rate == 0.0 )
+	usage();
+
+    if ( bfsk_n_data_bits == 8 ) {
+	bfsk_framebits_decode = framebits_decode_ascii8;
+	bfsk_framebits_encode = framebits_encode_ascii8;
+    } else if ( bfsk_n_data_bits == 5 ) {
 	bfsk_framebits_decode = framebits_decode_baudot;
 	bfsk_framebits_encode = framebits_encode_baudot;
     } else {
-	bfsk_data_rate = atof(argv[argi]);
-	bfsk_n_data_bits = 8;
-	bfsk_framebits_decode = framebits_decode_ascii8;
-	bfsk_framebits_encode = framebits_encode_ascii8;
+	assert( 0 && bfsk_n_data_bits );
     }
-    argi++;
 
-
-    unsigned int band_width;
-    unsigned int bfsk_mark_f;
-    unsigned int bfsk_space_f;
-    unsigned int autodetect_shift;
 
     if ( bfsk_data_rate >= 400 ) {
 	/*
 	 * Bell 202:     baud=1200 mark=1200 space=2200
 	 */
-	bfsk_mark_f  = 1200;
-	bfsk_space_f = 2200;
-	band_width = 200;
 	autodetect_shift = 0;	// not used
+	if ( bfsk_mark_f == 0 )
+	    bfsk_mark_f  = 1200;
+	if ( bfsk_space_f == 0 )
+	    bfsk_space_f = bfsk_mark_f + 1000;
+	if ( band_width == 0 )
+	    band_width = 200;
     } else if ( bfsk_data_rate >= 100 ) {
 	/*
 	 * Bell 103:     baud=300 mark=1270 space=1070
 	 * ITU-T V.21:   baud=300 mark=1280 space=1080
 	 */
-	bfsk_mark_f  = 1270;
-	bfsk_space_f = 1070;
-	band_width = 50;	// close enough
 	autodetect_shift = 200;
+	if ( bfsk_mark_f == 0 )
+	    bfsk_mark_f  = 1270;
+	if ( bfsk_space_f == 0 )
+	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
+	if ( band_width == 0 )
+	    band_width = 50;	// close enough
     } else {
 	/*
 	 * RTTY:     baud=45.45 mark/space=variable shift=-170
 	 */
-	bfsk_mark_f  = 1500;
-	bfsk_space_f = 1500 - 170;
-	band_width = 10;
-//	band_width = 68;	// FIXME FIXME FIXME -- causes assert crash
 	autodetect_shift = 170;
+	if ( bfsk_mark_f == 0 )
+	    bfsk_mark_f  = 1585;
+	if ( bfsk_space_f == 0 )
+	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
+	if ( band_width == 0 ) {
+	    band_width = 10;	// FIXME chosen arbitrarily
+	}
     }
 
+    /* restrict band_width to <= data rate */
+    if ( band_width > bfsk_data_rate )
+	band_width = bfsk_data_rate;
 
+
+    /*
+     * Handle transmit mode
+     */
     if ( TX_mode ) {
 
 	simpleaudio *sa_out = NULL;
 
-	if ( argi < argc && strncmp(argv[argi],"-",2)!=0 ) {
+	if ( filename ) {
 	    sa_out = simpleaudio_open_stream_sndfile(SA_STREAM_PLAYBACK,
-					argv[argi++]);
+					filename);
 	    if ( ! sa_out )
 		return 1;
 	}
 	if ( ! sa_out )
 	    sa_out = simpleaudio_open_stream_pulseaudio(SA_STREAM_PLAYBACK,
-					argv[0], "output audio");
+					program_name, "output audio");
 	assert( sa_out );
 
 	fsk_transmit_stdin(sa_out,
@@ -212,19 +332,19 @@ main( int argc, char*argv[] )
 	return 0;
     }
 
+
     /*
      * Open the input audio stream
      */
     simpleaudio *sa = NULL;
-    if ( argi < argc && strncmp(argv[argi],"-",2)!=0 ) {
-	sa = simpleaudio_open_stream_sndfile(SA_STREAM_RECORD,
-				    argv[argi++]);
+    if ( filename ) {
+	sa = simpleaudio_open_stream_sndfile(SA_STREAM_RECORD, filename);
 	if ( ! sa )
 	    return 1;
     }
     if ( ! sa )
 	sa = simpleaudio_open_stream_pulseaudio(SA_STREAM_RECORD,
-				    argv[0], "input audio");
+				    program_name, "input audio");
     if ( !sa )
         return 1;
 
@@ -233,20 +353,6 @@ main( int argc, char*argv[] )
 
     assert( nchannels == 1 );
 
-    /*
-     * Alloc for band_width and tone frequency overrides
-     * FIXME -- tone override doesn't work with autodetect carrier
-     */
-
-    if ( argi < argc ) {
-	band_width = atoi(argv[argi++]);	// FIXME make band_width float?
-    }
-
-    if ( argi < argc ) {
-	assert(argc-argi == 2);
-	bfsk_mark_f = atoi(argv[argi++]);
-	bfsk_space_f = atoi(argv[argi++]);
-    }
 
     /*
      * Prepare the input sample chunk rate
@@ -419,7 +525,7 @@ main( int argc, char*argv[] )
 	    carrier_band = -1;
 #endif
 	    if ( carrier ) {
-		fprintf(stderr, "### NOCARRIER ndata=%u confidence=%f ###\n",
+		fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f ###\n",
 			nframes_decoded, confidence_total / nframes_decoded );
 		carrier = 0;
 		confidence_total = 0;
@@ -436,9 +542,14 @@ main( int argc, char*argv[] )
 
 
 	if ( !carrier ) {
-	    fprintf(stderr, "### CARRIER %u @ %u Hz ###\n",
-		    (unsigned int)(bfsk_data_rate + 0.5),
-		    fskp->b_mark * fskp->band_width);
+	    if ( bfsk_data_rate >= 100 )
+		fprintf(stderr, "### CARRIER %u @ %u Hz ###\n",
+			(unsigned int)(bfsk_data_rate + 0.5),
+			fskp->b_mark * fskp->band_width);
+	    else
+		fprintf(stderr, "### CARRIER %.2f @ %u Hz ###\n",
+			bfsk_data_rate,
+			fskp->b_mark * fskp->band_width);
 	    carrier = 1;
 	    bfsk_framebits_decode(0, 0, 0);	/* reset the frame processor */
 	}
@@ -494,7 +605,7 @@ main( int argc, char*argv[] )
     } /* end of the main loop */
 
     if ( carrier ) {
-	fprintf(stderr, "### NOCARRIER ndata=%u confidence=%f ###\n",
+	fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f ###\n",
 		nframes_decoded, confidence_total / nframes_decoded );
     }
 

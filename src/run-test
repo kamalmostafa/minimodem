@@ -26,8 +26,8 @@ do
     txtnum="${i##*/}"
     txtnum="${txtnum%%-*}"
 
-    echo TEST	./minimodem "$rate"  "$i"
-    ./minimodem "$rate" "$i" >$TMPDIR/out 2>$TMPDIR/err
+    echo TEST	./minimodem -f "$i" "$rate" 
+    ./minimodem -f "$i" "$rate"  >$TMPDIR/out 2>$TMPDIR/err
 
     t="${f%%-*}"
 

@@ -11,7 +11,7 @@ TMPF="/tmp/minimodem-test-$$.flac"
 trap "rm -f $TMPF" 0
 
 set -e
-./minimodem -T "$baudmode" $TMPF < "$textfile"
+./minimodem --tx --file $TMPF "$baudmode" < "$textfile"
 ls -l $TMPF
-./minimodem "$baudmode" $TMPF | diff "$textfile" -
+./minimodem --rx --file $TMPF "$baudmode" | diff "$textfile" -
 
