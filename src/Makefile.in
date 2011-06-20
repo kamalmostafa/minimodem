@@ -166,7 +166,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
 INCLUDES = $(DEPS_CFLAGS)
-EXTRA_DIST = run-test self-test
+EXTRA_DIST = self-test # run-test
 SIMPLEAUDIO_SRC = \
 	simpleaudio.h		\
 	simpleaudio_internal.h	\
