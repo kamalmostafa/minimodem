@@ -597,7 +597,7 @@ main( int argc, char*argv[] )
 	 * but actually advance just a bit less than that to allow
 	 * for clock skew, so ...
 	 */
-#define FSK_SCAN_LAG	0.5
+#define FSK_SCAN_LAG	0.4
 	advance = frame_start_sample +
 	    nsamples_per_bit * (float)(fskp->n_data_bits + 2 - FSK_SCAN_LAG);
 
