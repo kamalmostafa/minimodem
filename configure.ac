@@ -30,6 +30,7 @@ AC_PROG_CC
 # Checks for libraries.
 PKG_CHECK_MODULES(DEPS, [
 		libpulse-simple
+		sndfile
 		fftw3f
 			])
 AC_SUBST(DEPS_CFLAGS)

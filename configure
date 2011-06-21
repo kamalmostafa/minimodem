@@ -3396,10 +3396,12 @@ if test -n "$DEPS_CFLAGS"; then
     if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"
 		libpulse-simple
+		sndfile
 		fftw3f
 			\""; } >&5
   ($PKG_CONFIG --exists --print-errors "
 		libpulse-simple
+		sndfile
 		fftw3f
 			") 2>&5
   ac_status=$?
@@ -3407,6 +3409,7 @@ if test -n "$DEPS_CFLAGS"; then
   test $ac_status = 0; }; then
   pkg_cv_DEPS_CFLAGS=`$PKG_CONFIG --cflags "
 		libpulse-simple
+		sndfile
 		fftw3f
 			" 2>/dev/null`
 else
@@ -3421,10 +3424,12 @@ if test -n "$DEPS_LIBS"; then
     if test -n "$PKG_CONFIG" && \
     { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"
 		libpulse-simple
+		sndfile
 		fftw3f
 			\""; } >&5
   ($PKG_CONFIG --exists --print-errors "
 		libpulse-simple
+		sndfile
 		fftw3f
 			") 2>&5
   ac_status=$?
@@ -3432,6 +3437,7 @@ if test -n "$DEPS_LIBS"; then
   test $ac_status = 0; }; then
   pkg_cv_DEPS_LIBS=`$PKG_CONFIG --libs "
 		libpulse-simple
+		sndfile
 		fftw3f
 			" 2>/dev/null`
 else
@@ -3455,11 +3461,13 @@ fi
         if test $_pkg_short_errors_supported = yes; then
 	        DEPS_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors "
 		libpulse-simple
+		sndfile
 		fftw3f
 			" 2>&1`
         else
 	        DEPS_PKG_ERRORS=`$PKG_CONFIG --print-errors "
 		libpulse-simple
+		sndfile
 		fftw3f
 			" 2>&1`
         fi
@@ -3468,6 +3476,7 @@ fi
 
 	as_fn_error $? "Package requirements (
 		libpulse-simple
+		sndfile
 		fftw3f
 			) were not met:
 
