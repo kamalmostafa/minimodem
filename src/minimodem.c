@@ -522,7 +522,8 @@ main( int argc, char*argv[] )
 
 	// FIXME: explain
 	unsigned int try_max_nsamples = nsamples_per_bit;
-	unsigned int try_step_nsamples = nsamples_per_bit / 8;
+#define FSK_ANALYZE_NSTEPS		8	/* accuracy vs. performance */
+	unsigned int try_step_nsamples = nsamples_per_bit / FSK_ANALYZE_NSTEPS;
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
 
@@ -591,14 +592,14 @@ main( int argc, char*argv[] )
 	 * but not past the stop bit, since we want it to appear as
 	 * the prev_stop bit of the next frame, so ...
 	 *
-	 * advance = 1 prev_stop + 1 start + 8 data bits == 10 bits
+	 * advance = 1 prev_stop + 1 start + N data bits == n_data_bits+2
 	 *
 	 * but actually advance just a bit less than that to allow
 	 * for clock skew, so ...
-	 *
-	 * advance = 9.5 bits		*/
+	 */
+#define FSK_SCAN_LAG	0.5
 	advance = frame_start_sample +
-		    nsamples_per_bit * (float)(fskp->n_data_bits + 1.5);
+	    nsamples_per_bit * (float)(fskp->n_data_bits + 2 - FSK_SCAN_LAG);
 
 	debug_log("@ nsamples_per_bit=%.3f n_data_bits=%u "
 			" frame_start=%u advance=%u\n",
