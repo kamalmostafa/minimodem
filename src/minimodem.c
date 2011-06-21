@@ -88,7 +88,6 @@ static void fsk_transmit_stdin(
     while ( (c = getchar()) != EOF )
     {
 
-	// HACK - baudot
 	unsigned int nwords;
 	unsigned int bits[2];
 	nwords = framebits_encoder(bits, c);
@@ -111,6 +110,29 @@ static void fsk_transmit_stdin(
     simpleaudio_tone(sa_out, 0, sample_rate/2);
 
 }
+
+
+static void
+report_no_carrier( fsk_plan *fskp,
+	unsigned int sample_rate,
+	float bfsk_data_rate,
+	unsigned int nframes_decoded,
+	size_t carrier_nsamples,
+	float confidence_total )
+{
+    unsigned long long nbits_total = nframes_decoded * (fskp->n_data_bits+2);
+    float throughput_rate = nbits_total * sample_rate / (float)carrier_nsamples;
+    float throughput_skew = (throughput_rate - bfsk_data_rate)
+			/ bfsk_data_rate;
+    fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f throughput=%.2f (%.1f%% %s) ###\n",
+	    nframes_decoded,
+	    confidence_total / nframes_decoded,
+	    throughput_rate,
+	    fabs(throughput_skew) * 100.0,
+	    signbit(throughput_skew) ? "slow" : "fast"
+	    );
+}
+
 
 void
 usage()
@@ -397,13 +419,18 @@ main( int argc, char*argv[] )
     int			carrier = 0;
     float		confidence_total = 0;
     unsigned int	nframes_decoded = 0;
+    size_t		carrier_nsamples = 0;
 
     unsigned int	noconfidence = 0;
+    size_t		noconfidence_nsamples = 0;
     unsigned int	advance = 0;
 
     while ( 1 ) {
 
 	debug_log("advance=%u\n", advance);
+
+	if ( carrier && nframes_decoded > 0 )
+	    carrier_nsamples += advance;
 	
 	/* Shift the samples in samplebuf by 'advance' samples */
 	assert( advance <= samplebuf_size );
@@ -519,28 +546,30 @@ main( int argc, char*argv[] )
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {
-	  // FIXME: explain
-	  if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
-	  {
+	    // FIXME: explain
+	    if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
+	    {
 #ifdef CARRIER_AUTODETECT_THRESHOLD
-	    carrier_band = -1;
+		carrier_band = -1;
 #endif
-	    if ( carrier ) {
-		fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f ###\n",
-			nframes_decoded, confidence_total / nframes_decoded );
-		carrier = 0;
-		confidence_total = 0;
-		nframes_decoded = 0;
-	      }
+		if ( carrier ) {
+		    carrier_nsamples -= noconfidence_nsamples;
+		    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
+			nframes_decoded, carrier_nsamples, confidence_total);
+		    carrier = 0;
+		    carrier_nsamples = 0;
+		    confidence_total = 0;
+		    nframes_decoded = 0;
+		}
 	    }
 
 	    /* Advance the sample stream forward by try_max_nsamples so the
 	     * next time around the loop we continue searching from where
 	     * we left off this time.		*/
 	    advance = try_max_nsamples;
+	    noconfidence_nsamples += advance;
 	    continue;
 	}
-
 
 	if ( !carrier ) {
 	    if ( bfsk_data_rate >= 100 )
@@ -555,9 +584,11 @@ main( int argc, char*argv[] )
 	    bfsk_framebits_decode(0, 0, 0);	/* reset the frame processor */
 	}
 
+
 	confidence_total += confidence;
 	nframes_decoded++;
 	noconfidence = 0;
+	noconfidence_nsamples = 0;
 
 	/* Advance the sample stream forward past the decoded frame
 	 * but not past the stop bit, since we want it to appear as
@@ -606,8 +637,9 @@ main( int argc, char*argv[] )
     } /* end of the main loop */
 
     if ( carrier ) {
-	fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f ###\n",
-		nframes_decoded, confidence_total / nframes_decoded );
+	carrier_nsamples -= noconfidence_nsamples;
+	report_no_carrier(fskp, sample_rate, bfsk_data_rate,
+	    nframes_decoded, carrier_nsamples, confidence_total);
     }
 
     simpleaudio_close(sa);
