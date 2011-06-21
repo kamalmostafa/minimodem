@@ -128,47 +128,24 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 
 
 /* returns confidence value [0.0 to 1.0] */
-static float
+static void
 fsk_bits_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
-	unsigned int *bits_outp )
+	unsigned int *bits_outp, float *bit_strengths_outp )
 {
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
     unsigned int nbits = fskp->n_data_bits;
 
-    float v = 0;
     unsigned int bits_out = 0;
     int i;
-    float d_str[32];
     for ( i=0; i<nbits; i++ ) {
 	unsigned int begin_databit = (float)(samples_per_bit * i + 0.5);
 	unsigned int bit;
 	debug_log("\t\tdata  begin_data_bit=%u  ", begin_databit);
 	fsk_bit_analyze(fskp, samples+begin_databit, bit_nsamples,
-							    &bit, &d_str[i]);
-	v += d_str[i];
+			    &bit, &bit_strengths_outp[i]);
 	bits_out |= bit << i;
     }
     *bits_outp = bits_out;
-
-    /* Compute frame decode confidence as the inverse of the average
-     * bit-strength delta from the average bit-strength.  (whew).*/
-    v /= nbits;	/* v = average bit-strength */
-
-    /*
-     * Filter out noise below FSK_MIN_STRENGTH threshold
-     */
-#define FSK_MIN_STRENGTH	0.05
-    if ( v < FSK_MIN_STRENGTH )
-	return 0.0;
-
-    float confidence = 0;
-    for ( i=0; i<nbits; i++ ) {
-	confidence += 1.0 - fabs(d_str[i] - v);
-    }
-    confidence /= nbits;
-
-    debug_log(__func__ " confidence=%f\n", confidence );
-    return confidence;
 }
 
 
@@ -233,12 +210,28 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	return 0.0;
     v += i_str;
 
-    // FIXME -- we're not actually even using 'v' from above 
-
     // Analyze the actual data payload bits
-    float confidence;
-    confidence = fsk_bits_analyze(fskp, samples+begin_databits,
-				samples_per_bit, bits_outp);
+    float databit_strengths[32];
+    fsk_bits_analyze(fskp, samples+begin_databits, samples_per_bit,
+			bits_outp, databit_strengths);
+
+    // computer average bit strength 'v'
+    int i;
+    for ( i=0; i<fskp->n_data_bits; i++ )
+	v += databit_strengths[i];
+    v /= (fskp->n_data_bits + 3);
+
+#define FSK_MIN_STRENGTH	0.05
+    if ( v < FSK_MIN_STRENGTH )
+	return 0.0;
+
+    float confidence = 0;
+    confidence += 1.0 - fabs(i_str - v);
+    confidence += 1.0 - fabs(s_str - v);
+    confidence += 1.0 - fabs(p_str - v);
+    for ( i=0; i<fskp->n_data_bits; i++ )
+	confidence += 1.0 - fabs(databit_strengths[i] - v);
+    confidence /= (fskp->n_data_bits + 3);
 
     return confidence;
 }
