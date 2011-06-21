@@ -172,6 +172,7 @@ main( int argc, char*argv[] )
 	    { "bandwidth",	1, 0, 'b' },
 	    { "mark",		1, 0, 'M' },
 	    { "space",		1, 0, 'S' },
+	    { 0 }
 	};
 	c = getopt_long(argc, argv, "tr85f:b:M:S:",
 		long_options, &option_index);
