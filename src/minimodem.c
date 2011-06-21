@@ -323,10 +323,6 @@ main( int argc, char*argv[] )
 	}
     }
 
-    /* restrict band_width to <= data rate */
-    if ( band_width > bfsk_data_rate )
-	band_width = bfsk_data_rate;
-
 
     /*
      * Handle transmit mode
@@ -475,8 +471,9 @@ main( int argc, char*argv[] )
 	// FIXME?: hardcoded 300 baud trigger for carrier autodetect
 	if ( bfsk_data_rate <= 300 && carrier_band < 0 ) {
 	    unsigned int i;
-//	    float nsamples_per_scan = fskp->fftsize;
 	    float nsamples_per_scan = nsamples_per_bit;
+	    if ( nsamples_per_scan > fskp->fftsize )
+		nsamples_per_scan = fskp->fftsize;
 	    for ( i=0; i+nsamples_per_scan<=samples_nvalid;
 						 i+=nsamples_per_scan ) {
 		carrier_band = fsk_detect_carrier(fskp,
