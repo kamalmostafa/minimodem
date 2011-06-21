@@ -12,6 +12,6 @@ trap "rm -f $TMPF" 0
 
 set -e
 ./minimodem --tx --file $TMPF "$baudmode" < "$textfile"
-ls -l $TMPF
+# ls -l $TMPF
 ./minimodem --rx --file $TMPF "$baudmode" | diff "$textfile" -
 

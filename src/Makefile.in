@@ -166,7 +166,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall -Werror
 INCLUDES = $(DEPS_CFLAGS)
-EXTRA_DIST = self-test # run-test
+EXTRA_DIST = self-test self-test-baudot.txt # run-test
 SIMPLEAUDIO_SRC = \
 	simpleaudio.h		\
 	simpleaudio_internal.h	\
@@ -480,6 +480,18 @@ uninstall-am: uninstall-binPROGRAMS
 	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am uninstall-binPROGRAMS
 
+
+test:
+	for file in simpleaudio.[ch] ; \
+	    do  { for rate in 1200 300 50; \
+		do  ./self-test $$rate $$file  || exit; \
+	      	done  }; \
+	    done
+	./self-test rtty self-test-baudot.txt
+	[ ! -f ./run-test ] || ./run-test
+	@echo
+	@echo "minimodem: ALL TESTS PASS"
+	@echo
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
