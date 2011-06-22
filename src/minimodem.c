@@ -84,7 +84,8 @@ static void fsk_transmit_stdin(
     size_t bit_nsamples = sample_rate / data_rate + 0.5;
     int c;
 
-    simpleaudio_tone(sa_out, bfsk_mark_f, sample_rate/2);    // 0.5 sec leader
+    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);    // 2.0 bit leader
+    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
     while ( (c = getchar()) != EOF )
     {
 
@@ -104,7 +105,8 @@ static void fsk_transmit_stdin(
 	    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);	// stop
 	}
     }
-    simpleaudio_tone(sa_out, bfsk_mark_f, sample_rate/2);    // 0.5 sec tail
+    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);    // 2.0 bit tail
+    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
 
     // 0.5 sec of zero samples to flush - FIXME lame
     simpleaudio_tone(sa_out, 0, sample_rate/2);
