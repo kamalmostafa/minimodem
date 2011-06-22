@@ -214,7 +214,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     fsk_bits_analyze(fskp, samples+begin_databits, samples_per_bit,
 			bits_outp, databit_strengths);
 
-    // computer average bit strength 'v'
+    // compute average bit strength 'v'
     int i;
     for ( i=0; i<fskp->n_data_bits; i++ )
 	v += databit_strengths[i];
@@ -224,6 +224,10 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     if ( v < FSK_MIN_STRENGTH )
 	return 0.0;
 
+#define CONFIDENCE_ALGO	2
+
+#if ( CONFIDENCE_ALGO == 1 )
+
     float confidence = 0;
     confidence += 1.0 - fabs(i_str - v);
     confidence += 1.0 - fabs(s_str - v);
@@ -232,6 +236,20 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	confidence += 1.0 - fabs(databit_strengths[i] - v);
     confidence /= (fskp->n_data_bits + 3);
 
+#elif ( CONFIDENCE_ALGO == 2 )
+
+    float confidence = 0;
+    confidence += i_str;
+    confidence += s_str;
+    confidence += p_str;
+    for ( i=0; i<fskp->n_data_bits; i++ )
+	confidence += databit_strengths[i];
+    confidence /= (fskp->n_data_bits + 3);
+
+#endif
+
+    debug_log("    frame confidence (algo #%u) = %f\n",
+	    CONFIDENCE_ALGO, confidence);
     return confidence;
 }
 

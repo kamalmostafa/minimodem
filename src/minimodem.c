@@ -525,7 +525,6 @@ main( int argc, char*argv[] )
 	if ( samples_nvalid < frame_nsamples )
 	    break;
 
-	// FIXME: explain
 	unsigned int try_max_nsamples = nsamples_per_bit;
 #define FSK_ANALYZE_NSTEPS		8	/* accuracy vs. performance */
 	unsigned int try_step_nsamples = nsamples_per_bit / FSK_ANALYZE_NSTEPS;
@@ -545,7 +544,7 @@ main( int argc, char*argv[] )
 			&frame_start_sample
 			);
 
-#define FSK_MIN_CONFIDENCE		0.5	/* not critical */
+#define FSK_MIN_CONFIDENCE		0.05
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {
@@ -600,9 +599,9 @@ main( int argc, char*argv[] )
 	 * advance = 1 prev_stop + 1 start + N data bits == n_data_bits+2
 	 *
 	 * but actually advance just a bit less than that to allow
-	 * for clock skew, so ...
+	 * for clock skew, hence FSK_SCAN_LAG.
 	 */
-#define FSK_SCAN_LAG	0.4
+#define FSK_SCAN_LAG			0.2
 	advance = frame_start_sample +
 	    nsamples_per_bit * (float)(fskp->n_data_bits + 2 - FSK_SCAN_LAG);
 
