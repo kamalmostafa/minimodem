@@ -328,6 +328,8 @@ main( int argc, char*argv[] )
 	    bfsk_mark_f  = 1585;
 	if ( bfsk_space_f == 0 )
 	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
+	if ( bfsk_txstopbits == 0 )
+	    bfsk_txstopbits = 1.5;	// conventional for RTTY (?)
 	if ( band_width == 0 ) {
 	    band_width = 10;	// FIXME chosen arbitrarily
 	}
