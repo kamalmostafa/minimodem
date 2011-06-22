@@ -77,6 +77,7 @@ static void fsk_transmit_stdin(
 	float bfsk_mark_f,
 	float bfsk_space_f,
 	int n_data_bits,
+	float bfsk_txstopbits,
 	int (*framebits_encoder)( unsigned int *databits_outp, char char_out )
 	)
 {
@@ -102,7 +103,8 @@ static void fsk_transmit_stdin(
 		float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
 		simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
 	    }
-	    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);	// stop
+	    simpleaudio_tone(sa_out, bfsk_mark_f,
+				bit_nsamples * bfsk_txstopbits);	// stop
 	}
     }
     simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);    // 2.0 bit tail
@@ -150,6 +152,7 @@ usage()
     "		    -b, --bandwidth {rx_bandwidth}\n"
     "		    -M, --mark {mark_freq}\n"
     "		    -S, --space {space_freq}\n"
+    "		    -T, --txstopbits {m.n}\n"
     "		{baudmode}\n"
     "		    1200 : Bell202  1200 bps --ascii\n"
     "		     300 : Bell103   300 bps --ascii (auto-rx-carrier)\n"
@@ -168,6 +171,7 @@ main( int argc, char*argv[] )
     float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
+    float bfsk_txstopbits = 0;
     unsigned int bfsk_n_data_bits = 0;
     unsigned int autodetect_shift;
     char *filename = NULL;
@@ -196,9 +200,10 @@ main( int argc, char*argv[] )
 	    { "bandwidth",	1, 0, 'b' },
 	    { "mark",		1, 0, 'M' },
 	    { "space",		1, 0, 'S' },
+	    { "txstopbits",	1, 0, 'T' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "tr85f:b:M:S:",
+	c = getopt_long(argc, argv, "tr85f:b:M:S:T:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -233,6 +238,10 @@ main( int argc, char*argv[] )
 	    case 'S':
 			bfsk_space_f = atoi(optarg);
 			assert( bfsk_space_f > 0 );
+			break;
+	    case 'T':
+			bfsk_txstopbits = atof(optarg);
+			assert( bfsk_txstopbits > 0 );
 			break;
 	    default:
 			usage();
@@ -324,6 +333,9 @@ main( int argc, char*argv[] )
 	}
     }
 
+    if ( bfsk_txstopbits == 0 )
+	bfsk_txstopbits = 1.0;
+
     /* restrict band_width to <= data rate (FIXME?) */
     if ( band_width > bfsk_data_rate )
 	band_width = bfsk_data_rate;
@@ -351,6 +363,7 @@ main( int argc, char*argv[] )
 				bfsk_data_rate,
 				bfsk_mark_f, bfsk_space_f,
 				bfsk_n_data_bits,
+				bfsk_txstopbits,
 				bfsk_framebits_encode
 				);
 	return 0;
