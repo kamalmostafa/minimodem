@@ -7,7 +7,7 @@
 # 
 # 
 
-AM_CFLAGS = -Wall -Werror
+AM_CFLAGS = -Wall # -Werror
 
 INCLUDES = $(DEPS_CFLAGS)
 
