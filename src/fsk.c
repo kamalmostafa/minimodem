@@ -34,7 +34,6 @@ fsk_plan_new(
     fskp->sample_rate = sample_rate;
     fskp->f_mark = f_mark;
     fskp->f_space = f_space;
-    fskp->filter_bw = filter_bw;
     fskp->n_data_bits = n_data_bits;
 
     /* 1 prev_stop + n_data_bits + 1 start + 1 stop == n_data_bits + 3 */
@@ -43,7 +42,7 @@ fsk_plan_new(
 #ifdef USE_FFT
     fskp->band_width = filter_bw;
 
-    float fft_half_bw = (float)fskp->band_width / 2.0;
+    float fft_half_bw = fskp->band_width / 2.0;
     fskp->fftsize = (sample_rate + fft_half_bw) / fskp->band_width;
     fskp->nbands = fskp->fftsize / 2 + 1;
 

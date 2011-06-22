@@ -28,7 +28,7 @@ struct fsk_plan {
 #ifdef USE_FFT
 	int		fftsize;
 	unsigned int	nbands;
-	unsigned int	band_width;
+	float		band_width;
 	unsigned int	b_mark;
 	unsigned int	b_space;
 	fftwf_plan	fftplan;

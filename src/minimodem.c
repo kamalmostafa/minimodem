@@ -163,7 +163,7 @@ main( int argc, char*argv[] )
 {
     char *modem_mode = NULL;
     int TX_mode = -1;
-    unsigned int band_width = 0;
+    float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
     unsigned int bfsk_n_data_bits = 0;
@@ -221,8 +221,7 @@ main( int argc, char*argv[] )
 			bfsk_n_data_bits = 5;
 			break;
 	    case 'b':
-			// FIXME make band_width float?
-			band_width = atoi(optarg);
+			band_width = atof(optarg);
 			assert( band_width != 0 );
 			break;
 	    case 'M':
@@ -322,6 +321,10 @@ main( int argc, char*argv[] )
 	    band_width = 10;	// FIXME chosen arbitrarily
 	}
     }
+
+    /* restrict band_width to <= data rate (FIXME?) */
+    if ( band_width > bfsk_data_rate )
+	band_width = bfsk_data_rate;
 
 
     /*
@@ -501,7 +504,7 @@ main( int argc, char*argv[] )
 		continue;
 	    }
 
-	    debug_log("### TONE freq=%u ###\n",
+	    debug_log("### TONE freq=%.1f ###\n",
 		    carrier_band * fskp->band_width);
 
 	    fsk_set_tones_by_bandshift(fskp, /*b_mark*/carrier_band, b_shift);
@@ -571,11 +574,11 @@ main( int argc, char*argv[] )
 
 	if ( !carrier ) {
 	    if ( bfsk_data_rate >= 100 )
-		fprintf(stderr, "### CARRIER %u @ %u Hz ###\n",
+		fprintf(stderr, "### CARRIER %u @ %.1f Hz ###\n",
 			(unsigned int)(bfsk_data_rate + 0.5),
 			fskp->b_mark * fskp->band_width);
 	    else
-		fprintf(stderr, "### CARRIER %.2f @ %u Hz ###\n",
+		fprintf(stderr, "### CARRIER %.2f @ %.1f Hz ###\n",
 			bfsk_data_rate,
 			fskp->b_mark * fskp->band_width);
 	    carrier = 1;
