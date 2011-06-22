@@ -250,7 +250,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     unsigned int best_t = 0;
     float best_c = 0.0;
     unsigned int best_bits = 0;
-    for ( t=0; t<try_max_nsamples; t+=try_step_nsamples )
+    for ( t=0; t<(try_max_nsamples+try_step_nsamples); t+=try_step_nsamples )
     {
 	float c;
 	unsigned int bits_out = 0;
