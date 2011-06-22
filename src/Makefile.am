@@ -14,6 +14,8 @@ INCLUDES = $(DEPS_CFLAGS)
 
 bin_PROGRAMS = minimodem
 
+dist_man_MANS = minimodem.1
+
 EXTRA_DIST = self-test testcases/* # run-test
 
 TESTS = testcases/test.*
