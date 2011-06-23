@@ -1,0 +1,22 @@
+Source: minimodem
+Section: comm
+Priority: optional
+Maintainer: Kamal Mostafa <kamal@whence.com>
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev, libfftw3-dev, libpulse-dev, libsndfile1-dev 
+Standards-Version: 3.9.2
+Homepage: http://www.whence.com/minimodem
+#Vcs-Git: git://git.debian.org/collab-maint/minimodem.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/minimodem.git;a=summary
+
+Package: minimodem
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: software audio Bell-type or RTTY FSK modem
+ Minimodem is a command-line program which generates (or decodes) audio
+ modem tones, emulating an old Bell-type or radio-teletype FSK modem.
+ The tones are played to (or recorded from) the default system audio
+ device or a file.
+ .
+ Minimodem can be used to transfer data between nearby computers using an
+ audio cable (or just via sound waves), or between remote computers using
+ radio, telephone, or another audio communications medium.

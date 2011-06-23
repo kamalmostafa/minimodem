@@ -1,0 +1,4 @@
+
+# omit testdata/ and src/run-test script out of the source package
+extend-diff-ignore = "debian/|testdata/|src/run-test"
+
