@@ -230,7 +230,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	v += databit_strengths[i];
     v /= (fskp->n_data_bits + 3);
 
-#define FSK_MIN_STRENGTH	0.05
+#define FSK_MIN_STRENGTH	0.005
     if ( v < FSK_MIN_STRENGTH )
 	return 0.0;
 
