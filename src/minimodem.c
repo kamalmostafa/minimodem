@@ -484,7 +484,7 @@ main( int argc, char*argv[] )
 	ssize_t r;
 	r = simpleaudio_read(sa, samples_readptr, read_nsamples);
 	debug_log("simpleaudio_read(samplebuf+%ld, n=%lu) returns %ld\n",
-		samples_readptr - samplebuf, samples_nvalid, r);
+		samples_readptr - samplebuf, read_nsamples, r);
 	if ( r < 0 ) {
 	    fprintf(stderr, "simpleaudio_read: error\n");
 	    ret = -1;

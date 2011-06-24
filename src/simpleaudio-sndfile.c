@@ -70,7 +70,7 @@ sa_sndfile_close( simpleaudio *sa )
 }
 
 
-static const struct simpleaudio_backend simpleaudio_backend_pulse = {
+static const struct simpleaudio_backend simpleaudio_backend_sndfile = {
     sa_sndfile_read,
     sa_sndfile_write,
     sa_sndfile_close,
@@ -110,7 +110,7 @@ simpleaudio_open_stream_sndfile(
     }
     sa->rate = sfinfo.samplerate;
     sa->channels = sfinfo.channels;
-    sa->backend = &simpleaudio_backend_pulse;
+    sa->backend = &simpleaudio_backend_sndfile;
     sa->backend_handle = s;
     sa->backend_framesize = sa->channels * sizeof(float);
 
