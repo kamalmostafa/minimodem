@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <malloc.h>
+#include <string.h>
 #include <assert.h>
 
 #include <sndfile.h>
@@ -76,6 +77,56 @@ static const struct simpleaudio_backend simpleaudio_backend_sndfile = {
     sa_sndfile_close,
 };
 
+
+/* (Why) doesn't libsndfile provide an API for this?... */
+static const struct sndfile_format {
+    unsigned int major_format;
+    char *str;
+} sndfile_formats[] = {
+    { SF_FORMAT_WAV,	"WAV" },
+    { SF_FORMAT_AIFF,	"AIFF" },
+    { SF_FORMAT_AU,	"AU" },
+    { SF_FORMAT_RAW,	"RAW" },
+    { SF_FORMAT_PAF,	"PAF" },
+    { SF_FORMAT_SVX,	"SVX" },
+    { SF_FORMAT_NIST,	"NIST" },
+    { SF_FORMAT_VOC,	"VOC" },
+    { SF_FORMAT_IRCAM,	"IRCAM" },
+    { SF_FORMAT_W64,	"W64" },
+    { SF_FORMAT_MAT4,	"MAT4" },
+    { SF_FORMAT_MAT5,	"MAT5" },
+    { SF_FORMAT_PVF,	"PVF" },
+    { SF_FORMAT_XI,	"XI" },
+    { SF_FORMAT_HTK,	"HTK" },
+    { SF_FORMAT_SDS,	"SDS" },
+    { SF_FORMAT_AVR,	"AVR" },
+    { SF_FORMAT_WAVEX,	"WAVEX" },
+    { SF_FORMAT_SD2,	"SD2" },
+    { SF_FORMAT_FLAC,	"FLAC" },
+    { SF_FORMAT_CAF,	"CAF" },
+    { SF_FORMAT_WVE,	"WVE" },
+    { SF_FORMAT_OGG,	"OGG" },
+    { SF_FORMAT_MPC2K,	"MPC2K" },
+    { SF_FORMAT_RF64,	"RF64" },
+    { 0, 0 }
+};
+
+static unsigned int
+sndfile_format_from_path( const char *path )
+{
+    const char *p = strrchr(path, '.');
+    if ( p )
+	p++;
+    else
+	p = path;
+
+    const struct sndfile_format *sfmt;
+    for ( sfmt=sndfile_formats; sfmt->str; sfmt++ )
+	if ( strcasecmp(sfmt->str,p) == 0 )
+	    return sfmt->major_format;
+    return SF_FORMAT_WAV;
+}
+
 simpleaudio *
 simpleaudio_open_stream_sndfile(
 		int sa_stream_direction,
@@ -83,13 +134,13 @@ simpleaudio_open_stream_sndfile(
 {
     /* setting for SA_STREAM_PLAYBACK (file write) */
     SF_INFO sfinfo = {
-	.format = SF_FORMAT_FLAC | SF_FORMAT_PCM_16,	// FIXME - hardcoded
+	.format = 0,
 	.samplerate = 48000,
 	.channels = 1,
     };
 
-    if ( sa_stream_direction == SA_STREAM_RECORD )
-	sfinfo.format = 0;
+    if ( sa_stream_direction == SA_STREAM_PLAYBACK )
+	sfinfo.format = sndfile_format_from_path(path) | SF_FORMAT_PCM_16;
 
     /* Create the recording stream */
     SNDFILE *s;
