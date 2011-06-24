@@ -7,7 +7,7 @@
 baudmode="$1"
 textfile="$2"
 
-TMPF="/tmp/minimodem-test-$$.flac"
+TMPF="/tmp/minimodem-test-$$.wav"
 trap "rm -f $TMPF" 0
 
 set -e
