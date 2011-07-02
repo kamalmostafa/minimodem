@@ -28,6 +28,12 @@
 #include <math.h>
 #include <assert.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else
+#define VERSION "unknown"
+#endif
+
 #include "simpleaudio.h"
 #include "fsk.h"
 #include "baudot.h"
@@ -149,6 +155,18 @@ report_no_carrier( fsk_plan *fskp,
 	    );
 }
 
+void
+version()
+{
+    fprintf(stderr,
+    "minimodem %s\n"
+    "Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>\n"
+    "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
+    "This is free software: you are free to change and redistribute it.\n"
+    "There is NO WARRANTY, to the extent permitted by law.\n\n"
+    "Written by Kamal Mostafa <kamal@whence.com>.\n",
+	VERSION);
+}
 
 void
 usage()
@@ -165,6 +183,7 @@ usage()
     "		    -M, --mark {mark_freq}\n"
     "		    -S, --space {space_freq}\n"
     "		    -T, --txstopbits {m.n}\n"
+    "		    -V, --version\n"
     "		{baudmode}\n"
     "		    1200 : Bell202  1200 bps --ascii\n"
     "		     300 : Bell103   300 bps --ascii (auto-rx-carrier)\n"
@@ -200,6 +219,7 @@ main( int argc, char*argv[] )
     
     while ( 1 ) {
 	static struct option long_options[] = {
+	    { "version",	0, 0, 'V' },
 	    { "tx",		0, 0, 't' },
 	    { "transmit",	0, 0, 't' },
 	    { "write",		0, 0, 't' },
@@ -215,11 +235,14 @@ main( int argc, char*argv[] )
 	    { "txstopbits",	1, 0, 'T' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "tr85f:b:M:S:T:",
+	c = getopt_long(argc, argv, "Vtr85f:b:M:S:T:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
 	switch( c ) {
+	    case 'V':
+			version();
+			exit(0);
 	    case 't':
 			if ( TX_mode == 0 )
 			    usage();
