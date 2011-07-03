@@ -394,7 +394,8 @@ main( int argc, char*argv[] )
 	if ( ! sa_out )
 	    sa_out = simpleaudio_open_stream_pulseaudio(SA_STREAM_PLAYBACK,
 					program_name, "output audio");
-	assert( sa_out );
+	if ( ! sa_out )
+	    return 1;
 
 	fsk_transmit_stdin(sa_out,
 				bfsk_data_rate,

@@ -100,14 +100,14 @@ simpleaudio_open_stream_pulseaudio(
 	.channels = 1,
     };
 
-    /* Create the recording stream */
+    /* Create the playback or recording stream */
     pa_simple *s;
     s = pa_simple_new(NULL, app_name,
 	    sa_stream_direction == SA_STREAM_RECORD ? PA_STREAM_RECORD : PA_STREAM_PLAYBACK,
 	    NULL, stream_name,
 	    &ss, NULL, NULL, &error);
     if ( !s ) {
-        fprintf(stderr, "pa_simple_new: %s\n", pa_strerror(error));
+        fprintf(stderr, "E: Cannot create PulseAudio stream: %s\n ", pa_strerror(error));
         return NULL;
     }
 
