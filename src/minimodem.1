@@ -29,8 +29,8 @@ minimodem \- software audio Bell-type or RTTY FSK modem
 .B minimodem
 is a command-line program which generates (or decodes) audio modem tones,
 emulating an old Bell-type or radio-teletype FSK modem.
-The tones are played to (or recorded from) the default system audio device
-or a file.
+The tones can be played to (or recorded from) the PulseAudio system
+or to an audio file.
 .PP
 .B minimodem
 can be used to transfer data between nearby computers using an audio
@@ -95,7 +95,8 @@ and receive 100 baud tones on another nearby computer.
 .B minimodem --rx rtty
 Decode amateur radio RTTY signals (listen near 14.085 MHz).
 .SH NOTES
-.B minimodem does not decode AX.25 framed packets.
+.B minimodem
+does not decode AX.25 framed packets.
 .PP
 .B minimodem
 does not support modem control ("AT") commands, nor does it produce
