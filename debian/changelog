@@ -1,3 +1,10 @@
+minimodem (0.6.1-1) unstable; urgency=low
+
+  * debian Recommends: pulseaudio
+  * add --version switch
+
+ -- Kamal Mostafa <kamal@whence.com>  Sun, 03 Jul 2011 17:02:26 -0700
+
 minimodem (0.6-1) unstable; urgency=low
 
   * fsk decode squelch reduced to 0.005
