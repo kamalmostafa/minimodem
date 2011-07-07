@@ -595,6 +595,12 @@ main( int argc, char*argv[] )
 			&frame_start_sample
 			);
 
+	// FIXME: hardcoded chop off framing bits
+	if ( fskp->n_data_bits == 5 )
+	    bits = ( bits >> 2 ) & 0x1F;
+	else
+	    bits = ( bits >> 2 ) & 0xFF;
+
 #define FSK_MIN_CONFIDENCE		0.05
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
