@@ -215,7 +215,13 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     }
 
     /* compute average bit strength 'v' */
+#if 1 /* don't consider the stop bit -- we'll look at it next time around */
+    float p_str = bit_strengths[fskp->n_data_bits + 2];
+    v -= p_str;
+    v /= (n_bits-1);
+#else
     v /= n_bits;
+#endif
 
 // #define FSK_MIN_STRENGTH	0.005
 #ifdef FSK_MIN_STRENGTH
@@ -227,7 +233,9 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 
     float worst_divergence = 0;
     int i;
-    for ( i=0; i<n_bits; i++ ) {
+    /* nbits-1: don't consider the stop bit */
+    for ( i=0; i<n_bits-1; i++ )
+    {
 	float normalized_bit_str = bit_strengths[i] / v;
 	float divergence = fabs(1.0 - normalized_bit_str);
 	if ( worst_divergence < divergence )
