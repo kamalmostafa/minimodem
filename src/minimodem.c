@@ -158,7 +158,7 @@ report_no_carrier( fsk_plan *fskp,
 void
 version()
 {
-    fprintf(stderr,
+    printf(
     "minimodem %s\n"
     "Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>\n"
     "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
