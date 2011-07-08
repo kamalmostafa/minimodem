@@ -1,2 +1,1 @@
-# use fsk.c as the sample text file
-exec ./self-test 300 fsk.c
+exec ./self-test 300 testcases/self-test-ascii.txt
