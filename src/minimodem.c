@@ -138,21 +138,33 @@ static void
 report_no_carrier( fsk_plan *fskp,
 	unsigned int sample_rate,
 	float bfsk_data_rate,
+	float nsamples_per_bit,
 	unsigned int nframes_decoded,
 	size_t carrier_nsamples,
 	float confidence_total )
 {
     unsigned long long nbits_total = nframes_decoded * (fskp->n_data_bits+2);
+#if 0
+    fprintf(stderr, "nframes_decoded=%u\n", nframes_decoded);
+    fprintf(stderr, "nbits_total=%llu\n", nbits_total);
+    fprintf(stderr, "carrier_nsamples=%lu\n", carrier_nsamples);
+    fprintf(stderr, "nsamples_per_bit=%f\n", nsamples_per_bit);
+#endif
     float throughput_rate = nbits_total * sample_rate / (float)carrier_nsamples;
-    float throughput_skew = (throughput_rate - bfsk_data_rate)
-			/ bfsk_data_rate;
-    fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f throughput=%.2f (%.1f%% %s) ###\n",
+    fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f throughput=%.2f",
 	    nframes_decoded,
 	    confidence_total / nframes_decoded,
-	    throughput_rate,
-	    fabs(throughput_skew) * 100.0,
-	    signbit(throughput_skew) ? "slow" : "fast"
-	    );
+	    throughput_rate);
+    if ( (size_t)(nbits_total * nsamples_per_bit + 0.5) == carrier_nsamples ) {
+	fprintf(stderr, " (rate perfect) ###\n");
+    } else {
+	float throughput_skew = (throughput_rate - bfsk_data_rate)
+			    / bfsk_data_rate;
+	fprintf(stderr, " (%.1f%% %s) ###\n",
+		fabs(throughput_skew) * 100.0,
+		signbit(throughput_skew) ? "slow" : "fast"
+		);
+    }
 }
 
 void
@@ -577,7 +589,9 @@ main( int argc, char*argv[] )
 	    break;
 
 	unsigned int try_max_nsamples = nsamples_per_bit;
-#define FSK_ANALYZE_NSTEPS		8	/* accuracy vs. performance */
+#define FSK_ANALYZE_NSTEPS		10	/* accuracy vs. performance */
+		// Note: FSK_ANALYZE_NSTEPS has subtle effects on the
+		// "rate perfect" calculation.  oh well.
 	unsigned int try_step_nsamples = nsamples_per_bit / FSK_ANALYZE_NSTEPS;
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
@@ -601,8 +615,10 @@ main( int argc, char*argv[] )
 	else
 	    bits = ( bits >> 2 ) & 0xFF;
 
-#define FSK_MIN_CONFIDENCE		0.50
+#define FSK_MIN_CONFIDENCE		0.60
 #define FSK_MAX_NOCONFIDENCE_BITS	20
+
+#define FSK_SCAN_LAG			0.2
 
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {
 	    // FIXME: explain
@@ -613,7 +629,10 @@ main( int argc, char*argv[] )
 #endif
 		if ( carrier ) {
 		    carrier_nsamples -= noconfidence_nsamples;
+		    if ( nframes_decoded > 0 )
+			carrier_nsamples += nsamples_per_bit * FSK_SCAN_LAG;
 		    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
+			nsamples_per_bit,
 			nframes_decoded, carrier_nsamples, confidence_total);
 		    carrier = 0;
 		    carrier_nsamples = 0;
@@ -640,6 +659,8 @@ main( int argc, char*argv[] )
 			bfsk_data_rate,
 			fskp->b_mark * fskp->band_width);
 	    carrier = 1;
+	    /* back up carrier_nsamples to account for the imminent advance */
+	    noconfidence_nsamples = frame_start_sample;
 	    bfsk_framebits_decode(0, 0, 0);	/* reset the frame processor */
 	}
 
@@ -647,7 +668,6 @@ main( int argc, char*argv[] )
 	confidence_total += confidence;
 	nframes_decoded++;
 	noconfidence = 0;
-	noconfidence_nsamples = 0;
 
 	/* Advance the sample stream forward past the decoded frame
 	 * but not past the stop bit, since we want it to appear as
@@ -658,7 +678,6 @@ main( int argc, char*argv[] )
 	 * but actually advance just a bit less than that to allow
 	 * for clock skew, hence FSK_SCAN_LAG.
 	 */
-#define FSK_SCAN_LAG			0.2
 	advance = frame_start_sample +
 	    nsamples_per_bit * (float)(fskp->n_data_bits + 2 - FSK_SCAN_LAG);
 
@@ -697,7 +716,10 @@ main( int argc, char*argv[] )
 
     if ( carrier ) {
 	carrier_nsamples -= noconfidence_nsamples;
+	if ( nframes_decoded > 0 )
+	    carrier_nsamples += nsamples_per_bit * FSK_SCAN_LAG;
 	report_no_carrier(fskp, sample_rate, bfsk_data_rate,
+	    nsamples_per_bit,
 	    nframes_decoded, carrier_nsamples, confidence_total);
     }
 
