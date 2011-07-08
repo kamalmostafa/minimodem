@@ -220,6 +220,8 @@ main( int argc, char*argv[] )
     char *filename = NULL;
     char *program_name;
 
+    float	bfsk_confidence_threshold = 0.6;
+
     program_name = strrchr(argv[0], '/');
     if ( program_name )
 	program_name++;
@@ -238,6 +240,7 @@ main( int argc, char*argv[] )
 	    { "rx",		0, 0, 'r' },
 	    { "receive",	0, 0, 'r' },
 	    { "read",		0, 0, 'r' },
+	    { "confidence",	1, 0, 'c' },
 	    { "ascii",		0, 0, '8' },
 	    { "baudot",		0, 0, '5' },
 	    { "file",		1, 0, 'f' },
@@ -247,7 +250,7 @@ main( int argc, char*argv[] )
 	    { "txstopbits",	1, 0, 'T' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtr85f:b:M:S:T:",
+	c = getopt_long(argc, argv, "Vtrc:85f:b:M:S:T:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -264,6 +267,9 @@ main( int argc, char*argv[] )
 			if ( TX_mode == 1 )
 			    usage();
 			TX_mode = 0;
+			break;
+	    case 'c':
+			bfsk_confidence_threshold = atof(optarg);
 			break;
 	    case 'f':
 			filename = optarg;
@@ -615,12 +621,11 @@ main( int argc, char*argv[] )
 	else
 	    bits = ( bits >> 2 ) & 0xFF;
 
-#define FSK_MIN_CONFIDENCE		0.60
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
 #define FSK_SCAN_LAG			0.2
 
-	if ( confidence <= FSK_MIN_CONFIDENCE ) {
+	if ( confidence <= bfsk_confidence_threshold ) {
 	    // FIXME: explain
 	    if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
 	    {
