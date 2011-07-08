@@ -520,7 +520,7 @@ main( int argc, char*argv[] )
 	if ( samples_nvalid == 0 )
 	    break;
 
-#define CARRIER_AUTODETECT_THRESHOLD	0.03
+#define CARRIER_AUTODETECT_THRESHOLD	0.001
 #ifdef CARRIER_AUTODETECT_THRESHOLD
 	/* Auto-detect carrier frequency */
 	static int carrier_band = -1;
