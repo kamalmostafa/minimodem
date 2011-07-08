@@ -13,7 +13,7 @@ TMPF="/tmp/minimodem-test-$$.wav"
 trap "rm -f $TMPF" 0
 
 set -e
-$MINIMODEM --tx --file $TMPF "$baudmode" < "$textfile"
+$MINIMODEM --tx -T 1 --file $TMPF "$baudmode" < "$textfile"
 # ls -l $TMPF
 $MINIMODEM --rx --file $TMPF "$baudmode" | diff "$textfile" -
 
