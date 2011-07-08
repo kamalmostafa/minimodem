@@ -217,10 +217,11 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     /* compute average bit strength 'v' */
     v /= n_bits;
 
-#define FSK_MIN_STRENGTH	0.005
+// #define FSK_MIN_STRENGTH	0.005
+#ifdef FSK_MIN_STRENGTH
     if ( v < FSK_MIN_STRENGTH )
 	return 0.0;
-
+#endif
 
 #define CONFIDENCE_ALGO	3
 
