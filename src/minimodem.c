@@ -601,7 +601,7 @@ main( int argc, char*argv[] )
 	else
 	    bits = ( bits >> 2 ) & 0xFF;
 
-#define FSK_MIN_CONFIDENCE		0.05
+#define FSK_MIN_CONFIDENCE		0.50
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
 	if ( confidence <= FSK_MIN_CONFIDENCE ) {

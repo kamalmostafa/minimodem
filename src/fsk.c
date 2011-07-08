@@ -186,16 +186,17 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	v += bit_strengths[bitnum];
     }
 
-    // float i_str = bit_strengths[0];
-    float s_str = bit_strengths[1];
-    float p_str = bit_strengths[fskp->n_data_bits + 2];
-
-#define AVOID_TRANSIENTS	0.7
+// Note: CONFIDENCE_ALGO 3 does not need AVOID_TRANSIENTS
+// #define AVOID_TRANSIENTS	0.7
+//
 #ifdef AVOID_TRANSIENTS
     /* Compare strength of stop bit and start bit, to avoid detecting
      * a transient as a start bit, as often results in a single false
      * character when the mark "leader" tone begins.  Require that the
      * diff between start bit and stop bit strength not be "large". */
+    //float i_str = bit_strengths[0];
+    float s_str = bit_strengths[1];
+    float p_str = bit_strengths[fskp->n_data_bits + 2];
     if ( fabs(s_str-p_str) > (s_str * AVOID_TRANSIENTS) ) {
 	debug_log(" avoid transient\n");
 	return 0.0;
@@ -220,33 +221,23 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     if ( v < FSK_MIN_STRENGTH )
 	return 0.0;
 
+
+#define CONFIDENCE_ALGO	3
+
+    float worst_divergence = 0;
     int i;
+    for ( i=0; i<n_bits; i++ ) {
+	float normalized_bit_str = bit_strengths[i] / v;
+	float divergence = fabs(1.0 - normalized_bit_str);
+	if ( worst_divergence < divergence )
+	    worst_divergence = divergence;
+    }
+    float confidence = 1.0 - worst_divergence;
+    if ( confidence <= 0.0 )
+	return 0.0;
 
-#define CONFIDENCE_ALGO	2
-
-#if ( CONFIDENCE_ALGO == 1 )
-
-    float confidence = 0;
-    confidence += 1.0 - fabs(i_str - v);
-    confidence += 1.0 - fabs(s_str - v);
-    confidence += 1.0 - fabs(p_str - v);
-    for ( i=0; i<fskp->n_data_bits; i++ )
-	confidence += 1.0 - fabs(databit_strengths[i] - v);
-    confidence /= (fskp->n_data_bits + 3);
-
-#elif ( CONFIDENCE_ALGO == 2 )
-
-    float confidence = 0;
-    for ( i=0; i<n_bits; i++ )
-	confidence += bit_strengths[i];
-    confidence /= n_bits;
-
-#endif
 
     *bits_outp = 0;
-// FIXME: databits at hardcoded offset of +2 
-//    for ( i=0; i<fskp->n_data_bits; i++ )
-//	*bits_outp |= bit_values[i+2] << i;
     for ( i=0; i<n_bits; i++ )
 	*bits_outp |= bit_values[i] << i;
 
@@ -287,6 +278,9 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     *frame_start_outp = best_t;
 
     float confidence = best_c;
+
+    if ( confidence == 0 )
+	return 0;
 
     // FIXME? hardcoded chop off framing bits for debug
 #ifdef FSK_DEBUG
