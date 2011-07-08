@@ -176,7 +176,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	assert( expect_bits[bitnum] == '1' || expect_bits[bitnum] == '0' );
 
 	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5);
-	debug_log( " bit# %2u @ %u: ", bitnum, bit_begin_sample);
+	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
 		&bit_values[bitnum], &bit_strengths[bitnum]);
 
@@ -207,7 +207,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	if ( expect_bits[bitnum] != 'd' )
 	    continue;
 	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5);
-	debug_log( " bit# %2u @ %u: ", bitnum, bit_begin_sample);
+	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
 		&bit_values[bitnum], &bit_strengths[bitnum]);
 	v += bit_strengths[bitnum];
