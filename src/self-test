@@ -1,5 +1,7 @@
 #!/bin/bash
 
+MINIMODEM="${MINIMODEM-./minimodem}"
+
 [ $# -eq 2 ] || {
     echo "usage: self-test baudmode textfile" 1>&2
     exit 1
@@ -11,7 +13,7 @@ TMPF="/tmp/minimodem-test-$$.wav"
 trap "rm -f $TMPF" 0
 
 set -e
-./minimodem --tx --file $TMPF "$baudmode" < "$textfile"
+$MINIMODEM --tx --file $TMPF "$baudmode" < "$textfile"
 # ls -l $TMPF
-./minimodem --rx --file $TMPF "$baudmode" | diff "$textfile" -
+$MINIMODEM --rx --file $TMPF "$baudmode" | diff "$textfile" -
 

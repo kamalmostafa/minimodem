@@ -8,6 +8,7 @@
 # 
 # 
 
+MINIMODEM="${MINIMODEM-./minimodem}"
 
 TMPDIR=/tmp/run-test-$$
 mkdir "$TMPDIR" || exit
@@ -26,8 +27,8 @@ do
     txtnum="${i##*/}"
     txtnum="${txtnum%%-*}"
 
-    echo TEST	./minimodem -f "$i" "$rate" 
-    ./minimodem -f "$i" "$rate"  >$TMPDIR/out 2>$TMPDIR/err
+    echo TEST	$MINIMODEM -f "$i" "$rate" 
+    $MINIMODEM -f "$i" "$rate"  >$TMPDIR/out 2>$TMPDIR/err
 
     t="${f%%-*}"
 
