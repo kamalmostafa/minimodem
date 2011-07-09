@@ -1,3 +1,15 @@
+minimodem (0.7-1) unstable; urgency=low
+
+  * new amplitude-independent confidence algo ("worst divergence")
+  * fsk decode squelch reduced to 0.0
+  * rx rate analysis refinement
+  * new command-line parameters:
+      --auto-carrier (no longer default)
+      --confidence {value}
+      --quiet
+
+ -- Kamal Mostafa <kamal@whence.com>  Fri, 08 Jul 2011 18:34:58 -0700
+
 minimodem (0.6.1-1) unstable; urgency=low
 
   * debian Recommends: pulseaudio
