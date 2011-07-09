@@ -197,6 +197,7 @@ usage()
     "		    -M, --mark {mark_freq}\n"
     "		    -S, --space {space_freq}\n"
     "		    -T, --txstopbits {m.n}\n"
+    "		    -q, --quiet\n"
     "		    -V, --version\n"
     "		{baudmode}\n"
     "		    1200 : Bell202  1200 bps --ascii\n"
@@ -213,6 +214,7 @@ main( int argc, char*argv[] )
 {
     char *modem_mode = NULL;
     int TX_mode = -1;
+    int quiet_mode = 0;
     float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
@@ -252,9 +254,10 @@ main( int argc, char*argv[] )
 	    { "mark",		1, 0, 'M' },
 	    { "space",		1, 0, 'S' },
 	    { "txstopbits",	1, 0, 'T' },
+	    { "quiet",		0, 0, 'q' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:",
+	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:q",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -302,6 +305,9 @@ main( int argc, char*argv[] )
 	    case 'T':
 			bfsk_txstopbits = atof(optarg);
 			assert( bfsk_txstopbits > 0 );
+			break;
+	    case 'q':
+			quiet_mode = 1;
 			break;
 	    default:
 			usage();
@@ -636,9 +642,10 @@ main( int argc, char*argv[] )
 		    carrier_nsamples -= noconfidence_nsamples;
 		    if ( nframes_decoded > 0 )
 			carrier_nsamples += nsamples_per_bit * FSK_SCAN_LAG;
-		    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
-			nsamples_per_bit,
-			nframes_decoded, carrier_nsamples, confidence_total);
+		    if ( !quiet_mode )
+			report_no_carrier(fskp, sample_rate, bfsk_data_rate,
+			    nsamples_per_bit, nframes_decoded,
+			    carrier_nsamples, confidence_total);
 		    carrier = 0;
 		    carrier_nsamples = 0;
 		    confidence_total = 0;
@@ -655,14 +662,16 @@ main( int argc, char*argv[] )
 	}
 
 	if ( !carrier ) {
-	    if ( bfsk_data_rate >= 100 )
-		fprintf(stderr, "### CARRIER %u @ %.1f Hz ###\n",
-			(unsigned int)(bfsk_data_rate + 0.5),
-			fskp->b_mark * fskp->band_width);
-	    else
-		fprintf(stderr, "### CARRIER %.2f @ %.1f Hz ###\n",
-			bfsk_data_rate,
-			fskp->b_mark * fskp->band_width);
+	    if ( !quiet_mode ) {
+		if ( bfsk_data_rate >= 100 )
+		    fprintf(stderr, "### CARRIER %u @ %.1f Hz ###\n",
+			    (unsigned int)(bfsk_data_rate + 0.5),
+			    fskp->b_mark * fskp->band_width);
+		else
+		    fprintf(stderr, "### CARRIER %.2f @ %.1f Hz ###\n",
+			    bfsk_data_rate,
+			    fskp->b_mark * fskp->band_width);
+	    }
 	    carrier = 1;
 	    /* back up carrier_nsamples to account for the imminent advance */
 	    noconfidence_nsamples = frame_start_sample;
@@ -723,9 +732,10 @@ main( int argc, char*argv[] )
 	carrier_nsamples -= noconfidence_nsamples;
 	if ( nframes_decoded > 0 )
 	    carrier_nsamples += nsamples_per_bit * FSK_SCAN_LAG;
-	report_no_carrier(fskp, sample_rate, bfsk_data_rate,
-	    nsamples_per_bit,
-	    nframes_decoded, carrier_nsamples, confidence_total);
+	if ( !quiet_mode )
+	    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
+		nsamples_per_bit, nframes_decoded,
+		carrier_nsamples, confidence_total);
     }
 
     simpleaudio_close(sa);
