@@ -45,6 +45,9 @@ transmit mode: generate audio tones
 receive mode: decode audio tones
 .SH OPTIONS
 .TP
+.B \-a, \-\-auto-carrier
+automatically detect mark and space frequences from carrier
+.TP
 .B \-c, \-\-confidence threshold
 set receive confidence threshold (0.0 to 1.0, default 0.6)
 .TP
@@ -77,7 +80,7 @@ depending on the rate.
 	: Bell202  1200 bps \-\-ascii
 .TP
 .B     300
-	: Bell103   300 bps \-\-ascii (auto-rx-carrier)
+	: Bell103   300 bps \-\-ascii
 .TP
 .B  N>=100
 	: Bellxxx     N bps \-\-ascii

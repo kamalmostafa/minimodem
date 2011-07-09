@@ -188,6 +188,8 @@ usage()
     "		    -t, --tx, --transmit, --write\n"
     "		    -r, --rx, --receive,  --read     (default)\n"
     "		[options]\n"
+    "		    -a, --auto-carrier\n"
+    "		    -c, --confidence {threshold}\n"
     "		    -8, --ascii		ASCII  8-N-1\n"
     "		    -5, --baudot	Baudot 5-N-1\n"
     "		    -f, --file {filename.flac}\n"
@@ -198,7 +200,7 @@ usage()
     "		    -V, --version\n"
     "		{baudmode}\n"
     "		    1200 : Bell202  1200 bps --ascii\n"
-    "		     300 : Bell103   300 bps --ascii (auto-rx-carrier)\n"
+    "		     300 : Bell103   300 bps --ascii\n"
     "		  N>=100 : Bellxxx     N bps --ascii\n"
     "		   N<100 : RTTY        N bps --baudot\n"
     "		    rtty : RTTY    45.45 bps --baudot\n"
@@ -216,10 +218,11 @@ main( int argc, char*argv[] )
     unsigned int bfsk_space_f = 0;
     float bfsk_txstopbits = 0;
     unsigned int bfsk_n_data_bits = 0;
-    unsigned int autodetect_shift;
+    int autodetect_shift;
     char *filename = NULL;
     char *program_name;
 
+    float	carrier_autodetect_threshold = 0.0;
     float	bfsk_confidence_threshold = 0.6;
 
     program_name = strrchr(argv[0], '/');
@@ -241,6 +244,7 @@ main( int argc, char*argv[] )
 	    { "receive",	0, 0, 'r' },
 	    { "read",		0, 0, 'r' },
 	    { "confidence",	1, 0, 'c' },
+	    { "auto-carrier",	0, 0, 'a' },
 	    { "ascii",		0, 0, '8' },
 	    { "baudot",		0, 0, '5' },
 	    { "file",		1, 0, 'f' },
@@ -250,7 +254,7 @@ main( int argc, char*argv[] )
 	    { "txstopbits",	1, 0, 'T' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:85f:b:M:S:T:",
+	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -270,6 +274,9 @@ main( int argc, char*argv[] )
 			break;
 	    case 'c':
 			bfsk_confidence_threshold = atof(optarg);
+			break;
+	    case 'a':
+			carrier_autodetect_threshold = 0.001;
 			break;
 	    case 'f':
 			filename = optarg;
@@ -348,16 +355,15 @@ main( int argc, char*argv[] )
 	assert( 0 && bfsk_n_data_bits );
     }
 
-
     if ( bfsk_data_rate >= 400 ) {
 	/*
 	 * Bell 202:     baud=1200 mark=1200 space=2200
 	 */
-	autodetect_shift = 0;	// not used
+	autodetect_shift = -1000;
 	if ( bfsk_mark_f == 0 )
 	    bfsk_mark_f  = 1200;
 	if ( bfsk_space_f == 0 )
-	    bfsk_space_f = bfsk_mark_f + 1000;
+	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
 	if ( band_width == 0 )
 	    band_width = 200;
     } else if ( bfsk_data_rate >= 100 ) {
@@ -538,12 +544,9 @@ main( int argc, char*argv[] )
 	if ( samples_nvalid == 0 )
 	    break;
 
-#define CARRIER_AUTODETECT_THRESHOLD	0.001
-#ifdef CARRIER_AUTODETECT_THRESHOLD
 	/* Auto-detect carrier frequency */
 	static int carrier_band = -1;
-	// FIXME?: hardcoded 300 baud trigger for carrier autodetect
-	if ( bfsk_data_rate <= 300 && carrier_band < 0 ) {
+	if ( carrier_autodetect_threshold > 0.0 && carrier_band < 0 ) {
 	    unsigned int i;
 	    float nsamples_per_scan = nsamples_per_bit;
 	    if ( nsamples_per_scan > fskp->fftsize )
@@ -552,7 +555,7 @@ main( int argc, char*argv[] )
 						 i+=nsamples_per_scan ) {
 		carrier_band = fsk_detect_carrier(fskp,
 				    samplebuf+i, nsamples_per_scan,
-				    CARRIER_AUTODETECT_THRESHOLD);
+				    carrier_autodetect_threshold);
 		if ( carrier_band >= 0 )
 		    break;
 	    }
@@ -580,7 +583,6 @@ main( int argc, char*argv[] )
 
 	    fsk_set_tones_by_bandshift(fskp, /*b_mark*/carrier_band, b_shift);
 	}
-#endif
 
 	/*
 	 * The main processing algorithm: scan samplesbuf for FSK frames,
@@ -629,9 +631,7 @@ main( int argc, char*argv[] )
 	    // FIXME: explain
 	    if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
 	    {
-#ifdef CARRIER_AUTODETECT_THRESHOLD
 		carrier_band = -1;
-#endif
 		if ( carrier ) {
 		    carrier_nsamples -= noconfidence_nsamples;
 		    if ( nframes_decoded > 0 )

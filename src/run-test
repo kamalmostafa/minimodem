@@ -27,8 +27,10 @@ do
     txtnum="${i##*/}"
     txtnum="${txtnum%%-*}"
 
-    echo TEST	$MINIMODEM -f "$i" "$rate" 
-    $MINIMODEM -f "$i" "$rate"  >$TMPDIR/out 2>$TMPDIR/err
+    unset flags
+    [ $rate = rtty ] || [ $rate -le 300 ] && flags="--auto-carrier"
+    echo TEST	$MINIMODEM $flags -f "$i" "$rate" 
+    $MINIMODEM $flags -f "$i" "$rate"  >$TMPDIR/out 2>$TMPDIR/err
 
     t="${f%%-*}"
 
