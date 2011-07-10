@@ -100,12 +100,23 @@ simpleaudio_open_stream_pulseaudio(
 	.channels = 1,
     };
 
+    pa_buffer_attr attr = {
+	.maxlength = (uint32_t)-1,
+	.tlength = (uint32_t)-1,
+	.prebuf = (uint32_t)-1,
+	.minreq = (uint32_t)-1,
+	.fragsize = (uint32_t)-1,
+    };
+
+    /* set for lowest possible latency */
+    attr.fragsize = 0;
+
     /* Create the playback or recording stream */
     pa_simple *s;
     s = pa_simple_new(NULL, app_name,
 	    sa_stream_direction == SA_STREAM_RECORD ? PA_STREAM_RECORD : PA_STREAM_PLAYBACK,
 	    NULL, stream_name,
-	    &ss, NULL, NULL, &error);
+	    &ss, NULL, &attr, &error);
     if ( !s ) {
         fprintf(stderr, "E: Cannot create PulseAudio stream: %s\n ", pa_strerror(error));
         return NULL;
