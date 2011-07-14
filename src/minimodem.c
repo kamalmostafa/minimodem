@@ -27,6 +27,8 @@
 #include <ctype.h>
 #include <math.h>
 #include <assert.h>
+#include <signal.h>
+#include <sys/time.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -86,6 +88,32 @@ framebits_decode_baudot( char *dataout_p, unsigned int dataout_size,
 }
 
 
+
+int		tx_transmitting = 0;
+int		tx_leader_bits_len = 2;
+int		tx_trailer_bits_len = 2;
+
+simpleaudio	*tx_sa_out;
+float		tx_bfsk_mark_f;
+unsigned int	tx_bit_nsamples;
+
+void
+tx_stop_transmit_sighandler( int sig )
+{
+    // fprintf(stderr, "alarm\n");
+
+    int j;
+    for ( j=0; j<tx_trailer_bits_len; j++ )
+	simpleaudio_tone(tx_sa_out, tx_bfsk_mark_f, tx_bit_nsamples);
+
+    // 0.5 sec of zero samples to flush - FIXME lame
+    size_t sample_rate = simpleaudio_get_rate(tx_sa_out);
+    simpleaudio_tone(tx_sa_out, 0, sample_rate/2);
+
+    tx_transmitting = 0;
+}
+
+
 /*
  * rudimentary BFSK transmitter
  */
@@ -103,15 +131,35 @@ static void fsk_transmit_stdin(
     size_t bit_nsamples = sample_rate / data_rate + 0.5;
     int c;
 
-    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);    // 2.0 bit leader
-    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
+    tx_sa_out = sa_out;
+    tx_bfsk_mark_f = bfsk_mark_f;
+    tx_bit_nsamples = bit_nsamples;
+
+    // one-shot
+    struct itimerval itv = {
+	{0, 0},						// it_interval
+	{0, 1000000/(data_rate+data_rate*0.03) }	// it_value
+    };
+
+    signal(SIGALRM, tx_stop_transmit_sighandler);
+
+    tx_transmitting = 0;
     while ( (c = getchar()) != EOF )
     {
+	setitimer(ITIMER_REAL, NULL, NULL);
 
+	// fprintf(stderr, "<c=%d>", c);
 	unsigned int nwords;
 	unsigned int bits[2];
 	nwords = framebits_encoder(bits, c);
 
+	if ( !tx_transmitting )
+	{
+	    tx_transmitting = 1;
+	    int j;
+	    for ( j=0; j<tx_leader_bits_len; j++ )
+		simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
+	}
 	unsigned int j;
 	for ( j=0; j<nwords; j++ ) {
 	    simpleaudio_tone(sa_out, bfsk_space_f, bit_nsamples);	// start
@@ -124,13 +172,14 @@ static void fsk_transmit_stdin(
 	    simpleaudio_tone(sa_out, bfsk_mark_f,
 				bit_nsamples * bfsk_txstopbits);	// stop
 	}
+
+	setitimer(ITIMER_REAL, &itv, NULL);
     }
-    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);    // 2.0 bit tail
-    simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
+    setitimer(ITIMER_REAL, NULL, NULL);
+    if ( !tx_transmitting )
+	return;
 
-    // 0.5 sec of zero samples to flush - FIXME lame
-    simpleaudio_tone(sa_out, 0, sample_rate/2);
-
+    tx_stop_transmit_sighandler(0);
 }
 
 
