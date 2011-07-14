@@ -70,6 +70,7 @@ sa_pulse_write( simpleaudio *sa, float *buf, size_t nframes )
 static void
 sa_pulse_close( simpleaudio *sa )
 {
+    pa_simple_drain(sa->backend_handle, NULL);
     pa_simple_free(sa->backend_handle);
 }
 
@@ -108,8 +109,10 @@ simpleaudio_open_stream_pulseaudio(
 	.fragsize = (uint32_t)-1,
     };
 
-    /* set for lowest possible latency */
-    attr.fragsize = 0;
+    attr.fragsize = 0;	/* set for lowest possible capture latency */
+
+    attr.prebuf = 1;	/* do not start stream until data available*/
+    attr.tlength = 0;	/* set lowest possible playback latency */
 
     /* Create the playback or recording stream */
     pa_simple *s;
