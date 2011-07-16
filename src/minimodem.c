@@ -414,9 +414,9 @@ main( int argc, char*argv[] )
 	/*
 	 * Bell 202:     baud=1200 mark=1200 space=2200
 	 */
-	autodetect_shift = -1000;
+	autodetect_shift = - ( bfsk_data_rate * 5 / 6 );
 	if ( bfsk_mark_f == 0 )
-	    bfsk_mark_f  = 1200;
+	    bfsk_mark_f  = bfsk_data_rate / 2 + 600;
 	if ( bfsk_space_f == 0 )
 	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
 	if ( band_width == 0 )
