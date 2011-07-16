@@ -1,3 +1,12 @@
+minimodem (0.8-1) unstable; urgency=low
+
+  * auto select reasonable default mark/space for high baud rates
+  * low-latency PulseAudio capture (for that old-timey modem feel)
+  * fix --tx stdin interactive behavior
+  * default 1.5 stop bits for rtty only
+
+ -- Kamal Mostafa <kamal@whence.com>  Fri, 15 Jul 2011 19:25:05 -0700
+
 minimodem (0.7-1) unstable; urgency=low
 
   * new amplitude-independent confidence algo ("worst divergence")
