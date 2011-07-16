@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MINIMODEM 1 "June 22, 2011"
+.TH MINIMODEM 1 "July 15, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -77,7 +77,8 @@ print program version
 The required \fI{baudmode}\fR parameter may be any floating-point value to
 specify a baud rate, or the string "rtty".
 The \fI{baudmode}\fR also implies certain other parameter defaults
-depending on the rate.
+depending on the rate, including standard (or at least reasonable)
+default mark and space tone frequencies.
 .TP
 .B    1200
 	: Bell202  1200 bps \-\-ascii
@@ -85,14 +86,11 @@ depending on the rate.
 .B     300
 	: Bell103   300 bps \-\-ascii
 .TP
-.B  N>=100
-	: Bellxxx     N bps \-\-ascii
-.TP
-.B   N<100
-	: RTTY        N bps \-\-baudot
-.TP
 .B    rtty
-	: RTTY    45.45 bps \-\-baudot
+	: RTTY    45.45 bps \-\-baudot \-\-txstopbits 1.5
+.TP
+.B  {any floating point value N}
+	: Bell-like   N bps \-\-ascii
 .SH EXAMPLES
 .TP
 .B minimodem --tx 100
@@ -103,6 +101,12 @@ and receive 100 baud tones on another nearby computer.
 .TP
 .B minimodem --rx --auto-carrier rtty
 Decode amateur radio RTTY signals (listen near 14.085 MHz).
+.TP
+.B minimodem --tx 0.5
+Experiment with very low baud rates (works in noisy conditions).
+.TP
+.B minimodem --tx 12000
+Experiment with very high baud rates works (works with audio files).
 .SH NOTES
 .B minimodem
 does not decode AX.25 framed packets.
@@ -110,6 +114,11 @@ does not decode AX.25 framed packets.
 .B minimodem
 does not support modem control ("AT") commands, nor does it produce
 DTMF telephone dialing tones.
+.SH VERSION
+This page documents
+.B minimodem
+version @PACKAGE_VERSION@.
+The latest version is available at <http://www.whence.com/minimodem>.
 .SH AUTHOR
 .B minimodem
 was written by Kamal Mostafa <kamal@whence.com>.

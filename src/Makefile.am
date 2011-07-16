@@ -26,7 +26,7 @@ bin_PROGRAMS = minimodem
 
 dist_man_MANS = minimodem.1
 
-EXTRA_DIST = self-test testcases/* # run-test
+EXTRA_DIST = minimodem.1.html self-test testcases/* # run-test
 
 TESTS = testcases/test.*
 
@@ -44,4 +44,9 @@ BAUDOT_SRC = baudot.h baudot.c
 
 minimodem_LDADD = $(DEPS_LIBS)
 minimodem_SOURCES = minimodem.c $(BAUDOT_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
+
+
+minimodem.1.html: minimodem.1 Makefile
+	man --html=cat ./minimodem.1 | sed '5,$$ s:\(http\:[^ &]*\):<A HREF="\1">\1</A>:g' > $@
+	[ -s $@ ] || { rm $@; exit 1; }
 

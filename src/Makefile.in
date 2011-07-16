@@ -54,14 +54,14 @@ POST_UNINSTALL = :
 bin_PROGRAMS = minimodem$(EXEEXT)
 subdir = src
 DIST_COMMON = $(dist_man_MANS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+	$(srcdir)/Makefile.in $(srcdir)/minimodem.1.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = minimodem.1
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"
 PROGRAMS = $(bin_PROGRAMS)
@@ -204,7 +204,7 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall # -Werror
 INCLUDES = $(DEPS_CFLAGS)
 dist_man_MANS = minimodem.1
-EXTRA_DIST = self-test testcases/* # run-test
+EXTRA_DIST = minimodem.1.html self-test testcases/* # run-test
 TESTS = testcases/test.*
 SIMPLEAUDIO_SRC = \
 	simpleaudio.h		\
@@ -252,6 +252,8 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+minimodem.1: $(top_builddir)/config.status $(srcdir)/minimodem.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -666,6 +668,10 @@ uninstall-man: uninstall-man1
 	ps ps-am tags uninstall uninstall-am uninstall-binPROGRAMS \
 	uninstall-man uninstall-man1
 
+
+minimodem.1.html: minimodem.1 Makefile
+	man --html=cat ./minimodem.1 | sed '5,$$ s:\(http\:[^ &]*\):<A HREF="\1">\1</A>:g' > $@
+	[ -s $@ ] || { rm $@; exit 1; }
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

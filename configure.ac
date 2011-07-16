@@ -49,6 +49,7 @@ AC_SUBST(DEPS_LIBS)
 AC_CONFIG_FILES([
 		 Makefile
                  src/Makefile
+                 src/minimodem.1
 		])
 #                 testdata/Makefile
 AC_OUTPUT
