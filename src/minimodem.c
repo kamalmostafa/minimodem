@@ -392,6 +392,8 @@ main( int argc, char*argv[] )
 	bfsk_data_rate = 45.45;
 	if ( bfsk_n_data_bits == 0 )
 	    bfsk_n_data_bits = 5;
+	if ( bfsk_txstopbits == 0 )
+	    bfsk_txstopbits = 1.5;
     } else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
@@ -442,8 +444,6 @@ main( int argc, char*argv[] )
 	    bfsk_mark_f  = 1585;
 	if ( bfsk_space_f == 0 )
 	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
-	if ( bfsk_txstopbits == 0 )
-	    bfsk_txstopbits = 1.5;	// conventional for RTTY (?)
 	if ( band_width == 0 ) {
 	    band_width = 10;	// FIXME chosen arbitrarily
 	}
