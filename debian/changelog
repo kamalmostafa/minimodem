@@ -1,3 +1,9 @@
+minimodem (0.8.1-1) unstable; urgency=low
+
+  * fix --tx stdin non-interactive behavior (no timeout for --file)
+
+ -- Kamal Mostafa <kamal@whence.com>  Fri, 15 Jul 2011 20:37:38 -0700
+
 minimodem (0.8-1) unstable; urgency=low
 
   * auto select reasonable default mark/space for high baud rates
