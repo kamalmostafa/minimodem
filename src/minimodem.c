@@ -119,6 +119,7 @@ tx_stop_transmit_sighandler( int sig )
  */
 static void fsk_transmit_stdin(
 	simpleaudio *sa_out,
+	int tx_interactive,
 	float data_rate,
 	float bfsk_mark_f,
 	float bfsk_space_f,
@@ -138,15 +139,17 @@ static void fsk_transmit_stdin(
     // one-shot
     struct itimerval itv = {
 	{0, 0},						// it_interval
-	{0, 1000000/(data_rate+data_rate*0.03) }	// it_value
+	{0, 1000000/(float)(data_rate+data_rate*0.03) }	// it_value
     };
 
-    signal(SIGALRM, tx_stop_transmit_sighandler);
+    if ( tx_interactive )
+	signal(SIGALRM, tx_stop_transmit_sighandler);
 
     tx_transmitting = 0;
     while ( (c = getchar()) != EOF )
     {
-	setitimer(ITIMER_REAL, NULL, NULL);
+	if ( tx_interactive )
+	    setitimer(ITIMER_REAL, NULL, NULL);
 
 	// fprintf(stderr, "<c=%d>", c);
 	unsigned int nwords;
@@ -173,9 +176,13 @@ static void fsk_transmit_stdin(
 				bit_nsamples * bfsk_txstopbits);	// stop
 	}
 
-	setitimer(ITIMER_REAL, &itv, NULL);
+	if ( tx_interactive )
+	    setitimer(ITIMER_REAL, &itv, NULL);
     }
-    setitimer(ITIMER_REAL, NULL, NULL);
+    if ( tx_interactive ) {
+	setitimer(ITIMER_REAL, NULL, NULL);
+	signal(SIGALRM, SIG_DFL);
+    }
     if ( !tx_transmitting )
 	return;
 
@@ -463,8 +470,10 @@ main( int argc, char*argv[] )
     if ( TX_mode ) {
 
 	simpleaudio *sa_out = NULL;
+	int tx_interactive = 1;
 
 	if ( filename ) {
+	    tx_interactive = 0;
 	    sa_out = simpleaudio_open_stream_sndfile(SA_STREAM_PLAYBACK,
 					filename);
 	    if ( ! sa_out )
@@ -476,7 +485,7 @@ main( int argc, char*argv[] )
 	if ( ! sa_out )
 	    return 1;
 
-	fsk_transmit_stdin(sa_out,
+	fsk_transmit_stdin(sa_out, tx_interactive,
 				bfsk_data_rate,
 				bfsk_mark_f, bfsk_space_f,
 				bfsk_n_data_bits,
