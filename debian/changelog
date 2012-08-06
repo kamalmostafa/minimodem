@@ -1,3 +1,10 @@
+minimodem (0.8.2-1) unstable; urgency=low
+
+  * configure: new opts --without-{pulseaudio,sndfile}
+  * debian/copyright: update copyright format
+
+ -- Kamal Mostafa <kamal@whence.com>  Mon, 06 Aug 2012 14:47:05 -0700
+
 minimodem (0.8.1-1) unstable; urgency=low
 
   * fix --tx stdin non-interactive behavior (no timeout for --file)
