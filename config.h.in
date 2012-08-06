@@ -21,5 +21,11 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Define to 1 to enable pulseaudio support */
+#undef USE_PULSEAUDIO
+
+/* Define to 1 to enable sndfile support */
+#undef USE_SNDFILE
+
 /* Version number of package */
 #undef VERSION

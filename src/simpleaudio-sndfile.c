@@ -17,6 +17,11 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#if USE_SNDFILE
 
 #include <stdio.h>
 #include <malloc.h>
@@ -168,3 +173,4 @@ simpleaudio_open_stream_sndfile(
     return sa;
 }
 
+#endif /* USE_SNDFILE */

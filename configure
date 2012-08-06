@@ -656,6 +656,8 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
+with_pulseaudio
+with_sndfile
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1288,6 +1290,12 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
+
+Optional Packages:
+  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
+  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --without-pulseaudio    build without pulseaudio support
+  --without-sndfile       build without sndfile support
 
 Some influential environment variables:
   CC          C compiler command
@@ -3276,6 +3284,54 @@ fi
 
 # AC_PROG_RANLIB
 
+
+# Configure dependency libs
+
+#   fftw3f
+deps_packages+=" fftw3f"
+
+#   pulseaudio
+
+# Check whether --with-pulseaudio was given.
+if test "${with_pulseaudio+set}" = set; then :
+  withval=$with_pulseaudio;
+fi
+
+if test "x$with_pulseaudio" == "xno"; then :
+  # then
+	use_pulseaudio=0
+else
+  # else
+	use_pulseaudio=1
+	deps_packages+=" libpulse-simple"
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define USE_PULSEAUDIO $use_pulseaudio
+_ACEOF
+
+
+#   sndfile
+
+# Check whether --with-sndfile was given.
+if test "${with_sndfile+set}" = set; then :
+  withval=$with_sndfile;
+fi
+
+if test "x$with_sndfile" == "xno"; then :
+  # then
+	use_sndfile=0
+else
+  # else
+	use_sndfile=1
+	deps_packages+=" sndfile"
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define USE_SNDFILE $use_sndfile
+_ACEOF
+
+
 # Checks for libraries.
 
 
@@ -3406,24 +3462,12 @@ if test -n "$DEPS_CFLAGS"; then
     pkg_cv_DEPS_CFLAGS="$DEPS_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"
-		libpulse-simple
-		sndfile
-		fftw3f
-			\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "
-		libpulse-simple
-		sndfile
-		fftw3f
-			") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \" \$deps_packages \""; } >&5
+  ($PKG_CONFIG --exists --print-errors " $deps_packages ") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_DEPS_CFLAGS=`$PKG_CONFIG --cflags "
-		libpulse-simple
-		sndfile
-		fftw3f
-			" 2>/dev/null`
+  pkg_cv_DEPS_CFLAGS=`$PKG_CONFIG --cflags " $deps_packages " 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -3435,24 +3479,12 @@ if test -n "$DEPS_LIBS"; then
     pkg_cv_DEPS_LIBS="$DEPS_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"
-		libpulse-simple
-		sndfile
-		fftw3f
-			\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "
-		libpulse-simple
-		sndfile
-		fftw3f
-			") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \" \$deps_packages \""; } >&5
+  ($PKG_CONFIG --exists --print-errors " $deps_packages ") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_DEPS_LIBS=`$PKG_CONFIG --libs "
-		libpulse-simple
-		sndfile
-		fftw3f
-			" 2>/dev/null`
+  pkg_cv_DEPS_LIBS=`$PKG_CONFIG --libs " $deps_packages " 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -3473,26 +3505,14 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        DEPS_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "
-		libpulse-simple
-		sndfile
-		fftw3f
-			" 2>&1`
+	        DEPS_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs " $deps_packages " 2>&1`
         else
-	        DEPS_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "
-		libpulse-simple
-		sndfile
-		fftw3f
-			" 2>&1`
+	        DEPS_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs " $deps_packages " 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$DEPS_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (
-		libpulse-simple
-		sndfile
-		fftw3f
-			) were not met:
+	as_fn_error $? "Package requirements ( $deps_packages ) were not met:
 
 $DEPS_PKG_ERRORS
 
@@ -3524,6 +3544,7 @@ else
 $as_echo "yes" >&6; }
 
 fi
+
 
 
 
@@ -5002,3 +5023,14 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: minimodem 0.8.1 configuration summary:
+	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-sndfile        $with_sndfile ($use_sndfile)
+	deps_packages:        $deps_packages
+" >&5
+$as_echo "minimodem 0.8.1 configuration summary:
+	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-sndfile        $with_sndfile ($use_sndfile)
+	deps_packages:        $deps_packages
+" >&6; }

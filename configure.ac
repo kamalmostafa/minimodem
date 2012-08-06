@@ -27,12 +27,39 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_CC
 # AC_PROG_RANLIB
 
+
+# Configure dependency libs
+
+#   fftw3f
+deps_packages+=" fftw3f"
+
+#   pulseaudio
+AC_ARG_WITH([pulseaudio],
+    AS_HELP_STRING([--without-pulseaudio], [build without pulseaudio support]))
+AS_IF([test "x$with_pulseaudio" == "xno"],
+        # then
+	use_pulseaudio=0,
+	# else
+	use_pulseaudio=1
+	deps_packages+=" libpulse-simple")
+AC_DEFINE_UNQUOTED(USE_PULSEAUDIO, $use_pulseaudio,
+	[Define to 1 to enable pulseaudio support])
+
+#   sndfile
+AC_ARG_WITH([sndfile],
+    AS_HELP_STRING([--without-sndfile], [build without sndfile support]))
+AS_IF([test "x$with_sndfile" == "xno"],
+        # then
+	use_sndfile=0,
+	# else
+	use_sndfile=1
+	deps_packages+=" sndfile")
+AC_DEFINE_UNQUOTED(USE_SNDFILE, $use_sndfile,
+	[Define to 1 to enable sndfile support])
+
 # Checks for libraries.
-PKG_CHECK_MODULES(DEPS, [
-		libpulse-simple
-		sndfile
-		fftw3f
-			])
+PKG_CHECK_MODULES(DEPS, [ $deps_packages ])
+
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)
 
@@ -53,3 +80,9 @@ AC_CONFIG_FILES([
 		])
 #                 testdata/Makefile
 AC_OUTPUT
+
+AC_MSG_RESULT([PKG_NAME PKG_VERSION configuration summary:
+	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-sndfile        $with_sndfile ($use_sndfile)
+	deps_packages:        $deps_packages
+])
