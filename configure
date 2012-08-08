@@ -656,6 +656,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
+with_alsa
 with_pulseaudio
 with_sndfile
 '
@@ -1294,6 +1295,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --without-alsa          build without ALSA support
   --without-pulseaudio    build without pulseaudio support
   --without-sndfile       build without sndfile support
 
@@ -3290,6 +3292,28 @@ fi
 #   fftw3f
 deps_packages+=" fftw3f"
 
+#   ALSA
+
+# Check whether --with-alsa was given.
+if test "${with_alsa+set}" = set; then :
+  withval=$with_alsa;
+fi
+
+if test "x$with_alsa" != "xyes"; then :
+  # then
+	use_alsa=0
+else
+  # else
+	use_alsa=1
+	with_pulseaudio=no	# For now, ALSA precludes pulseaudio
+	deps_packages+=" alsa"
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define USE_ALSA $use_alsa
+_ACEOF
+
+
 #   pulseaudio
 
 # Check whether --with-pulseaudio was given.
@@ -5026,11 +5050,13 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: minimodem 0.8.2 configuration summary:
 	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-alsa           $with_alsa ($use_alsa)
 	--with-sndfile        $with_sndfile ($use_sndfile)
 	deps_packages:        $deps_packages
 " >&5
 $as_echo "minimodem 0.8.2 configuration summary:
 	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-alsa           $with_alsa ($use_alsa)
 	--with-sndfile        $with_sndfile ($use_sndfile)
 	deps_packages:        $deps_packages
 " >&6; }

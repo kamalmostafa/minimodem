@@ -372,17 +372,27 @@ main( int argc, char*argv[] )
     if ( TX_mode == -1 )
 	TX_mode = 0;
 
-#if !(USE_PULSEAUDIO || USE_SNDFILE)
-#error At least one of {USE_PULSEAUDIO,USE_SNDFILE} must be enabled
+#if !(USE_PULSEAUDIO || USE_ALSA || USE_SNDFILE)
+#error At least one of {USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE} must be enabled!
 #endif
+
+#if (USE_PULSEAUDIO && USE_ALSA)
+#error For now, only one of {USE_PULSEAUDIO,USE_ALSA} can be enabled (FIXME)!
+#endif
+#if USE_PULSEAUDIO
+#define simpleaudio_open_system_audio simpleaudio_open_stream_pulseaudio
+#elif USE_ALSA
+#define simpleaudio_open_system_audio simpleaudio_open_stream_alsa
+#endif
+
     if ( filename ) {
 #if !USE_SNDFILE
 	fprintf(stderr, "E: This build of minimodem was configured without sndfile,\nE:   so the --file flag is not supported.\n");
 	exit(1);
 #endif
     } else {
-#if !USE_PULSEAUDIO
-	fprintf(stderr, "E: this build of minimodem was configured without pulseaudio,\nE:   so only the --file mode is supported.\n");
+#ifndef simpleaudio_open_system_audio
+	fprintf(stderr, "E: this build of minimodem was configured without system audio support,\nE:   so only the --file mode is supported.\n");
 	exit(1);
 #endif
     }
@@ -496,9 +506,10 @@ main( int argc, char*argv[] )
 	    if ( ! sa_out )
 		return 1;
 	}
-#if USE_PULSEAUDIO
+
+#ifdef simpleaudio_open_system_audio
 	if ( ! sa_out )
-	    sa_out = simpleaudio_open_stream_pulseaudio(SA_STREAM_PLAYBACK,
+	    sa_out = simpleaudio_open_system_audio(SA_STREAM_PLAYBACK,
 					program_name, "output audio");
 #endif
 	if ( ! sa_out )
@@ -526,10 +537,10 @@ main( int argc, char*argv[] )
 	if ( ! sa )
 	    return 1;
     }
-#if USE_PULSEAUDIO
+#ifdef simpleaudio_open_system_audio
     if ( ! sa )
-	sa = simpleaudio_open_stream_pulseaudio(SA_STREAM_RECORD,
-				    program_name, "input audio");
+	sa = simpleaudio_open_system_audio(SA_STREAM_RECORD,
+				program_name, "input audio");
 #endif
     if ( !sa )
         return 1;

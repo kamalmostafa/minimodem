@@ -36,6 +36,7 @@ SIMPLEAUDIO_SRC = \
 	simpleaudio.c		\
 	simple-tone-generator.c \
 	simpleaudio-pulse.c	\
+	simpleaudio-alsa.c	\
 	simpleaudio-sndfile.c
 
 FSK_SRC = fsk.h fsk.c

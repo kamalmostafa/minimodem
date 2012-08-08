@@ -33,6 +33,19 @@ AC_PROG_CC
 #   fftw3f
 deps_packages+=" fftw3f"
 
+#   ALSA
+AC_ARG_WITH([alsa],
+    AS_HELP_STRING([--without-alsa], [build without ALSA support]))
+AS_IF([test "x$with_alsa" != "xyes"],
+        # then
+	use_alsa=0,
+	# else
+	use_alsa=1
+	with_pulseaudio=no	# For now, ALSA precludes pulseaudio
+	deps_packages+=" alsa")
+AC_DEFINE_UNQUOTED(USE_ALSA, $use_alsa,
+	[Define to 1 to enable ALSA support])
+
 #   pulseaudio
 AC_ARG_WITH([pulseaudio],
     AS_HELP_STRING([--without-pulseaudio], [build without pulseaudio support]))
@@ -83,6 +96,7 @@ AC_OUTPUT
 
 AC_MSG_RESULT([PKG_NAME PKG_VERSION configuration summary:
 	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-alsa           $with_alsa ($use_alsa)
 	--with-sndfile        $with_sndfile ($use_sndfile)
 	deps_packages:        $deps_packages
 ])
