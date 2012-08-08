@@ -45,11 +45,12 @@ sa_alsa_read( simpleaudio *sa, float *buf, size_t nframes )
     snd_pcm_t *pcm = (snd_pcm_t *)sa->backend_handle;
     while ( frames_read < nframes ) {
 	ssize_t r;
-	r = snd_pcm_readi(pcm, buf, nframes-frames_read);
+	r = snd_pcm_readi(pcm, buf+frames_read*sa->backend_framesize, nframes-frames_read);
 	if (r < 0) {
 	    /* silently recover from e.g. overruns, and try once more */
+	    fprintf(stderr, "snd_pcm_readi: reset for %s\n", snd_strerror(r));
 	    snd_pcm_prepare(pcm);
-	    r = snd_pcm_readi(pcm, buf, nframes-frames_read);
+	    r = snd_pcm_readi(pcm, buf+frames_read*sa->backend_framesize, nframes-frames_read);
 	}
 	if (r < 0) {
 	    fprintf(stderr, "snd_pcm_readi: %s\n", snd_strerror(r));
@@ -66,18 +67,23 @@ sa_alsa_read( simpleaudio *sa, float *buf, size_t nframes )
 static ssize_t
 sa_alsa_write( simpleaudio *sa, float *buf, size_t nframes )
 {
-    ssize_t frames_written;
+    ssize_t frames_written = 0;
     snd_pcm_t *pcm = (snd_pcm_t *)sa->backend_handle;
-    frames_written = snd_pcm_writei(pcm, buf, nframes);
-    if (frames_written < 0) {
-	/* silently recover from e.g. underruns, and try once more */
-	snd_pcm_recover(pcm, frames_written, 1 /*silent*/);
-	frames_written = snd_pcm_writei(pcm, buf, nframes);
+    while ( frames_written < nframes ) {
+	ssize_t r;
+	r = snd_pcm_writei(pcm, buf+frames_written*sa->backend_framesize, nframes-frames_written);
+	if (r < 0) {
+	    /* silently recover from e.g. underruns, and try once more */
+	    snd_pcm_recover(pcm, r, 0 /*silent*/);
+	    r = snd_pcm_writei(pcm, buf+frames_written*sa->backend_framesize, nframes-frames_written);
+	}
+	if (r < 0) {
+	    fprintf(stderr, "E: %s\n", snd_strerror(frames_written));
+	    return -1;
+	}
+	frames_written += r;
     }
-    if (frames_written < 0) {
-	fprintf(stderr, "E: %s\n", snd_strerror(frames_written));
-	return -1;
-    }
+    assert (frames_written == nframes);
     return frames_written;
 }
 
@@ -117,6 +123,7 @@ simpleaudio_open_stream_alsa(
 	return NULL;
     }
 
+    /* set up ALSA hardware params */
     error = snd_pcm_set_params(pcm,
 		SND_PCM_FORMAT_FLOAT,
 		SND_PCM_ACCESS_RW_INTERLEAVED,
@@ -124,6 +131,23 @@ simpleaudio_open_stream_alsa(
 		rate,
 		1 /* soft_resample (allow) */,
 		0 /* latency */);
+    if (error) {
+	fprintf(stderr, "E: %s\n", snd_strerror(error));
+	snd_pcm_close(pcm);
+	return NULL;
+    }
+
+    /* set ALSA's "stop threshold" to 0.1 sec (rate/10) to avoid underruns */
+    snd_pcm_sw_params_t  *swparams;
+    snd_pcm_sw_params_alloca(&swparams);
+    error = snd_pcm_sw_params_current(pcm, swparams);
+    if (error) {
+	fprintf(stderr, "E: %s\n", snd_strerror(error));
+	snd_pcm_close(pcm);
+	return NULL;
+    }
+    snd_pcm_sw_params_set_stop_threshold(pcm, swparams, rate/10);
+    error = snd_pcm_sw_params(pcm, swparams);
     if (error) {
 	fprintf(stderr, "E: %s\n", snd_strerror(error));
 	snd_pcm_close(pcm);
