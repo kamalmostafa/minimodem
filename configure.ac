@@ -36,12 +36,11 @@ deps_packages+=" fftw3f"
 #   ALSA
 AC_ARG_WITH([alsa],
     AS_HELP_STRING([--without-alsa], [build without ALSA support]))
-AS_IF([test "x$with_alsa" != "xyes"],
+AS_IF([test "x$with_alsa" == "xno"],
         # then
 	use_alsa=0,
 	# else
 	use_alsa=1
-	with_pulseaudio=no	# For now, ALSA precludes pulseaudio
 	deps_packages+=" alsa")
 AC_DEFINE_UNQUOTED(USE_ALSA, $use_alsa,
 	[Define to 1 to enable ALSA support])

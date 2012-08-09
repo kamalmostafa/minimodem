@@ -255,6 +255,7 @@ usage()
     "		    -T, --txstopbits {m.n}\n"
     "		    -q, --quiet\n"
     "		    -V, --version\n"
+    "		    -A, --alsa\n"
     "		{baudmode}\n"
     "		    1200 : Bell202  1200 bps --ascii\n"
     "		     300 : Bell103   300 bps --ascii\n"
@@ -282,6 +283,20 @@ main( int argc, char*argv[] )
 
     float	carrier_autodetect_threshold = 0.0;
     float	bfsk_confidence_threshold = 0.6;
+
+    simpleaudio * (*simpleaudio_open_system_audio)() = NULL;
+
+    /* configure the default system audio mechanism */
+#if USE_PULSEAUDIO
+    simpleaudio_open_system_audio = simpleaudio_open_stream_pulseaudio;
+#elif USE_ALSA
+    simpleaudio_open_system_audio = simpleaudio_open_stream_alsa;
+#else
+# define _MINIMODEM_NO_SYSTEM_AUDIO
+# if !USE_SNDFILE
+#  error At least one of {USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE} must be enabled!
+# endif
+#endif
 
     program_name = strrchr(argv[0], '/');
     if ( program_name )
@@ -311,9 +326,10 @@ main( int argc, char*argv[] )
 	    { "space",		1, 0, 'S' },
 	    { "txstopbits",	1, 0, 'T' },
 	    { "quiet",		0, 0, 'q' },
+	    { "alsa",		0, 0, 'A' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:q",
+	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qA",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -365,6 +381,14 @@ main( int argc, char*argv[] )
 	    case 'q':
 			quiet_mode = 1;
 			break;
+	    case 'A':
+#if USE_ALSA
+			simpleaudio_open_system_audio = simpleaudio_open_stream_alsa;
+#else
+			fprintf(stderr, "E: This build of minimodem was configured without alsa support.\n");
+			exit(1);
+#endif
+			break;
 	    default:
 			usage();
 	}
@@ -372,26 +396,13 @@ main( int argc, char*argv[] )
     if ( TX_mode == -1 )
 	TX_mode = 0;
 
-#if !(USE_PULSEAUDIO || USE_ALSA || USE_SNDFILE)
-#error At least one of {USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE} must be enabled!
-#endif
-
-#if (USE_PULSEAUDIO && USE_ALSA)
-#error For now, only one of {USE_PULSEAUDIO,USE_ALSA} can be enabled (FIXME)!
-#endif
-#if USE_PULSEAUDIO
-#define simpleaudio_open_system_audio simpleaudio_open_stream_pulseaudio
-#elif USE_ALSA
-#define simpleaudio_open_system_audio simpleaudio_open_stream_alsa
-#endif
-
     if ( filename ) {
 #if !USE_SNDFILE
 	fprintf(stderr, "E: This build of minimodem was configured without sndfile,\nE:   so the --file flag is not supported.\n");
 	exit(1);
 #endif
     } else {
-#ifndef simpleaudio_open_system_audio
+#ifdef _MINIMODEM_NO_SYSTEM_AUDIO
 	fprintf(stderr, "E: this build of minimodem was configured without system audio support,\nE:   so only the --file mode is supported.\n");
 	exit(1);
 #endif
@@ -507,11 +518,9 @@ main( int argc, char*argv[] )
 		return 1;
 	}
 
-#ifdef simpleaudio_open_system_audio
 	if ( ! sa_out )
 	    sa_out = simpleaudio_open_system_audio(SA_STREAM_PLAYBACK,
 					program_name, "output audio");
-#endif
 	if ( ! sa_out )
 	    return 1;
 
@@ -537,11 +546,10 @@ main( int argc, char*argv[] )
 	if ( ! sa )
 	    return 1;
     }
-#ifdef simpleaudio_open_system_audio
+
     if ( ! sa )
 	sa = simpleaudio_open_system_audio(SA_STREAM_RECORD,
 				program_name, "input audio");
-#endif
     if ( !sa )
         return 1;
 

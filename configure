@@ -3299,13 +3299,12 @@ if test "${with_alsa+set}" = set; then :
   withval=$with_alsa;
 fi
 
-if test "x$with_alsa" != "xyes"; then :
+if test "x$with_alsa" == "xno"; then :
   # then
 	use_alsa=0
 else
   # else
 	use_alsa=1
-	with_pulseaudio=no	# For now, ALSA precludes pulseaudio
 	deps_packages+=" alsa"
 fi
 
