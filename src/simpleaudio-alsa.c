@@ -130,7 +130,7 @@ simpleaudio_open_stream_alsa(
 		channels,
 		rate,
 		1 /* soft_resample (allow) */,
-		0 /* latency */);
+		-1 /* latency */);
     if (error) {
 	fprintf(stderr, "E: %s\n", snd_strerror(error));
 	snd_pcm_close(pcm);
