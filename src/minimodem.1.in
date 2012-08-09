@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MINIMODEM 1 "July 15, 2011"
+.TH MINIMODEM 1 "August 8, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -106,7 +106,7 @@ Decode amateur radio RTTY signals (listen near 14.085 MHz).
 Experiment with very low baud rates (works in noisy conditions).
 .TP
 .B minimodem --tx 12000
-Experiment with very high baud rates works (works with audio files).
+Experiment with very high baud rates (works with audio files).
 .SH NOTES
 .B minimodem
 does not decode AX.25 framed packets.
