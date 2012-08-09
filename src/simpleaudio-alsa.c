@@ -47,7 +47,7 @@ sa_alsa_read( simpleaudio *sa, float *buf, size_t nframes )
 	ssize_t r;
 	r = snd_pcm_readi(pcm, buf+frames_read*sa->backend_framesize, nframes-frames_read);
 	if (r < 0) {
-	    /* silently recover from e.g. overruns, and try once more */
+	    /* recover from e.g. overruns, and try once more */
 	    fprintf(stderr, "snd_pcm_readi: reset for %s\n", snd_strerror(r));
 	    snd_pcm_prepare(pcm);
 	    r = snd_pcm_readi(pcm, buf+frames_read*sa->backend_framesize, nframes-frames_read);
@@ -73,7 +73,7 @@ sa_alsa_write( simpleaudio *sa, float *buf, size_t nframes )
 	ssize_t r;
 	r = snd_pcm_writei(pcm, buf+frames_written*sa->backend_framesize, nframes-frames_written);
 	if (r < 0) {
-	    /* silently recover from e.g. underruns, and try once more */
+	    /* recover from e.g. underruns, and try once more */
 	    snd_pcm_recover(pcm, r, 0 /*silent*/);
 	    r = snd_pcm_writei(pcm, buf+frames_written*sa->backend_framesize, nframes-frames_written);
 	}
