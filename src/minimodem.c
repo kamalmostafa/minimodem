@@ -257,11 +257,10 @@ usage()
     "		    -V, --version\n"
     "		    -A, --alsa\n"
     "		{baudmode}\n"
-    "		    1200 : Bell202  1200 bps --ascii\n"
-    "		     300 : Bell103   300 bps --ascii\n"
-    "		  N>=100 : Bellxxx     N bps --ascii\n"
-    "		   N<100 : RTTY        N bps --baudot\n"
-    "		    rtty : RTTY    45.45 bps --baudot\n"
+    "		    1200       Bell202  1200 bps --ascii\n"
+    "		     300       Bell103   300 bps --ascii\n"
+    "	    any_number_N       Bell103     N bps --ascii\n"
+    "		    rtty       RTTY    45.45 bps --baudot\n"
     );
     exit(1);
 }
