@@ -137,7 +137,7 @@ simpleaudio_open_stream_alsa(
 	return NULL;
     }
 
-    /* set ALSA's "stop threshold" to 0.1 sec (rate/10) to avoid underruns */
+#if 0
     snd_pcm_sw_params_t  *swparams;
     snd_pcm_sw_params_alloca(&swparams);
     error = snd_pcm_sw_params_current(pcm, swparams);
@@ -146,13 +146,16 @@ simpleaudio_open_stream_alsa(
 	snd_pcm_close(pcm);
 	return NULL;
     }
-    snd_pcm_sw_params_set_stop_threshold(pcm, swparams, rate/10);
+    snd_pcm_sw_params_set_start_threshold(pcm, swparams, NFRAMES_VAL);
+    snd_pcm_sw_params_set_stop_threshold(pcm, swparams, NFRAMES_VAL);
+    snd_pcm_sw_params_set_silence_threshold(pcm, swparams, NFRAMES_VAL);
     error = snd_pcm_sw_params(pcm, swparams);
     if (error) {
 	fprintf(stderr, "E: %s\n", snd_strerror(error));
 	snd_pcm_close(pcm);
 	return NULL;
     }
+#endif
 
     simpleaudio *sa = malloc(sizeof(simpleaudio));
     if ( !sa ) {
