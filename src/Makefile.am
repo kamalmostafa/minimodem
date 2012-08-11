@@ -28,7 +28,7 @@ dist_man_MANS = minimodem.1
 
 EXTRA_DIST = minimodem.1.html self-test testcases/* # run-test
 
-TESTS = testcases/test.*
+TESTS = testcases/test-*
 
 SIMPLEAUDIO_SRC = \
 	simpleaudio.h		\
