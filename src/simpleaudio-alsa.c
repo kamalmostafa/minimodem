@@ -104,13 +104,10 @@ static const struct simpleaudio_backend simpleaudio_backend_alsa = {
 
 simpleaudio *
 simpleaudio_open_stream_alsa(
-		// unsigned int rate, unsigned int channels,
 		int sa_stream_direction,
+		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
-    unsigned int rate = 48000;
-    unsigned int channels = 1;
-
     snd_pcm_t *pcm;
     int error;
 

@@ -88,8 +88,8 @@ static const struct simpleaudio_backend simpleaudio_backend_pulse = {
 
 simpleaudio *
 simpleaudio_open_stream_pulseaudio(
-		// unsigned int rate, unsigned int channels,
 		int sa_stream_direction,
+		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
     int error;
@@ -100,10 +100,8 @@ simpleaudio_open_stream_pulseaudio(
     /* The sample type to use */
     pa_sample_spec ss = {
         .format = PA_SAMPLE_FLOAT32,
-	// .rate = rate,
-	.rate = 48000,
-	// .channels = channels,
-	.channels = 1,
+	.rate = rate,
+	.channels = channels,
     };
 
     pa_buffer_attr attr = {

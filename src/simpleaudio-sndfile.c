@@ -135,13 +135,14 @@ sndfile_format_from_path( const char *path )
 simpleaudio *
 simpleaudio_open_stream_sndfile(
 		int sa_stream_direction,
+		unsigned int rate, unsigned int channels,
 		char *path )
 {
     /* setting for SA_STREAM_PLAYBACK (file write) */
     SF_INFO sfinfo = {
 	.format = 0,
-	.samplerate = 48000,
-	.channels = 1,
+	.samplerate = rate,
+	.channels = channels,
     };
 
     if ( sa_stream_direction == SA_STREAM_PLAYBACK )

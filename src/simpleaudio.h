@@ -38,19 +38,20 @@ enum {
 
 simpleaudio *
 simpleaudio_open_stream_pulseaudio(
-		// unsigned int rate, unsigned int channels,
 		int sa_stream_direction,
+		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name );
 
 simpleaudio *
 simpleaudio_open_stream_alsa(
-		// unsigned int rate, unsigned int channels,
 		int sa_stream_direction,
+		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name );
 
 simpleaudio *
 simpleaudio_open_stream_sndfile(
 		int sa_stream_direction,
+		unsigned int rate, unsigned int channels,
 		char *path );
 
 /*

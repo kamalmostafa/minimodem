@@ -285,6 +285,9 @@ main( int argc, char*argv[] )
 
     simpleaudio * (*simpleaudio_open_system_audio)() = NULL;
 
+    unsigned int sample_rate = 48000;
+    unsigned int nchannels = 1; // FIXME: only works with one channel
+
     /* configure the default system audio mechanism */
 #if USE_PULSEAUDIO
     simpleaudio_open_system_audio = simpleaudio_open_stream_pulseaudio;
@@ -511,6 +514,7 @@ main( int argc, char*argv[] )
 	    tx_interactive = 0;
 #if USE_SNDFILE
 	    sa_out = simpleaudio_open_stream_sndfile(SA_STREAM_PLAYBACK,
+					sample_rate, nchannels,
 					filename);
 #endif
 	    if ( ! sa_out )
@@ -519,6 +523,7 @@ main( int argc, char*argv[] )
 
 	if ( ! sa_out )
 	    sa_out = simpleaudio_open_system_audio(SA_STREAM_PLAYBACK,
+					sample_rate, nchannels,
 					program_name, "output audio");
 	if ( ! sa_out )
 	    return 1;
@@ -540,7 +545,9 @@ main( int argc, char*argv[] )
     simpleaudio *sa = NULL;
     if ( filename ) {
 #if USE_SNDFILE
-	sa = simpleaudio_open_stream_sndfile(SA_STREAM_RECORD, filename);
+	sa = simpleaudio_open_stream_sndfile(SA_STREAM_RECORD,
+				sample_rate, nchannels,
+				filename);
 #endif
 	if ( ! sa )
 	    return 1;
@@ -548,14 +555,10 @@ main( int argc, char*argv[] )
 
     if ( ! sa )
 	sa = simpleaudio_open_system_audio(SA_STREAM_RECORD,
+				sample_rate, nchannels,
 				program_name, "input audio");
     if ( !sa )
         return 1;
-
-    unsigned int sample_rate = simpleaudio_get_rate(sa);
-    unsigned int nchannels = simpleaudio_get_channels(sa);
-
-    assert( nchannels == 1 );
 
 
     /*

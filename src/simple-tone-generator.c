@@ -43,7 +43,7 @@ simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur)
 
     if ( tone_freq != 0 ) {
 
-	float wave_nsamples = 48000.0 / tone_freq;	// FIXME rate
+	float wave_nsamples = simpleaudio_get_rate(sa_out) / tone_freq;
 
 	size_t i;
 	for ( i=0; i<nsamples_dur; i++ )
