@@ -1,2 +1,2 @@
 # use fsk.c as the sample text file
-exec ./self-test 1200 fsk.c
+exec ./self-test fsk.c 1200

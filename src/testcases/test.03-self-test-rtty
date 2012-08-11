@@ -1,2 +1,2 @@
 # use self-test-baudot.txt as the sample text file
-exec ./self-test rtty testcases/self-test-baudot.txt
+exec ./self-test testcases/self-test-baudot.txt rtty

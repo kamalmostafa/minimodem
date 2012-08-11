@@ -1,1 +1,1 @@
-exec ./self-test 12000 testcases/self-test-ascii.txt
+exec ./self-test testcases/self-test-ascii.txt 12000
