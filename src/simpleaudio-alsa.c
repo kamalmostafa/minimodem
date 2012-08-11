@@ -129,7 +129,7 @@ simpleaudio_open_stream_alsa(
 		SND_PCM_ACCESS_RW_INTERLEAVED,
 		channels,
 		rate,
-		1 /* soft_resample (allow) */,
+		0 /* soft_resample (allow) */,
 		-1 /* latency */);
     if (error) {
 	fprintf(stderr, "E: %s\n", snd_strerror(error));
