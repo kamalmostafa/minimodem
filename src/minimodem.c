@@ -254,6 +254,7 @@ usage()
     "		    -S, --space {space_freq}\n"
     "		    -T, --txstopbits {m.n}\n"
     "		    -q, --quiet\n"
+    "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
     "		    -A, --alsa\n"
     "		{baudmode}\n"
@@ -329,9 +330,10 @@ main( int argc, char*argv[] )
 	    { "txstopbits",	1, 0, 'T' },
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		0, 0, 'A' },
+	    { "samplerate",	1, 0, 'R' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qA",
+	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qAR:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -382,6 +384,10 @@ main( int argc, char*argv[] )
 			break;
 	    case 'q':
 			quiet_mode = 1;
+			break;
+	    case 'R':
+			sample_rate = atoi(optarg);
+			assert( sample_rate > 0 );
 			break;
 	    case 'A':
 #if USE_ALSA
