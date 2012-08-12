@@ -105,6 +105,7 @@ static const struct simpleaudio_backend simpleaudio_backend_alsa = {
 simpleaudio *
 simpleaudio_open_stream_alsa(
 		int sa_stream_direction,
+		sa_sample_format_t sa_sample_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
@@ -119,6 +120,8 @@ simpleaudio_open_stream_alsa(
 	fprintf(stderr, "E: Cannot create ALSA stream: %s\n", snd_strerror(error));
 	return NULL;
     }
+
+    assert( sa_sample_format == SA_SAMPLE_FORMAT_FLOAT );
 
     /* set up ALSA hardware params */
     error = snd_pcm_set_params(pcm,
@@ -160,6 +163,7 @@ simpleaudio_open_stream_alsa(
 	snd_pcm_close(pcm);
         return NULL;
     }
+    sa->format = sa_sample_format;
     sa->rate = rate;
     sa->channels = channels;
     sa->samplesize = sizeof(float);

@@ -520,6 +520,7 @@ main( int argc, char*argv[] )
 	    tx_interactive = 0;
 #if USE_SNDFILE
 	    sa_out = simpleaudio_open_stream_sndfile(SA_STREAM_PLAYBACK,
+					SA_SAMPLE_FORMAT_FLOAT,
 					sample_rate, nchannels,
 					filename);
 #endif
@@ -529,6 +530,7 @@ main( int argc, char*argv[] )
 
 	if ( ! sa_out )
 	    sa_out = simpleaudio_open_system_audio(SA_STREAM_PLAYBACK,
+					SA_SAMPLE_FORMAT_FLOAT,
 					sample_rate, nchannels,
 					program_name, "output audio");
 	if ( ! sa_out )
@@ -552,6 +554,7 @@ main( int argc, char*argv[] )
     if ( filename ) {
 #if USE_SNDFILE
 	sa = simpleaudio_open_stream_sndfile(SA_STREAM_RECORD,
+				SA_SAMPLE_FORMAT_FLOAT,
 				sample_rate, nchannels,
 				filename);
 #endif
@@ -561,6 +564,7 @@ main( int argc, char*argv[] )
 
     if ( ! sa )
 	sa = simpleaudio_open_system_audio(SA_STREAM_RECORD,
+				SA_SAMPLE_FORMAT_FLOAT,
 				sample_rate, nchannels,
 				program_name, "input audio");
     if ( !sa )

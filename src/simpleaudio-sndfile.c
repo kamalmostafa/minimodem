@@ -135,9 +135,12 @@ sndfile_format_from_path( const char *path )
 simpleaudio *
 simpleaudio_open_stream_sndfile(
 		int sa_stream_direction,
+		sa_sample_format_t sa_sample_format,
 		unsigned int rate, unsigned int channels,
 		char *path )
 {
+    assert( sa_sample_format == SA_SAMPLE_FORMAT_FLOAT );
+
     /* setting for SA_STREAM_PLAYBACK (file write) */
     SF_INFO sfinfo = {
 	.format = 0,
@@ -165,6 +168,7 @@ simpleaudio_open_stream_sndfile(
 	sf_close(s);
         return NULL;
     }
+    sa->format = sa_sample_format;
     sa->rate = sfinfo.samplerate;
     sa->channels = sfinfo.channels;
     sa->samplesize = sizeof(float);

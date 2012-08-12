@@ -33,6 +33,7 @@ typedef struct simpleaudio_backend simpleaudio_backend;
 
 struct simpleaudio {
 	const struct simpleaudio_backend	*backend;
+	sa_sample_format_t	format;
 	unsigned int	rate;
 	unsigned int	channels;
 	void *		backend_handle;

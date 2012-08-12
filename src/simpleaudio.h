@@ -31,26 +31,36 @@ typedef struct simpleaudio simpleaudio;
  *
  */
 
+/* sa_stream_direction */
 enum {
     SA_STREAM_PLAYBACK,
     SA_STREAM_RECORD,
 };
 
+/* sa_stream_format */
+typedef enum {
+    SA_SAMPLE_FORMAT_S16,
+    SA_SAMPLE_FORMAT_FLOAT,
+} sa_sample_format_t;
+
 simpleaudio *
 simpleaudio_open_stream_pulseaudio(
 		int sa_stream_direction,
+		sa_sample_format_t sa_sample_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name );
 
 simpleaudio *
 simpleaudio_open_stream_alsa(
 		int sa_stream_direction,
+		sa_sample_format_t sa_sample_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name );
 
 simpleaudio *
 simpleaudio_open_stream_sndfile(
 		int sa_stream_direction,
+		sa_sample_format_t sa_sample_format,
 		unsigned int rate, unsigned int channels,
 		char *path );
 
@@ -66,6 +76,9 @@ simpleaudio_get_channels( simpleaudio *sa );
 
 unsigned int
 simpleaudio_get_framesize( simpleaudio *sa );
+
+sa_sample_format_t
+simpleaudio_get_format( simpleaudio *sa );
 
 unsigned int
 simpleaudio_get_samplesize( simpleaudio *sa );

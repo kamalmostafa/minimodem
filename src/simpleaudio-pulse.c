@@ -89,6 +89,7 @@ static const struct simpleaudio_backend simpleaudio_backend_pulse = {
 simpleaudio *
 simpleaudio_open_stream_pulseaudio(
 		int sa_stream_direction,
+		sa_sample_format_t sa_sample_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
@@ -96,6 +97,8 @@ simpleaudio_open_stream_pulseaudio(
 
     // FIXME - use source for something
     // just take the default pulseaudio source for now
+
+    assert( sa_sample_format == SA_SAMPLE_FORMAT_FLOAT );
 
     /* The sample type to use */
     pa_sample_spec ss = {
@@ -134,6 +137,7 @@ simpleaudio_open_stream_pulseaudio(
 	pa_simple_free(s);
         return NULL;
     }
+    sa->format = sa_sample_format;
     sa->rate = ss.rate;
     sa->channels = ss.channels;
     sa->samplesize = sizeof(float);

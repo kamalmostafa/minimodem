@@ -21,6 +21,12 @@
 #include "simpleaudio_internal.h"
 #include "malloc.h"
 
+sa_sample_format_t
+simpleaudio_get_format( simpleaudio *sa )
+{
+    return sa->format;
+}
+
 unsigned int
 simpleaudio_get_rate( simpleaudio *sa )
 {
