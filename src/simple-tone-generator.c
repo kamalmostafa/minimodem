@@ -40,16 +40,38 @@ simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur)
 {
     unsigned int framesize = simpleaudio_get_framesize(sa_out);
 
-    float *buf = malloc(nsamples_dur * framesize);
+    void *buf = malloc(nsamples_dur * framesize);
     assert(buf);
 
     if ( tone_freq != 0 ) {
 
 	float wave_nsamples = simpleaudio_get_rate(sa_out) / tone_freq;
-
 	size_t i;
-	for ( i=0; i<nsamples_dur; i++ )
-	    buf[i] = sinf( M_PI*2.0*( i/wave_nsamples + sa_tone_cphase) );
+
+#define SINE_PHASE_ANGLE  ( M_PI*2.0*(i/wave_nsamples + sa_tone_cphase) )
+
+	switch ( simpleaudio_get_format(sa_out) ) {
+
+	    case SA_SAMPLE_FORMAT_FLOAT:
+		{
+		    float *float_buf = buf;
+		    for ( i=0; i<nsamples_dur; i++ )
+			float_buf[i] = sinf(SINE_PHASE_ANGLE);
+		}
+		break;
+
+	    case SA_SAMPLE_FORMAT_S16:
+		{
+		    short *float_buf = buf;
+		    for ( i=0; i<nsamples_dur; i++ )
+			float_buf[i] = 32767 * sinf(SINE_PHASE_ANGLE);
+		}
+		break;
+
+	    default:
+		assert(0);
+		break;
+	}
 
 	sa_tone_cphase
 	    = fmodf(sa_tone_cphase + (float)nsamples_dur/wave_nsamples, 1.0);
