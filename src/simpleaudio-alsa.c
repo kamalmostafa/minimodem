@@ -39,7 +39,7 @@
 
 
 static ssize_t
-sa_alsa_read( simpleaudio *sa, float *buf, size_t nframes )
+sa_alsa_read( simpleaudio *sa, void *buf, size_t nframes )
 {
     ssize_t frames_read = 0;
     snd_pcm_t *pcm = (snd_pcm_t *)sa->backend_handle;
@@ -65,7 +65,7 @@ sa_alsa_read( simpleaudio *sa, float *buf, size_t nframes )
 
 
 static ssize_t
-sa_alsa_write( simpleaudio *sa, float *buf, size_t nframes )
+sa_alsa_write( simpleaudio *sa, void *buf, size_t nframes )
 {
     ssize_t frames_written = 0;
     snd_pcm_t *pcm = (snd_pcm_t *)sa->backend_handle;

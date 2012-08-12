@@ -41,7 +41,7 @@
 
 
 static ssize_t
-sa_pulse_read( simpleaudio *sa, float *buf, size_t nframes )
+sa_pulse_read( simpleaudio *sa, void *buf, size_t nframes )
 {
     int error;
     pa_simple *s = (pa_simple *)sa->backend_handle;
@@ -57,7 +57,7 @@ sa_pulse_read( simpleaudio *sa, float *buf, size_t nframes )
 
 
 static ssize_t
-sa_pulse_write( simpleaudio *sa, float *buf, size_t nframes )
+sa_pulse_write( simpleaudio *sa, void *buf, size_t nframes )
 {
     int error;
     pa_simple *s = (pa_simple *)sa->backend_handle;

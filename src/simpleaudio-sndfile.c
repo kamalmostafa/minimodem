@@ -40,7 +40,7 @@
 
 
 static ssize_t
-sa_sndfile_read( simpleaudio *sa, float *buf, size_t nframes )
+sa_sndfile_read( simpleaudio *sa, void *buf, size_t nframes )
 {
     SNDFILE *s = (SNDFILE *)sa->backend_handle;
     int n;
@@ -55,7 +55,7 @@ sa_sndfile_read( simpleaudio *sa, float *buf, size_t nframes )
 
 
 static ssize_t
-sa_sndfile_write( simpleaudio *sa, float *buf, size_t nframes )
+sa_sndfile_write( simpleaudio *sa, void *buf, size_t nframes )
 {
 //fprintf(stderr, "sf_writef_float: nframes=%ld\n", nframes);
     SNDFILE *s = (SNDFILE *)sa->backend_handle;

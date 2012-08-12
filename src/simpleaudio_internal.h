@@ -48,10 +48,10 @@ struct simpleaudio_backend {
 		char *app_name, char *stream_name );
 
 	ssize_t
-	(*simpleaudio_read)( simpleaudio *sa, float *buf, size_t nframes );
+	(*simpleaudio_read)( simpleaudio *sa, void *buf, size_t nframes );
 
 	ssize_t
-	(*simpleaudio_write)( simpleaudio *sa, float *buf, size_t nframes );
+	(*simpleaudio_write)( simpleaudio *sa, void *buf, size_t nframes );
 
 	void
 	(*simpleaudio_close)( simpleaudio *sa );

@@ -144,13 +144,13 @@ simpleaudio_get_samplesize( simpleaudio *sa )
 }
 
 ssize_t
-simpleaudio_read( simpleaudio *sa, float *buf, size_t nframes )
+simpleaudio_read( simpleaudio *sa, void *buf, size_t nframes )
 {
     return sa->backend->simpleaudio_read(sa, buf, nframes);
 }
 
 ssize_t
-simpleaudio_write( simpleaudio *sa, float *buf, size_t nframes )
+simpleaudio_write( simpleaudio *sa, void *buf, size_t nframes )
 {
     return sa->backend->simpleaudio_write(sa, buf, nframes);
 }
