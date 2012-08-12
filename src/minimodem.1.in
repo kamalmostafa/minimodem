@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MINIMODEM 1 "August 11, 2011"
+.TH MINIMODEM 1 "August 12, 2011"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -77,6 +77,11 @@ Set the audio sample rate (default rate is 48000 Hz).
 .B \-A, \-\-alsa
 Use ALSA as the audio output system instead of the default
 PulseAudio (depending on build configuration options).
+.TP
+.B \-F, \-\-float-samples
+Generate 32-bit floating-point format audio samples, instead of the
+default 16-bit signed integer format (applies to \-\-tx mode only;
+\-\-rx mode always uses 32-bit floating-point).
 .TP
 .B \-V, \-\-version
 print program version

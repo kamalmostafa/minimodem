@@ -257,6 +257,7 @@ usage()
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
     "		    -A, --alsa\n"
+    "		    -F, --float-samples\n"
     "		{baudmode}\n"
     "		    1200       Bell202  1200 bps --ascii\n"
     "		     300       Bell103   300 bps --ascii\n"
@@ -285,7 +286,7 @@ main( int argc, char*argv[] )
     float	bfsk_confidence_threshold = 0.6;
 
     sa_backend_t sa_backend = SA_BACKEND_SYSDEFAULT;
-
+    sa_format_t sample_format = SA_SAMPLE_FORMAT_S16;
     unsigned int sample_rate = 48000;
     unsigned int nchannels = 1; // FIXME: only works with one channel
 
@@ -327,9 +328,10 @@ main( int argc, char*argv[] )
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		0, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
+	    { "float-samples",	0, 0, 'F' },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qAR:",
+	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qAR:F",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -393,12 +395,19 @@ main( int argc, char*argv[] )
 			exit(1);
 #endif
 			break;
+	    case 'F':
+			sample_format = SA_SAMPLE_FORMAT_FLOAT;
+			break;
 	    default:
 			usage();
 	}
     }
     if ( TX_mode == -1 )
 	TX_mode = 0;
+
+    /* The receive code requires floating point samples to feed to the FFT */
+    if ( TX_mode == 0 )
+	sample_format = SA_SAMPLE_FORMAT_FLOAT;
 
     if ( filename ) {
 #if !USE_SNDFILE
@@ -524,8 +533,7 @@ main( int argc, char*argv[] )
 
 	simpleaudio *sa_out;
 	sa_out = simpleaudio_open_stream(sa_backend, SA_STREAM_PLAYBACK,
-					SA_SAMPLE_FORMAT_FLOAT,
-					sample_rate, nchannels,
+					sample_format, sample_rate, nchannels,
 					program_name, stream_name);
 	if ( ! sa_out )
 	    return 1;
@@ -553,8 +561,7 @@ main( int argc, char*argv[] )
 
     simpleaudio *sa;
     sa = simpleaudio_open_stream(sa_backend, SA_STREAM_RECORD,
-				SA_SAMPLE_FORMAT_FLOAT,
-				sample_rate, nchannels,
+				sample_format, sample_rate, nchannels,
 				program_name, stream_name);
     if ( ! sa )
         return 1;
