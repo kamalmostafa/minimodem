@@ -1,0 +1,16 @@
+#!/bin/bash
+
+TMPF=/tmp/minimodem-test.$$
+trap "rm -f $TMPF" 0
+
+# test for confidence=1.00 when using exact integer multiple frequencies
+./self-test testcases/self-test-ascii.txt \
+	1200 --samplerate 24000 -M 1200 -S 2400 2>&1 | tee $TMPF
+
+match="ndata=3123 confidence=1.00 throughput=1200.00 (rate perfect)"
+grep -q "$match" $TMPF || {
+  echo "Expected: $match"
+  exit 1
+}
+echo "Perfect!"
+exit 0
