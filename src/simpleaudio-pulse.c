@@ -92,11 +92,22 @@ sa_pulse_open_stream(
     // FIXME - use source for something
     // just take the default pulseaudio source for now
 
-    assert( sa_format == SA_SAMPLE_FORMAT_FLOAT );
+    pa_sample_format_t pa_format;
+
+    switch ( sa->format ) {
+	case SA_SAMPLE_FORMAT_FLOAT:
+		pa_format = PA_SAMPLE_FLOAT32;
+		break;
+	case SA_SAMPLE_FORMAT_S16:
+		pa_format = PA_SAMPLE_S16LE;	// FIXME: handle S16BE
+		break;
+	default:
+		assert(0);
+    }
 
     /* The sample type to use */
     pa_sample_spec ss = {
-        .format = PA_SAMPLE_FLOAT32,
+        .format = pa_format,
 	.rate = rate,
 	.channels = channels,
     };

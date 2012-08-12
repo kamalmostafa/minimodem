@@ -115,11 +115,22 @@ sa_alsa_open_stream(
 	return 0;
     }
 
-    assert( sa_format == SA_SAMPLE_FORMAT_FLOAT );
+    snd_pcm_format_t pcm_format;
+
+    switch ( sa->format ) {
+	case SA_SAMPLE_FORMAT_FLOAT:
+		pcm_format = SND_PCM_FORMAT_FLOAT;
+		break;
+	case SA_SAMPLE_FORMAT_S16:
+		pcm_format = SND_PCM_FORMAT_S16;
+		break;
+	default:
+		assert(0);
+    }
 
     /* set up ALSA hardware params */
     error = snd_pcm_set_params(pcm,
-		SND_PCM_FORMAT_FLOAT,
+		pcm_format,
 		SND_PCM_ACCESS_RW_INTERLEAVED,
 		channels,
 		rate,

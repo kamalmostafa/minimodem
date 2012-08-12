@@ -44,12 +44,23 @@ sa_sndfile_read( simpleaudio *sa, void *buf, size_t nframes )
 {
     SNDFILE *s = (SNDFILE *)sa->backend_handle;
     int n;
-    if ((n = sf_readf_float(s, buf, nframes)) < 0) {
-	fprintf(stderr, "sf_read_float: ");
+    switch ( sa->format ) {
+	case SA_SAMPLE_FORMAT_FLOAT:
+		n = sf_readf_float(s, buf, nframes);
+		break;
+	case SA_SAMPLE_FORMAT_S16:
+		n = sf_readf_short(s, buf, nframes);
+		break;
+	default:
+		assert(0);
+		break;
+    }
+    if ( n < 0 ) {
+	fprintf(stderr, "sf_read: ");
 	sf_perror(s);
 	return -1;
     }
-//fprintf(stderr, "sf_readf_float: nframes=%ld n=%d\n", nframes, n);
+    // fprintf(stderr, "sf_read: nframes=%ld n=%d\n", nframes, n);
     return n;
 }
 
@@ -57,11 +68,22 @@ sa_sndfile_read( simpleaudio *sa, void *buf, size_t nframes )
 static ssize_t
 sa_sndfile_write( simpleaudio *sa, void *buf, size_t nframes )
 {
-//fprintf(stderr, "sf_writef_float: nframes=%ld\n", nframes);
+    // fprintf(stderr, "sf_write: nframes=%ld\n", nframes);
     SNDFILE *s = (SNDFILE *)sa->backend_handle;
     int n;
-    if ((n = sf_writef_float(s, buf, nframes)) < 0) {
-	fprintf(stderr, "sf_read_float: ");
+    switch ( sa->format ) {
+	case SA_SAMPLE_FORMAT_FLOAT:
+		n = sf_writef_float(s, buf, nframes);
+		break;
+	case SA_SAMPLE_FORMAT_S16:
+		n = sf_writef_short(s, buf, nframes);
+		break;
+	default:
+		assert(0);
+		break;
+    }
+    if ( n < 0 ) {
+	fprintf(stderr, "sf_write: ");
 	sf_perror(s);
 	return -1;
     }
@@ -135,17 +157,27 @@ sa_sndfile_open_stream(
 {
     const char *path = stream_name;
 
-    assert( sa_format == SA_SAMPLE_FORMAT_FLOAT );
+    int sf_format;
+    switch ( sa->format ) {
+	case SA_SAMPLE_FORMAT_FLOAT:
+		sf_format = SF_FORMAT_FLOAT;
+		break;
+	case SA_SAMPLE_FORMAT_S16:
+		sf_format = SF_FORMAT_PCM_16;
+		break;
+	default:
+		assert(0);
+    }
 
     /* setting for SA_STREAM_PLAYBACK (file write) */
     SF_INFO sfinfo = {
-	.format = 0,
+	.format = sf_format,
 	.samplerate = rate,
 	.channels = channels,
     };
 
     if ( sa_stream_direction == SA_STREAM_PLAYBACK )
-	sfinfo.format = sndfile_format_from_path(path) | SF_FORMAT_PCM_16;
+	sfinfo.format = sndfile_format_from_path(path) | sf_format;
 
     /* Create the recording stream */
     SNDFILE *s;
