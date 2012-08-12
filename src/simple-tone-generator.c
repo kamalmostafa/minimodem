@@ -38,7 +38,9 @@ simpleaudio_tone_reset()
 void
 simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur)
 {
-    float *buf = malloc(nsamples_dur * sizeof(float));
+    unsigned int framesize = simpleaudio_get_framesize(sa_out);
+
+    float *buf = malloc(nsamples_dur * framesize);
     assert(buf);
 
     if ( tone_freq != 0 ) {
@@ -54,7 +56,7 @@ simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur)
 
     } else {
 
-	bzero(buf, nsamples_dur*sizeof(float));
+	bzero(buf, nsamples_dur * framesize);
 	sa_tone_cphase = 0.0;
 
     }

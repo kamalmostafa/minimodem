@@ -36,6 +36,7 @@ struct simpleaudio {
 	unsigned int	rate;
 	unsigned int	channels;
 	void *		backend_handle;
+	unsigned int	samplesize;
 	unsigned int	backend_framesize;
 };
 

@@ -162,9 +162,10 @@ simpleaudio_open_stream_alsa(
     }
     sa->rate = rate;
     sa->channels = channels;
+    sa->samplesize = sizeof(float);
     sa->backend = &simpleaudio_backend_alsa;
     sa->backend_handle = pcm;
-    sa->backend_framesize = sizeof(float);
+    sa->backend_framesize = sa->channels * sa->samplesize; 
 
     return sa;
 }

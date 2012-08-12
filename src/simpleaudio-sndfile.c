@@ -167,9 +167,10 @@ simpleaudio_open_stream_sndfile(
     }
     sa->rate = sfinfo.samplerate;
     sa->channels = sfinfo.channels;
+    sa->samplesize = sizeof(float);
     sa->backend = &simpleaudio_backend_sndfile;
     sa->backend_handle = s;
-    sa->backend_framesize = sa->channels * sizeof(float);
+    sa->backend_framesize = sa->channels * sa->samplesize; 
 
     return sa;
 }

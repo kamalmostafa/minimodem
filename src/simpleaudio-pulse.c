@@ -136,11 +136,12 @@ simpleaudio_open_stream_pulseaudio(
     }
     sa->rate = ss.rate;
     sa->channels = ss.channels;
+    sa->samplesize = sizeof(float);
     sa->backend = &simpleaudio_backend_pulse;
     sa->backend_handle = s;
     sa->backend_framesize = pa_frame_size(&ss);
 
-    assert( sa->backend_framesize == ss.channels * sizeof(float) );
+    assert( sa->backend_framesize == sa->channels * sa->samplesize );
 
     return sa;
 }

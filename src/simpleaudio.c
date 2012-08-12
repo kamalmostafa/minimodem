@@ -33,6 +33,18 @@ simpleaudio_get_channels( simpleaudio *sa )
     return sa->channels;
 }
 
+unsigned int
+simpleaudio_get_framesize( simpleaudio *sa )
+{
+    return sa->backend_framesize;
+}
+
+unsigned int
+simpleaudio_get_samplesize( simpleaudio *sa )
+{
+    return sa->samplesize;
+}
+
 ssize_t
 simpleaudio_read( simpleaudio *sa, float *buf, size_t nframes )
 {

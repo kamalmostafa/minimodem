@@ -64,6 +64,12 @@ simpleaudio_get_rate( simpleaudio *sa );
 unsigned int
 simpleaudio_get_channels( simpleaudio *sa );
 
+unsigned int
+simpleaudio_get_framesize( simpleaudio *sa );
+
+unsigned int
+simpleaudio_get_samplesize( simpleaudio *sa );
+
 ssize_t
 simpleaudio_read( simpleaudio *sa, float *buf, size_t nframes );
 
