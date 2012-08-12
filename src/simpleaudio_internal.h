@@ -23,17 +23,13 @@
 
 #include "simpleaudio.h"
 
-/*
- * Backend modules must provide an "open" routine which returns a
- * (simpleaudio *) to the caller.
- */
 
 struct simpleaudio_backend;
 typedef struct simpleaudio_backend simpleaudio_backend;
 
 struct simpleaudio {
 	const struct simpleaudio_backend	*backend;
-	sa_sample_format_t	format;
+	sa_format_t	format;
 	unsigned int	rate;
 	unsigned int	channels;
 	void *		backend_handle;
@@ -42,13 +38,27 @@ struct simpleaudio {
 };
 
 struct simpleaudio_backend {
+
+	int /* boolean 'ok' value */
+	(*simpleaudio_open_stream)(
+		simpleaudio *	sa,
+		sa_direction_t	sa_stream_direction,
+		sa_format_t sa_format,
+		unsigned int rate, unsigned int channels,
+		char *app_name, char *stream_name );
+
 	ssize_t
 	(*simpleaudio_read)( simpleaudio *sa, float *buf, size_t nframes );
+
 	ssize_t
 	(*simpleaudio_write)( simpleaudio *sa, float *buf, size_t nframes );
+
 	void
 	(*simpleaudio_close)( simpleaudio *sa );
 };
 
+extern const struct simpleaudio_backend simpleaudio_backend_sndfile;
+extern const struct simpleaudio_backend simpleaudio_backend_alsa;
+extern const struct simpleaudio_backend simpleaudio_backend_pulseaudio;
 
 #endif

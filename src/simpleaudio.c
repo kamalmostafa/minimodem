@@ -19,9 +19,101 @@
 
 #include "simpleaudio.h"
 #include "simpleaudio_internal.h"
-#include "malloc.h"
 
-sa_sample_format_t
+#include <malloc.h>
+#include <assert.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else
+# define USE_PULSEAUDIO 1
+# define USE_ALSA 1
+#endif
+
+simpleaudio *
+simpleaudio_open_stream(
+		sa_backend_t	sa_backend,
+		sa_direction_t	sa_stream_direction,
+		sa_format_t sa_format,
+		unsigned int rate, unsigned int channels,
+		char *app_name, char *stream_name )
+{
+    simpleaudio *sa = calloc(1, sizeof(simpleaudio));
+    if ( !sa ) {
+	perror("malloc");
+        return NULL;
+    }
+
+    sa->format = sa_format;
+    sa->rate = rate;
+    sa->channels = channels;
+
+    switch ( sa_format ) {
+	case SA_SAMPLE_FORMAT_FLOAT:
+	    assert( sizeof(float) == 4 );
+	    sa->samplesize = sizeof(float);
+	    break;
+	case SA_SAMPLE_FORMAT_S16:
+	    assert( sizeof(short) == 2 );
+	    sa->samplesize = sizeof(short);
+	    break;
+	default:
+	    fprintf(stderr, "simpleaudio_open_stream: no such sa_format (%d)\n", sa_format);
+	    goto err_out;
+	    break;
+    }
+
+    switch ( sa_backend ) {
+
+#if USE_SNDFILE
+	case SA_BACKEND_FILE:
+	    sa->backend = &simpleaudio_backend_sndfile;
+	    break;
+#endif
+
+	case SA_BACKEND_SYSDEFAULT:
+#if USE_PULSEAUDIO
+	    sa->backend = &simpleaudio_backend_pulseaudio;
+#elif USE_ALSA
+	    sa->backend = &simpleaudio_backend_alsa;
+#else
+	    fprintf(stderr, "simpleaudio_open_stream: no SA_BACKEND_SYSDEFAULT was configured\n");
+	    goto err_out;
+#endif
+	    break;
+
+#if USE_ALSA
+	case SA_BACKEND_ALSA:
+	    sa->backend = &simpleaudio_backend_alsa;
+	    break;
+#endif
+
+#if USE_PULSEAUDIO
+	case SA_BACKEND_PULSEAUDIO:
+	    sa->backend = &simpleaudio_backend_pulseaudio;
+	    break;
+#endif
+
+	default:
+	    fprintf(stderr, "simpleaudio_open_stream: no such sa_backend (%d).  not configured at build?\n", sa_backend);
+	    goto err_out;
+    }
+
+    int ok = sa->backend->simpleaudio_open_stream(sa,
+		sa_stream_direction, sa_format,
+		rate, channels, app_name, stream_name);
+
+    if ( ok ) {
+	assert( sa->backend_framesize == sa->channels * sa->samplesize );
+	return sa;
+    }
+
+err_out:
+    free(sa);
+    return NULL;
+}
+
+sa_format_t
 simpleaudio_get_format( simpleaudio *sa )
 {
     return sa->format;

@@ -284,17 +284,13 @@ main( int argc, char*argv[] )
     float	carrier_autodetect_threshold = 0.0;
     float	bfsk_confidence_threshold = 0.6;
 
-    simpleaudio * (*simpleaudio_open_system_audio)() = NULL;
+    sa_backend_t sa_backend = SA_BACKEND_SYSDEFAULT;
 
     unsigned int sample_rate = 48000;
     unsigned int nchannels = 1; // FIXME: only works with one channel
 
-    /* configure the default system audio mechanism */
-#if USE_PULSEAUDIO
-    simpleaudio_open_system_audio = simpleaudio_open_stream_pulseaudio;
-#elif USE_ALSA
-    simpleaudio_open_system_audio = simpleaudio_open_stream_alsa;
-#else
+    /* validate the default system audio mechanism */
+#if !(USE_PULSEAUDIO || USE_ALSA)
 # define _MINIMODEM_NO_SYSTEM_AUDIO
 # if !USE_SNDFILE
 #  error At least one of {USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE} must be enabled!
@@ -391,7 +387,7 @@ main( int argc, char*argv[] )
 			break;
 	    case 'A':
 #if USE_ALSA
-			simpleaudio_open_system_audio = simpleaudio_open_stream_alsa;
+			sa_backend = SA_BACKEND_ALSA;
 #else
 			fprintf(stderr, "E: This build of minimodem was configured without alsa support.\n");
 			exit(1);
@@ -508,31 +504,29 @@ main( int argc, char*argv[] )
 	band_width = bfsk_data_rate;
 
 
+    char *stream_name = NULL;;
+
+    if ( filename ) {
+	sa_backend = SA_BACKEND_FILE;
+	stream_name = filename;
+    }
+
     /*
      * Handle transmit mode
      */
     if ( TX_mode ) {
 
-	simpleaudio *sa_out = NULL;
-	int tx_interactive = 1;
-
-	if ( filename ) {
-	    tx_interactive = 0;
-#if USE_SNDFILE
-	    sa_out = simpleaudio_open_stream_sndfile(SA_STREAM_PLAYBACK,
-					SA_SAMPLE_FORMAT_FLOAT,
-					sample_rate, nchannels,
-					filename);
-#endif
-	    if ( ! sa_out )
-		return 1;
+	int tx_interactive = 0;
+	if ( ! stream_name ) {
+	    tx_interactive = 1;
+	    stream_name = "output audio";
 	}
 
-	if ( ! sa_out )
-	    sa_out = simpleaudio_open_system_audio(SA_STREAM_PLAYBACK,
+	simpleaudio *sa_out;
+	sa_out = simpleaudio_open_stream(sa_backend, SA_STREAM_PLAYBACK,
 					SA_SAMPLE_FORMAT_FLOAT,
 					sample_rate, nchannels,
-					program_name, "output audio");
+					program_name, stream_name);
 	if ( ! sa_out )
 	    return 1;
 
@@ -543,6 +537,9 @@ main( int argc, char*argv[] )
 				bfsk_txstopbits,
 				bfsk_framebits_encode
 				);
+
+	simpleaudio_close(sa_out);
+
 	return 0;
     }
 
@@ -550,24 +547,16 @@ main( int argc, char*argv[] )
     /*
      * Open the input audio stream
      */
-    simpleaudio *sa = NULL;
-    if ( filename ) {
-#if USE_SNDFILE
-	sa = simpleaudio_open_stream_sndfile(SA_STREAM_RECORD,
-				SA_SAMPLE_FORMAT_FLOAT,
-				sample_rate, nchannels,
-				filename);
-#endif
-	if ( ! sa )
-	    return 1;
-    }
 
-    if ( ! sa )
-	sa = simpleaudio_open_system_audio(SA_STREAM_RECORD,
+    if ( ! stream_name )
+	stream_name = "input audio";
+
+    simpleaudio *sa;
+    sa = simpleaudio_open_stream(sa_backend, SA_STREAM_RECORD,
 				SA_SAMPLE_FORMAT_FLOAT,
 				sample_rate, nchannels,
-				program_name, "input audio");
-    if ( !sa )
+				program_name, stream_name);
+    if ( ! sa )
         return 1;
 
 

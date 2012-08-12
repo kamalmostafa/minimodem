@@ -31,42 +31,33 @@ typedef struct simpleaudio simpleaudio;
  *
  */
 
+/* sa_backend */
+typedef enum {
+	SA_BACKEND_SYSDEFAULT=0,
+	SA_BACKEND_FILE,
+	SA_BACKEND_ALSA,
+	SA_BACKEND_PULSEAUDIO,
+} sa_backend_t;
+
 /* sa_stream_direction */
-enum {
-    SA_STREAM_PLAYBACK,
-    SA_STREAM_RECORD,
-};
+typedef enum {
+	SA_STREAM_PLAYBACK,
+	SA_STREAM_RECORD,
+} sa_direction_t;
 
 /* sa_stream_format */
 typedef enum {
-    SA_SAMPLE_FORMAT_S16,
-    SA_SAMPLE_FORMAT_FLOAT,
-} sa_sample_format_t;
+	SA_SAMPLE_FORMAT_S16,
+	SA_SAMPLE_FORMAT_FLOAT,
+} sa_format_t;
 
 simpleaudio *
-simpleaudio_open_stream_pulseaudio(
-		int sa_stream_direction,
-		sa_sample_format_t sa_sample_format,
+simpleaudio_open_stream(
+		sa_backend_t	sa_backend,
+		sa_direction_t	sa_stream_direction,
+		sa_format_t	sa_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name );
-
-simpleaudio *
-simpleaudio_open_stream_alsa(
-		int sa_stream_direction,
-		sa_sample_format_t sa_sample_format,
-		unsigned int rate, unsigned int channels,
-		char *app_name, char *stream_name );
-
-simpleaudio *
-simpleaudio_open_stream_sndfile(
-		int sa_stream_direction,
-		sa_sample_format_t sa_sample_format,
-		unsigned int rate, unsigned int channels,
-		char *path );
-
-/*
- * common simpleaudio_ API routines available to any backend:
- */
 
 unsigned int
 simpleaudio_get_rate( simpleaudio *sa );
@@ -77,7 +68,7 @@ simpleaudio_get_channels( simpleaudio *sa );
 unsigned int
 simpleaudio_get_framesize( simpleaudio *sa );
 
-sa_sample_format_t
+sa_format_t
 simpleaudio_get_format( simpleaudio *sa );
 
 unsigned int

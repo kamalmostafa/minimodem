@@ -79,17 +79,11 @@ sa_pulse_close( simpleaudio *sa )
     pa_simple_free(sa->backend_handle);
 }
 
-
-static const struct simpleaudio_backend simpleaudio_backend_pulse = {
-    sa_pulse_read,
-    sa_pulse_write,
-    sa_pulse_close,
-};
-
-simpleaudio *
-simpleaudio_open_stream_pulseaudio(
-		int sa_stream_direction,
-		sa_sample_format_t sa_sample_format,
+static int
+sa_pulse_open_stream(
+		simpleaudio *sa,
+		sa_direction_t sa_stream_direction,
+		sa_format_t sa_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
@@ -98,7 +92,7 @@ simpleaudio_open_stream_pulseaudio(
     // FIXME - use source for something
     // just take the default pulseaudio source for now
 
-    assert( sa_sample_format == SA_SAMPLE_FORMAT_FLOAT );
+    assert( sa_format == SA_SAMPLE_FORMAT_FLOAT );
 
     /* The sample type to use */
     pa_sample_spec ss = {
@@ -128,26 +122,25 @@ simpleaudio_open_stream_pulseaudio(
 	    &ss, NULL, &attr, &error);
     if ( !s ) {
         fprintf(stderr, "E: Cannot create PulseAudio stream: %s\n ", pa_strerror(error));
-        return NULL;
+        return 0;
     }
 
-    simpleaudio *sa = malloc(sizeof(simpleaudio));
-    if ( !sa ) {
-	perror("malloc");
-	pa_simple_free(s);
-        return NULL;
-    }
-    sa->format = sa_sample_format;
+    /* good or bad to override these? */
     sa->rate = ss.rate;
     sa->channels = ss.channels;
-    sa->samplesize = sizeof(float);
-    sa->backend = &simpleaudio_backend_pulse;
+
     sa->backend_handle = s;
     sa->backend_framesize = pa_frame_size(&ss);
 
-    assert( sa->backend_framesize == sa->channels * sa->samplesize );
-
-    return sa;
+    return 1;
 }
+
+
+const struct simpleaudio_backend simpleaudio_backend_pulseaudio = {
+    sa_pulse_open_stream,
+    sa_pulse_read,
+    sa_pulse_write,
+    sa_pulse_close,
+};
 
 #endif /* USE_PULSEAUDIO */

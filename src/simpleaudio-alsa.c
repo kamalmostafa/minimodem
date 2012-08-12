@@ -95,17 +95,11 @@ sa_alsa_close( simpleaudio *sa )
     snd_pcm_close(sa->backend_handle);
 }
 
-
-static const struct simpleaudio_backend simpleaudio_backend_alsa = {
-    sa_alsa_read,
-    sa_alsa_write,
-    sa_alsa_close,
-};
-
-simpleaudio *
-simpleaudio_open_stream_alsa(
-		int sa_stream_direction,
-		sa_sample_format_t sa_sample_format,
+static int
+sa_alsa_open_stream(
+		simpleaudio *sa,
+		sa_direction_t sa_stream_direction,
+		sa_format_t sa_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
@@ -118,10 +112,10 @@ simpleaudio_open_stream_alsa(
 		0 /*mode*/);
     if (error) {
 	fprintf(stderr, "E: Cannot create ALSA stream: %s\n", snd_strerror(error));
-	return NULL;
+	return 0;
     }
 
-    assert( sa_sample_format == SA_SAMPLE_FORMAT_FLOAT );
+    assert( sa_format == SA_SAMPLE_FORMAT_FLOAT );
 
     /* set up ALSA hardware params */
     error = snd_pcm_set_params(pcm,
@@ -134,7 +128,7 @@ simpleaudio_open_stream_alsa(
     if (error) {
 	fprintf(stderr, "E: %s\n", snd_strerror(error));
 	snd_pcm_close(pcm);
-	return NULL;
+	return 0;
     }
 
 #if 0
@@ -157,21 +151,18 @@ simpleaudio_open_stream_alsa(
     }
 #endif
 
-    simpleaudio *sa = malloc(sizeof(simpleaudio));
-    if ( !sa ) {
-	perror("malloc");
-	snd_pcm_close(pcm);
-        return NULL;
-    }
-    sa->format = sa_sample_format;
-    sa->rate = rate;
-    sa->channels = channels;
-    sa->samplesize = sizeof(float);
-    sa->backend = &simpleaudio_backend_alsa;
     sa->backend_handle = pcm;
     sa->backend_framesize = sa->channels * sa->samplesize; 
 
-    return sa;
+    return 1;
 }
 
-#endif /* USE_PULSEAUDIO */
+
+const struct simpleaudio_backend simpleaudio_backend_alsa = {
+    sa_alsa_open_stream,
+    sa_alsa_read,
+    sa_alsa_write,
+    sa_alsa_close,
+};
+
+#endif /* USE_ALSA */

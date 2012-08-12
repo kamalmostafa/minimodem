@@ -76,13 +76,6 @@ sa_sndfile_close( simpleaudio *sa )
 }
 
 
-static const struct simpleaudio_backend simpleaudio_backend_sndfile = {
-    sa_sndfile_read,
-    sa_sndfile_write,
-    sa_sndfile_close,
-};
-
-
 /* (Why) doesn't libsndfile provide an API for this?... */
 static const struct sndfile_format {
     unsigned int major_format;
@@ -132,14 +125,17 @@ sndfile_format_from_path( const char *path )
     return SF_FORMAT_WAV;
 }
 
-simpleaudio *
-simpleaudio_open_stream_sndfile(
-		int sa_stream_direction,
-		sa_sample_format_t sa_sample_format,
+static int
+sa_sndfile_open_stream(
+		simpleaudio *sa,
+		sa_direction_t sa_stream_direction,
+		sa_format_t sa_format,
 		unsigned int rate, unsigned int channels,
-		char *path )
+		char *app_name, char *stream_name )
 {
-    assert( sa_sample_format == SA_SAMPLE_FORMAT_FLOAT );
+    const char *path = stream_name;
+
+    assert( sa_format == SA_SAMPLE_FORMAT_FLOAT );
 
     /* setting for SA_STREAM_PLAYBACK (file write) */
     SF_INFO sfinfo = {
@@ -159,24 +155,25 @@ simpleaudio_open_stream_sndfile(
     if ( !s ) {
 	fprintf(stderr, "%s: ", path);
 	sf_perror(s);
-        return NULL;
+        return 0;
     }
 
-    simpleaudio *sa = malloc(sizeof(simpleaudio));
-    if ( !sa ) {
-	perror("malloc");
-	sf_close(s);
-        return NULL;
-    }
-    sa->format = sa_sample_format;
+    /* good or bad to override these? */
     sa->rate = sfinfo.samplerate;
     sa->channels = sfinfo.channels;
-    sa->samplesize = sizeof(float);
-    sa->backend = &simpleaudio_backend_sndfile;
+
     sa->backend_handle = s;
     sa->backend_framesize = sa->channels * sa->samplesize; 
 
-    return sa;
+    return 1;
 }
+
+
+const struct simpleaudio_backend simpleaudio_backend_sndfile = {
+    sa_sndfile_open_stream,
+    sa_sndfile_read,
+    sa_sndfile_write,
+    sa_sndfile_close,
+};
 
 #endif /* USE_SNDFILE */
