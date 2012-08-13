@@ -308,7 +308,7 @@ usage()
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
     "		    -A, --alsa\n"
-    "		    -F, --float-samples\n"
+    "		    --float-samples\n"
     "		    --benchmarks\n"
     "		{baudmode}\n"
     "		    1200       Bell202  1200 bps --ascii\n"
@@ -360,6 +360,7 @@ main( int argc, char*argv[] )
     
     enum {
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
+	MINIMODEM_OPT_FLOAT_SAMPLES,
 	MINIMODEM_OPT_BENCHMARKS,
     };
 
@@ -384,11 +385,11 @@ main( int argc, char*argv[] )
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		0, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
-	    { "float-samples",	0, 0, 'F' },
+	    { "float-samples",	0, 0, MINIMODEM_OPT_FLOAT_SAMPLES },
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qAR:F",
+	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qAR:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -452,7 +453,7 @@ main( int argc, char*argv[] )
 			exit(1);
 #endif
 			break;
-	    case 'F':
+	    case MINIMODEM_OPT_FLOAT_SAMPLES:
 			sample_format = SA_SAMPLE_FORMAT_FLOAT;
 			break;
 	    case MINIMODEM_OPT_BENCHMARKS:
