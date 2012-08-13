@@ -40,6 +40,8 @@
 #include "fsk.h"
 #include "baudot.h"
 
+char *program_name = "";
+
 
 /*
  * ASCII 8-bit data framebits decoder/encoder (passthrough)
@@ -224,6 +226,55 @@ report_no_carrier( fsk_plan *fskp,
 }
 
 void
+generate_test_tones( simpleaudio *sa_out, unsigned int duration_sec )
+{
+    unsigned int sample_rate = simpleaudio_get_rate(sa_out);
+    unsigned int nframes = sample_rate / 10;
+    int i;
+    for ( i=0; i<(sample_rate/nframes*duration_sec); i++ ) {
+	simpleaudio_tone(sa_out, 1000, nframes/2);
+	simpleaudio_tone(sa_out, 1777, nframes/2);
+    }
+}
+
+static int
+benchmarks()
+{
+    fprintf(stdout, "minimodem %s benchmarks\n", VERSION);
+
+    int ret;
+    ret = system("sed -n '/^model name/{p;q}' /proc/cpuinfo");
+    ret = ret;	// don't care, hush compiler.
+
+    fflush(stdout);
+
+    unsigned int sample_rate = 48000;
+    sa_backend_t backend = SA_BACKEND_BENCHMARK;
+    // backend = SA_BACKEND_SYSDEFAULT;	// for test
+
+    simpleaudio *sa_out;
+
+    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+				    SA_SAMPLE_FORMAT_S16, sample_rate, 1,
+				    program_name, "generate-tones-S16-mono");
+    if ( ! sa_out )
+	return 0;
+    generate_test_tones(sa_out, 10);
+    simpleaudio_close(sa_out);
+
+    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+				    SA_SAMPLE_FORMAT_FLOAT, sample_rate, 1,
+				    program_name, "generate-tones-FLOAT-mono");
+    if ( ! sa_out )
+	return 0;
+    generate_test_tones(sa_out, 10);
+    simpleaudio_close(sa_out);
+
+    return 1;
+}
+
+
+void
 version()
 {
     printf(
@@ -258,6 +309,7 @@ usage()
     "		    -V, --version\n"
     "		    -A, --alsa\n"
     "		    -F, --float-samples\n"
+    "		    --benchmarks\n"
     "		{baudmode}\n"
     "		    1200       Bell202  1200 bps --ascii\n"
     "		     300       Bell103   300 bps --ascii\n"
@@ -280,7 +332,6 @@ main( int argc, char*argv[] )
     unsigned int bfsk_n_data_bits = 0;
     int autodetect_shift;
     char *filename = NULL;
-    char *program_name;
 
     float	carrier_autodetect_threshold = 0.0;
     float	bfsk_confidence_threshold = 0.6;
@@ -307,6 +358,11 @@ main( int argc, char*argv[] )
     int c;
     int option_index;
     
+    enum {
+	MINIMODEM_OPT_UNUSED=256,	// placeholder
+	MINIMODEM_OPT_BENCHMARKS,
+    };
+
     while ( 1 ) {
 	static struct option long_options[] = {
 	    { "version",	0, 0, 'V' },
@@ -329,6 +385,7 @@ main( int argc, char*argv[] )
 	    { "alsa",		0, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
 	    { "float-samples",	0, 0, 'F' },
+	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { 0 }
 	};
 	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qAR:F",
@@ -397,6 +454,10 @@ main( int argc, char*argv[] )
 			break;
 	    case 'F':
 			sample_format = SA_SAMPLE_FORMAT_FLOAT;
+			break;
+	    case MINIMODEM_OPT_BENCHMARKS:
+			benchmarks();
+			exit(0);
 			break;
 	    default:
 			usage();

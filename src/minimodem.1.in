@@ -83,6 +83,9 @@ Generate 32-bit floating-point format audio samples, instead of the
 default 16-bit signed integer format (applies to \-\-tx mode only;
 \-\-rx mode always uses 32-bit floating-point).
 .TP
+.B \-\-benchmarks
+Run and report internal performance tests (all other flags are ignored).
+.TP
 .B \-V, \-\-version
 print program version
 .SH {baudmode}
