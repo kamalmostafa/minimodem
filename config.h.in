@@ -24,6 +24,9 @@
 /* Define to 1 to enable ALSA support */
 #undef USE_ALSA
 
+/* Define to 1 to enable internal benchmarks */
+#undef USE_BENCHMARKS
+
 /* Define to 1 to enable pulseaudio support */
 #undef USE_PULSEAUDIO
 

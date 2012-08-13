@@ -69,7 +69,7 @@ am__objects_1 = baudot.$(OBJEXT)
 am__objects_2 = fsk.$(OBJEXT)
 am__objects_3 = simpleaudio.$(OBJEXT) simple-tone-generator.$(OBJEXT) \
 	simpleaudio-pulse.$(OBJEXT) simpleaudio-alsa.$(OBJEXT) \
-	simpleaudio-sndfile.$(OBJEXT)
+	simpleaudio-benchmark.$(OBJEXT) simpleaudio-sndfile.$(OBJEXT)
 am_minimodem_OBJECTS = minimodem.$(OBJEXT) $(am__objects_1) \
 	$(am__objects_2) $(am__objects_3)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
@@ -220,6 +220,7 @@ SIMPLEAUDIO_SRC = \
 	simple-tone-generator.c \
 	simpleaudio-pulse.c	\
 	simpleaudio-alsa.c	\
+	simpleaudio-benchmark.c	\
 	simpleaudio-sndfile.c
 
 FSK_SRC = fsk.h fsk.c
@@ -314,6 +315,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minimodem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simple-tone-generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-alsa.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-benchmark.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-pulse.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio-sndfile.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleaudio.Po@am__quote@

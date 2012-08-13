@@ -659,6 +659,7 @@ enable_dependency_tracking
 with_alsa
 with_pulseaudio
 with_sndfile
+with_benchmarks
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1298,6 +1299,7 @@ Optional Packages:
   --without-alsa          build without ALSA support
   --without-pulseaudio    build without pulseaudio support
   --without-sndfile       build without sndfile support
+  --disable-benchmarks    build without internal benchmarks
 
 Some influential environment variables:
   CC          C compiler command
@@ -3355,6 +3357,26 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+#   benchmarks
+
+# Check whether --with-benchmarks was given.
+if test "${with_benchmarks+set}" = set; then :
+  withval=$with_benchmarks;
+fi
+
+if test "x$with_benchmarks" == "xno"; then :
+  # then
+	use_benchmarks=0
+else
+  # else
+	use_benchmarks=1
+fi
+
+cat >>confdefs.h <<_ACEOF
+#define USE_BENCHMARKS $use_benchmarks
+_ACEOF
+
+
 # Checks for libraries.
 
 
@@ -5051,11 +5073,13 @@ fi
 	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
 	--with-alsa           $with_alsa ($use_alsa)
 	--with-sndfile        $with_sndfile ($use_sndfile)
+	--with-benchmarks     $with_benchmarks ($use_benchmarks)
 	deps_packages:        $deps_packages
 " >&5
 $as_echo "minimodem 0.8.2 configuration summary:
 	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
 	--with-alsa           $with_alsa ($use_alsa)
 	--with-sndfile        $with_sndfile ($use_sndfile)
+	--with-benchmarks     $with_benchmarks ($use_benchmarks)
 	deps_packages:        $deps_packages
 " >&6; }
