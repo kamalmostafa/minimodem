@@ -78,6 +78,11 @@ Set the audio sample rate (default rate is 48000 Hz).
 Use ALSA as the audio output system instead of the default
 PulseAudio (depending on build configuration options).
 .TP
+.B \-\-lut={tx_sin_table_len}
+Minimodem uses a precomputed sine wave lookup table of 1024 elements,
+or the size specified here.  Use \-\-lut=0 to disable the use of
+the sine wave lookup table.  (This option applies to \-\-tx mode only).
+.TP
 .B \-\-float-samples
 Generate 32-bit floating-point format audio samples, instead of the
 default 16-bit signed integer format (applies to \-\-tx mode only;

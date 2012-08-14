@@ -254,21 +254,46 @@ benchmarks()
 
     simpleaudio *sa_out;
 
+
+    // enable the sine wave LUT
+    simpleaudio_tone_init(1024);
+
     sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
-				    SA_SAMPLE_FORMAT_S16, sample_rate, 1,
-				    program_name, "generate-tones-S16-mono");
+			SA_SAMPLE_FORMAT_S16, sample_rate, 1,
+			program_name, "generate-tones-lut1024-S16-mono");
     if ( ! sa_out )
 	return 0;
     generate_test_tones(sa_out, 10);
     simpleaudio_close(sa_out);
 
     sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
-				    SA_SAMPLE_FORMAT_FLOAT, sample_rate, 1,
-				    program_name, "generate-tones-FLOAT-mono");
+			SA_SAMPLE_FORMAT_FLOAT, sample_rate, 1,
+			program_name, "generate-tones-lut1024-FLOAT-mono");
     if ( ! sa_out )
 	return 0;
     generate_test_tones(sa_out, 10);
     simpleaudio_close(sa_out);
+
+
+    // disable the sine wave LUT
+    simpleaudio_tone_init(0);
+
+    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+			SA_SAMPLE_FORMAT_S16, sample_rate, 1,
+			program_name, "generate-tones-nolut-S16-mono");
+    if ( ! sa_out )
+	return 0;
+    generate_test_tones(sa_out, 10);
+    simpleaudio_close(sa_out);
+
+    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+			SA_SAMPLE_FORMAT_FLOAT, sample_rate, 1,
+			program_name, "generate-tones-nolut-FLOAT-mono");
+    if ( ! sa_out )
+	return 0;
+    generate_test_tones(sa_out, 10);
+    simpleaudio_close(sa_out);
+
 
     return 1;
 }
@@ -308,6 +333,7 @@ usage()
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
     "		    -A, --alsa\n"
+    "		    --lut={tx_sin_table_len}\n"
     "		    --float-samples\n"
     "		    --benchmarks\n"
     "		{baudmode}\n"
@@ -341,6 +367,8 @@ main( int argc, char*argv[] )
     unsigned int sample_rate = 48000;
     unsigned int nchannels = 1; // FIXME: only works with one channel
 
+    unsigned int tx_sin_table_len = 4096;
+
     /* validate the default system audio mechanism */
 #if !(USE_PULSEAUDIO || USE_ALSA)
 # define _MINIMODEM_NO_SYSTEM_AUDIO
@@ -360,6 +388,7 @@ main( int argc, char*argv[] )
     
     enum {
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
+	MINIMODEM_OPT_LUT,
 	MINIMODEM_OPT_FLOAT_SAMPLES,
 	MINIMODEM_OPT_BENCHMARKS,
     };
@@ -385,6 +414,7 @@ main( int argc, char*argv[] )
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		0, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
+	    { "lut",		1, 0, MINIMODEM_OPT_LUT },
 	    { "float-samples",	0, 0, MINIMODEM_OPT_FLOAT_SAMPLES },
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { 0 }
@@ -452,6 +482,9 @@ main( int argc, char*argv[] )
 			fprintf(stderr, "E: This build of minimodem was configured without alsa support.\n");
 			exit(1);
 #endif
+			break;
+	    case MINIMODEM_OPT_LUT:
+			tx_sin_table_len = atoi(optarg);
 			break;
 	    case MINIMODEM_OPT_FLOAT_SAMPLES:
 			sample_format = SA_SAMPLE_FORMAT_FLOAT;
@@ -586,6 +619,8 @@ main( int argc, char*argv[] )
      * Handle transmit mode
      */
     if ( TX_mode ) {
+
+	simpleaudio_tone_init(tx_sin_table_len);
 
 	int tx_interactive = 0;
 	if ( ! stream_name ) {
