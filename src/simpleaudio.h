@@ -1,7 +1,7 @@
 /*
  * simpleaudio.h
  *
- * Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>
+ * Copyright (C) 2011-2012 Kamal Mostafa <kamal@whence.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -95,5 +95,7 @@ simpleaudio_tone_reset();
 void
 simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur);
 
+void
+simpleaudio_tone_init( unsigned int new_sin_table_len );
 
 #endif
