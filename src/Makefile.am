@@ -26,7 +26,7 @@ bin_PROGRAMS = minimodem
 
 dist_man_MANS = minimodem.1
 
-EXTRA_DIST = minimodem.1.html self-test testcases/* # run-test
+EXTRA_DIST = minimodem.1.html self-test self-test-perfect testcases/* # run-test
 
 TESTS = testcases/test-*
 

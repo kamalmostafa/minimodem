@@ -211,7 +211,7 @@ top_srcdir = @top_srcdir@
 AM_CFLAGS = -Wall # -Werror
 INCLUDES = $(DEPS_CFLAGS)
 dist_man_MANS = minimodem.1
-EXTRA_DIST = minimodem.1.html self-test testcases/* # run-test
+EXTRA_DIST = minimodem.1.html self-test self-test-perfect testcases/* # run-test
 TESTS = testcases/test-*
 SIMPLEAUDIO_SRC = \
 	simpleaudio.h		\
