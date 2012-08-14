@@ -40,7 +40,7 @@
 
 struct benchmark_data {
     struct timeval	tv_start;
-    unsigned long	total_nframes;
+    unsigned long long	total_nframes;
 };
 
 
@@ -59,21 +59,21 @@ sa_benchmark_close( simpleaudio *sa )
     gettimeofday(&tv_stop, NULL);
 
     struct benchmark_data *d = sa->backend_handle;
-    unsigned long runtime_usec, playtime_usec;
+    unsigned long long runtime_usec, playtime_usec;
     runtime_usec = (tv_stop.tv_sec - d->tv_start.tv_sec) * 1000000;
     runtime_usec += tv_stop.tv_usec;
     runtime_usec -= d->tv_start.tv_usec;
 
     playtime_usec = d->total_nframes * 1000000 / sa->rate;
 
-    unsigned long performance = d->total_nframes * 1000000 / runtime_usec;
+    unsigned long long performance = d->total_nframes * 1000000 / runtime_usec;
 
-    fprintf(stdout, "    frames count:    \t%lu\n", d->total_nframes);
-    fprintf(stdout, "    audio playtime:  \t%2lu.%06lu sec\n",
+    fprintf(stdout, "    frames count:    \t%llu\n", d->total_nframes);
+    fprintf(stdout, "    audio playtime:  \t%2llu.%06llu sec\n",
 	    playtime_usec/1000000, playtime_usec%1000000);
-    fprintf(stdout, "    elapsed runtime: \t%2lu.%06lu sec\n",
+    fprintf(stdout, "    elapsed runtime: \t%2llu.%06llu sec\n",
 	    runtime_usec/1000000, runtime_usec%1000000);
-    fprintf(stdout, "    performance:     \t%lu samples/sec\n",
+    fprintf(stdout, "    performance:     \t%llu samples/sec\n",
 	    performance);
     fflush(stdout);
 
