@@ -1,3 +1,22 @@
+minimodem (0.9-1) unstable; urgency=low
+
+  * runtime configurable audio sample rate and system audio backend
+      (PulseAudio or ALSA)
+  * use 1024-element sine wave lookup table by default (for --tx only)
+  * output 16-bit integer audio samples by default (for --tx only)
+  * configure --with/out switches for {pulseaudio,alsa,sndfile,benchmarks}
+  * internal sine wave benchmarks
+  * more 'make check' test cases
+
+  * minimodem new runtime command line switches:
+      -R, --samplerate {rate}    specify audio sample rate (default 48000)
+      -A, --alsa                 use ALSA backend (default PulseAudio)
+      --lut={tx_sin_table_len}   use lookup table of len, 0 to disable LUT
+      --float-samples            use 32-bit float audio samples for --tx
+      --benchmarks               run and report internal performance tests
+
+ -- Kamal Mostafa <kamal@whence.com>  Mon, 13 Aug 2012 21:52:32 -0700
+
 minimodem (0.8.2-1) unstable; urgency=low
 
   * configure: new opts --without-{pulseaudio,sndfile}
