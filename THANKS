@@ -1,0 +1,26 @@
+
+My thanks to the following, who assisted with the development and testing
+of minimodem.
+
+  - Kamal Mostafa <kamal@whence.com>
+
+
+Colin Ian King <colin.king@canonical.com> was one of the first users of
+minimodem and was instrumental in the testing of the initial versions.
+He has used minimodem to debug suspend/resume issues, representing its
+first practical application:
+http://smackerelofopinion.blogspot.com/2011/08/debugging-s3-suspendresume-using.html
+Thanks Colin!
+
+
+Elektra <onelektra@gmx.net> provided encouragement and extensive help with
+making minimodem work on an OpenWRT router, including testing the ALSA
+back-end and runtime performance improvements for non-FPU systems.  Elektra
+demonstrates and discusses minimodem on the German Freifunk radio show:
+http://wiki.freifunk.net/Freifunk.radio_20120814
+Thanks Elektra!
+
+
+My employer Canonical, Ltd. for encouraging me to spend time developing
+and maintaining this and other open-source projects.  Thanks, Canonical!
+
