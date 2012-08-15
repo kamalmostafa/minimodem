@@ -243,7 +243,7 @@ benchmarks()
     fprintf(stdout, "minimodem %s benchmarks\n", VERSION);
 
     int ret;
-    ret = system("sed -n '/^model name/{p;q}' /proc/cpuinfo");
+    ret = system("sed -n -e '/^model name/{p;q}' -e '/^cpu model/{p;q}' /proc/cpuinfo");
     ret = ret;	// don't care, hush compiler.
 
     fflush(stdout);
