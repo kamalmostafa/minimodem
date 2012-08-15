@@ -68,9 +68,8 @@ simpleaudio_tone_init( unsigned int new_sin_table_len )
 static inline short
 sin_lu_short( float turns )
 {
-    turns = fmodf(turns, 1.0);
-    int t = (float)sin_table_len * turns;
-    // assert ( t >= 0 && t < sin_table_len );
+    int t = (float)sin_table_len * turns + 0.5f;
+    t %= sin_table_len;
     return sin_table_short[t];
 }
 
@@ -80,9 +79,8 @@ sin_lu_short( float turns )
 static inline float
 sin_lu_float( float turns )
 {
-    turns = fmodf(turns, 1.0);
-    int t = (float)sin_table_len * turns;
-    // assert ( t >= 0 && t < sin_table_len );
+    int t = (float)sin_table_len * turns + 0.5f;
+    t %= sin_table_len;
     return sin_table_float[t];
 }
 
