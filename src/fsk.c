@@ -1,7 +1,7 @@
 /*
  * fsk.c
  *
- * Copyright (C) 2011 Kamal Mostafa <kamal@whence.com>
+ * Copyright (C) 2011-2012 Kamal Mostafa <kamal@whence.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -119,21 +119,57 @@ band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
 
 static void
 fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
-	unsigned int *bit_outp, float *bit_strength_outp)
+	unsigned int *bit_outp,
+	float *bit_signal_mag_outp,
+	float *bit_noise_mag_outp
+	)
 {
     unsigned int pa_nchannels = 1;	// FIXME
     bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
     memcpy(fskp->fftin, samples, bit_nsamples * sizeof(float));
+
+    float magscalar = 2.0 / (float)bit_nsamples;
+
+#if 0
+    //// apodization window
+
+    //// raised cosine windows
+# if 0
+    float a0=0.54, a1=(1.0f - a0);	// Hamming window
+# else
+    float a0=0.5, a1=0.5;		// Hann window
+# endif
+
+    magscalar /= a0;		// true for all raised cosine windows (I think)
+
+    int i;
+    for ( i=0; i<bit_nsamples; i++ ) {
+	float zoff = 0.0; // 0.5  // FIXME which is it??
+	unsigned int z = bit_nsamples /* not -1  ... explain */;
+	float w = a0
+		- a1 * cos((2.0*M_PI*((float)i+zoff)) / z);
+	fskp->fftin[i] *= w;
+    }
+#endif
+
+
     fftwf_execute(fskp->fftplan);
-    float magscalar = 1.0 / ((float)bit_nsamples/2.0);
     float mag_mark  = band_mag(fskp->fftout, fskp->b_mark,  magscalar);
     float mag_space = band_mag(fskp->fftout, fskp->b_space, magscalar);
-    *bit_outp = mag_mark > mag_space ? 1 : 0;	// mark==1, space==0
-    *bit_strength_outp = fabs(mag_mark - mag_space);
-    debug_log( "\t%.2f  %.2f  %s  bit=%u bit_strength=%.2f\n",
+    // mark==1, space==0
+    if ( mag_mark > mag_space ) {
+	*bit_outp = 1;
+	*bit_signal_mag_outp = mag_mark;
+	*bit_noise_mag_outp = mag_space;
+    } else {
+	*bit_outp = 0;
+	*bit_signal_mag_outp = mag_space;
+	*bit_noise_mag_outp = mag_mark;
+    }
+    debug_log( "\t%.2f  %.2f  %s  bit=%u sig=%.2f noise=%.2f\n",
 	    mag_mark, mag_space,
 	    mag_mark > mag_space ? "mark      " : "     space",
-	    *bit_outp, *bit_strength_outp);
+	    *bit_outp, *bit_signal_mag_outp, *bit_noise_mag_outp);
 }
 
 
@@ -161,11 +197,10 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
     unsigned int	bit_values[32];
-    float		bit_strengths[32];
+    float		bit_sig_mags[32];
+    float		bit_noise_mags[32];
     unsigned int	bit_begin_sample;
     int			bitnum;
-
-    float		v = 0;
 
     char *expect_bits = expect_bit_string;
 
@@ -178,12 +213,12 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5);
 	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
-		&bit_values[bitnum], &bit_strengths[bitnum]);
+		&bit_values[bitnum],
+		&bit_sig_mags[bitnum],
+		&bit_noise_mags[bitnum]);
 
 	if ( (expect_bits[bitnum] - '0') != bit_values[bitnum] )
 	    return 0.0; /* does not match expected; abort frame analysis. */
-
-	v += bit_strengths[bitnum];
     }
 
 // Note: CONFIDENCE_ALGO 3 does not need AVOID_TRANSIENTS
@@ -210,45 +245,140 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5);
 	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
-		&bit_values[bitnum], &bit_strengths[bitnum]);
-	v += bit_strengths[bitnum];
+		&bit_values[bitnum],
+		&bit_sig_mags[bitnum],
+		&bit_noise_mags[bitnum]);
     }
 
-    /* compute average bit strength 'v' */
-#if 1 /* don't consider the stop bit -- we'll look at it next time around */
-    float p_str = bit_strengths[fskp->n_data_bits + 2];
-    v -= p_str;
-    v /= (n_bits-1);
-#else
-    v /= n_bits;
+
+#define CONFIDENCE_ALGO	5
+
+    float confidence;
+
+#if CONFIDENCE_ALGO == 5
+
+    float total_bit_sig = 0.0, total_bit_noise = 0.0;
+    for ( bitnum=0; bitnum<(n_bits-1); bitnum++ ) {
+	total_bit_sig   += bit_sig_mags[bitnum];
+	total_bit_noise += bit_noise_mags[bitnum];
+    }
+
+    // Deal with floating point data type quantization noise...
+    // If total_bit_noise is so small that (sig-noise) appears to == sig,
+    // then force noise=0.0, so that we end up with snr==inf.
+    float d = total_bit_sig - total_bit_noise;
+    if ( d == total_bit_sig)
+	total_bit_noise = 0.0f;
+
+    // Compute the "frame SNR"
+    float snr = total_bit_sig / total_bit_noise;
+
+#ifdef FSK_DEBUG
+    float avg_bit_sig   = total_bit_sig / (n_bits-1);
+    float avg_bit_noise = total_bit_noise / (n_bits-1);
+    debug_log("    snr=%.6f avg{ bit_sig=%.6f bit_noise=%.6f }\n",
+	    snr, avg_bit_sig, avg_bit_noise);
 #endif
+
+    // Frame confidence is the frame SNR
+    confidence = snr;
+
+#elif CONFIDENCE_ALGO == 4
+
+    /* compute average bit strengths: v_mark and v_space */
+    /* compute average bit strength */
+    /* don't consider the stop bit -- we'll look at it next time around */
+    float v_mark=0.0, v_space=0.0, avg_bit_strength=0.0;
+    unsigned int v_mark_count=0, v_space_count=0;
+    for ( bitnum=0; bitnum<(n_bits-1); bitnum++ ) {
+	if ( bit_values[bitnum] == 1 ) {
+	    v_mark += bit_strengths[bitnum];
+	    v_mark_count++;
+	} else {
+	    v_space += bit_strengths[bitnum];
+	    v_space_count++;
+	}
+	avg_bit_strength += bit_strengths[bitnum];
+    }
+    if ( v_mark_count )
+	v_mark /= v_mark_count;
+    if ( v_space_count )
+	v_space /= v_space_count;
+    avg_bit_strength /= (n_bits-1);
+
+#ifdef FSK_DEBUG
+    debug_log("    bit_mag ");
+    for ( bitnum=0; bitnum<n_bits-1; bitnum++ )
+	debug_log("%.2f  ", bit_sig_mags[bitnum]);
+    debug_log("\n");
+    debug_log("    bit_str ");
+    for ( bitnum=0; bitnum<n_bits-1; bitnum++ )
+	debug_log("%.2f  ", bit_strengths[bitnum]);
+    debug_log("\n");
+#endif
+
+
+    /* determine the worst bit strength divergence */
+    float worst_divergence = 0;
+    /* nbits-1: don't consider the stop bit */
+    debug_log("mag_diverge ");
+    for ( bitnum=0; bitnum<n_bits-1; bitnum++ )
+    {
+	float normalized_bit_str;
+	if ( bit_values[bitnum] == 1 )
+	    normalized_bit_str = bit_strengths[bitnum] - v_mark;
+	else
+	    normalized_bit_str = bit_strengths[bitnum] - v_space;
+	debug_log("%.2f  ", normalized_bit_str);
+	// float divergence = fabs(1.0 - normalized_bit_str);
+	float divergence = fabs(normalized_bit_str);
+	if ( worst_divergence < divergence )
+	    worst_divergence = divergence;
+    }
+    debug_log("\n");
+
+    debug_log("    avg_str=%.6f avg_mark=%.6f avg_space=%.6f, worst_div=%.6f\n",
+	    avg_bit_strength, v_mark, v_space, worst_divergence);
+
+    // confidence = (1.0 - worst_divergence) * avg_bit_strength;
+    confidence = (1.0 - worst_divergence);
+    if ( confidence <= 0.0 )
+	return 0.0;
+
+#else /* CONFIDENCE_ALGO 3 */
+
+    /* compute average bit strength 'v' */
+    /* don't consider the stop bit -- we'll look at it next time around */
+    float v = 0.0;
+    for ( bitnum=0; bitnum<(n_bits-1); bitnum++ )
+	v += bit_strengths[bitnum];
+    v /= (n_bits-1);
 
 // #define FSK_MIN_STRENGTH	0.005
-#ifdef FSK_MIN_STRENGTH
+# ifdef FSK_MIN_STRENGTH
     if ( v < FSK_MIN_STRENGTH )
 	return 0.0;
-#endif
-
-#define CONFIDENCE_ALGO	3
+# endif
 
     float worst_divergence = 0;
-    int i;
     /* nbits-1: don't consider the stop bit */
-    for ( i=0; i<n_bits-1; i++ )
+    for ( bitnum=0; bitnum<n_bits-1; bitnum++ )
     {
-	float normalized_bit_str = bit_strengths[i] / v;
+	float normalized_bit_str = bit_strengths[bitnum] / v;
 	float divergence = fabs(1.0 - normalized_bit_str);
 	if ( worst_divergence < divergence )
 	    worst_divergence = divergence;
     }
-    float confidence = 1.0 - worst_divergence;
+    confidence = 1.0 - worst_divergence;
     if ( confidence <= 0.0 )
 	return 0.0;
 
+#endif /* CONFIDENCE_ALGO */
+
 
     *bits_outp = 0;
-    for ( i=0; i<n_bits; i++ )
-	*bits_outp |= bit_values[i] << i;
+    for ( bitnum=0; bitnum<n_bits; bitnum++ )
+	*bits_outp |= bit_values[bitnum] << bitnum;
 
     debug_log("    frame confidence (algo #%u) = %f\n",
 	    CONFIDENCE_ALGO, confidence);
@@ -266,11 +396,13 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 {
     float samples_per_bit = (float)frame_nsamples / fskp->n_frame_bits;
 
+    // try_step_nsamples = 1;	// pedantic TEST
+
     unsigned int t;
     unsigned int best_t = 0;
     float best_c = 0.0;
     unsigned int best_bits = 0;
-    for ( t=0; t<(try_max_nsamples+try_step_nsamples); t+=try_step_nsamples )
+    for ( t=0; t+try_step_nsamples<=try_max_nsamples; t+=try_step_nsamples )
     {
 	float c;
 	unsigned int bits_out = 0;
@@ -280,6 +412,12 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	    best_t = t;
 	    best_c = c;
 	    best_bits = bits_out;
+	    // TEST
+//	    if ( best_c > 100.0f )
+//		break;
+	    // if we find a perfect frame, stop scanning for a better one
+	    if ( best_c == INFINITY )
+		break;
 	}
     }
 

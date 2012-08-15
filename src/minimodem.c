@@ -209,7 +209,7 @@ report_no_carrier( fsk_plan *fskp,
     fprintf(stderr, "nsamples_per_bit=%f\n", nsamples_per_bit);
 #endif
     float throughput_rate = nbits_total * sample_rate / (float)carrier_nsamples;
-    fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.2f throughput=%.2f",
+    fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.3f throughput=%.2f",
 	    nframes_decoded,
 	    confidence_total / nframes_decoded,
 	    throughput_rate);
@@ -360,7 +360,7 @@ main( int argc, char*argv[] )
     char *filename = NULL;
 
     float	carrier_autodetect_threshold = 0.0;
-    float	bfsk_confidence_threshold = 0.6;
+    float	bfsk_confidence_threshold = 1.0;
 
     sa_backend_t sa_backend = SA_BACKEND_SYSDEFAULT;
     sa_format_t sample_format = SA_SAMPLE_FORMAT_S16;
@@ -862,6 +862,7 @@ main( int argc, char*argv[] )
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
 	if ( confidence <= bfsk_confidence_threshold ) {
+
 	    // FIXME: explain
 	    if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
 	    {
@@ -886,6 +887,8 @@ main( int argc, char*argv[] )
 	     * we left off this time.		*/
 	    advance = try_max_nsamples;
 	    noconfidence_nsamples += advance;
+	    debug_log("@ NOCONFIDENCE=%u advance=%u nc_nsamples=%lu\n",
+			noconfidence, advance, noconfidence_nsamples);
 	    continue;
 	}
 

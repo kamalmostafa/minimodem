@@ -16,7 +16,7 @@ trap "rm -f $TMPF" 0
 
 ndata=$(wc -c <$textfile)
 
-match="ndata=$ndata confidence=1.00 .* (rate perfect)"
+match="ndata=$ndata confidence=inf .* (rate perfect)"
 grep -q "$match" $TMPF || {
 echo "Not perfect; expected: $match"
   exit 1
