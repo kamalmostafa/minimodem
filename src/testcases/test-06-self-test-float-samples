@@ -1,1 +1,0 @@
-exec ./self-test testcases/self-test-ascii.txt --float-samples 12000

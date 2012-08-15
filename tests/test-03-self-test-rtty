@@ -1,0 +1,2 @@
+# use testdata-ascii-baudot.txt as the sample text file
+exec ./self-test testdata-baudot.txt rtty

@@ -17,36 +17,12 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-AM_CFLAGS = -Wall # -Werror
+EXTRA_DIST = \
+	run-self-tests \
+	self-test \
+	self-test-perfect \
+	test-* \
+	testdata-*
 
-INCLUDES = $(DEPS_CFLAGS)
-
-
-bin_PROGRAMS = minimodem
-
-dist_man_MANS = minimodem.1
-
-EXTRA_DIST = minimodem.1.html
-
-SIMPLEAUDIO_SRC = \
-	simpleaudio.h		\
-	simpleaudio_internal.h	\
-	simpleaudio.c		\
-	simple-tone-generator.c \
-	simpleaudio-pulse.c	\
-	simpleaudio-alsa.c	\
-	simpleaudio-benchmark.c	\
-	simpleaudio-sndfile.c
-
-FSK_SRC = fsk.h fsk.c
-
-BAUDOT_SRC = baudot.h baudot.c
-
-minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c $(BAUDOT_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
-
-
-minimodem.1.html: minimodem.1 Makefile
-	man --html=cat ./minimodem.1 | sed '5,$$ s:\(http\:[^ &]*\):<A HREF="\1">\1</A>:g' > $@
-	[ -s $@ ] || { rm $@; exit 1; }
+TESTS = test-*
 

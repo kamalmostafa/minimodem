@@ -1,0 +1,1 @@
+exec ./self-test testdata-ascii.txt 12000

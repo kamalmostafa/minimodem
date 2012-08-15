@@ -1,0 +1,11 @@
+#!/bin/bash
+
+for testcase in ./test-*
+do
+   $testcase
+   if [ $? -eq 0 ]
+   then echo "PASS: $testcase"
+   else echo "FAIL: $testcase"
+   fi
+done
+

@@ -1,6 +1,13 @@
 #!/bin/bash
 
 MINIMODEM="${MINIMODEM-./minimodem}"
+[ -f "$MINIMODEM" ] || {
+    MINIMODEM="../src/minimodem"
+    [ -f "$MINIMODEM" ] || {
+	echo "E: cannot find minimodem in ./ or ../src/" 1>&2
+	exit 1
+    }
+}
 
 [ $# -ge 2 ] || {
     echo "usage: self-test textfile minimodem_args" 1>&2

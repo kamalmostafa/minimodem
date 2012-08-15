@@ -100,6 +100,7 @@ AC_CONFIG_FILES([
 		 Makefile
                  src/Makefile
                  src/minimodem.1
+                 tests/Makefile
 		])
 #                 testdata/Makefile
 AC_OUTPUT

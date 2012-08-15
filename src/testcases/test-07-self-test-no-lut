@@ -1,1 +1,0 @@
-exec ./self-test fsk.c 1200 --lut=0
