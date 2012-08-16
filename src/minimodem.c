@@ -690,7 +690,8 @@ main( int argc, char*argv[] )
 // FIXME I should be able to reduce this to * 9 for 5-bit data, but
 // it SOMETIMES crashes -- probably due to non-integer nsamples_per_bit
 // FIXME by passing it down into the fsk code?
-    size_t	samplebuf_size = ceilf(nsamples_per_bit) * 12;
+    // FIXME EXPLAIN +1 goes with extra bit when scanning
+    size_t	samplebuf_size = ceilf(nsamples_per_bit) * (12+1);
     float	*samplebuf = malloc(samplebuf_size * sizeof(float));
     float	*samples_readptr = samplebuf;
     size_t	read_nsamples = samplebuf_size;
@@ -711,6 +712,25 @@ main( int argc, char*argv[] )
     unsigned int	noconfidence = 0;
     size_t		noconfidence_nsamples = 0;
     unsigned int	advance = 0;
+
+    // Fraction of nsamples_per_bit that we will "overscan"; range (0.0 .. 1.0)
+    float fsk_frame_overscan = 0.5;
+    //   should be != 0.0 (only the nyquist edge cases actually require this?)
+    // for handling of slightly faster-than-us rates:
+    //   should be >> 0.0 to allow us to lag back for faster-than-us rates
+    //   should be << 1.0 or we may lag backwards over whole bits
+    // for optimal analysis:
+    //   should be >= 0.5 (half a bit width) or we may not find the optimal bit
+    //   should be <  1.0 (a full bit width) or we may skip over whole bits
+    assert( fsk_frame_overscan >= 0.0 && fsk_frame_overscan < 1.0 );
+
+    // ensure that we overscan at least a single sample
+    unsigned int nsamples_overscan
+			= nsamples_per_bit * fsk_frame_overscan + 0.5;
+    if ( fsk_frame_overscan > 0.0 && nsamples_overscan == 0 )
+	nsamples_overscan = 1;
+    debug_log("fsk_frame_overscan=%f nsamples_overscan=%u\n",
+	    fsk_frame_overscan, nsamples_overscan);
 
     while ( 1 ) {
 
@@ -807,7 +827,12 @@ main( int argc, char*argv[] )
 	if ( samples_nvalid < frame_nsamples )
 	    break;
 
-	unsigned int try_max_nsamples = nsamples_per_bit;
+	// try_max_nsamples = nsamples_per_bit + nsamples_overscan;
+	// serves two purposes
+	// 1. avoids finding a non-optimal first frame
+	// 2. allows us to track slightly slow signals
+	unsigned int try_max_nsamples = nsamples_per_bit + nsamples_overscan;
+
 #define FSK_ANALYZE_NSTEPS		10	/* accuracy vs. performance */
 		// Note: FSK_ANALYZE_NSTEPS has subtle effects on the
 		// "rate perfect" calculation.  oh well.
@@ -836,8 +861,6 @@ main( int argc, char*argv[] )
 
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
-#define FSK_SCAN_LAG			0.2
-
 	if ( confidence <= bfsk_confidence_threshold ) {
 	    // FIXME: explain
 	    if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )
@@ -846,7 +869,7 @@ main( int argc, char*argv[] )
 		if ( carrier ) {
 		    carrier_nsamples -= noconfidence_nsamples;
 		    if ( nframes_decoded > 0 )
-			carrier_nsamples += nsamples_per_bit * FSK_SCAN_LAG;
+			carrier_nsamples += nsamples_overscan;
 		    if ( !quiet_mode )
 			report_no_carrier(fskp, sample_rate, bfsk_data_rate,
 			    nsamples_per_bit, nframes_decoded,
@@ -895,10 +918,11 @@ main( int argc, char*argv[] )
 	 * advance = 1 prev_stop + 1 start + N data bits == n_data_bits+2
 	 *
 	 * but actually advance just a bit less than that to allow
-	 * for clock skew, hence FSK_SCAN_LAG.
+	 * for tracking slightly fast signals, hence - nsamples_overscan.
 	 */
-	advance = frame_start_sample +
-	    nsamples_per_bit * (float)(fskp->n_data_bits + 2 - FSK_SCAN_LAG);
+	advance = frame_start_sample
+		+ nsamples_per_bit * (float)(fskp->n_data_bits + 2)
+		- nsamples_overscan;
 
 	debug_log("@ nsamples_per_bit=%.3f n_data_bits=%u "
 			" frame_start=%u advance=%u\n",
@@ -936,7 +960,7 @@ main( int argc, char*argv[] )
     if ( carrier ) {
 	carrier_nsamples -= noconfidence_nsamples;
 	if ( nframes_decoded > 0 )
-	    carrier_nsamples += nsamples_per_bit * FSK_SCAN_LAG;
+	    carrier_nsamples += nsamples_overscan;
 	if ( !quiet_mode )
 	    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
 		nsamples_per_bit, nframes_decoded,
