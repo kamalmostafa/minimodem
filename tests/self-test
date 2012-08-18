@@ -9,21 +9,59 @@ MINIMODEM="${MINIMODEM-./minimodem}"
     }
 }
 
+test_perfect=0
+[ "$1" = "-P" ] && {
+    test_perfect=1
+    shift
+}
+
 [ $# -ge 2 ] || {
-    echo "usage: self-test textfile minimodem_args" 1>&2
+    echo "usage: self-test [-P] textfile minimodem_args" 1>&2
     exit 1
 }
 textfile="$1"
 shift
 minimodem_args="$*"
 
-TMPF="/tmp/minimodem-test-$$.wav"
-trap "rm -f $TMPF" 0
+TMPF="/tmp/minimodem-test-$$"
+trap "rm -f $TMPF.*" 0
 
 set -e
-echo
-echo "$MINIMODEM ... $minimodem_args < $textfile"
-$MINIMODEM --tx -T 1 --file $TMPF $minimodem_args < "$textfile"
-# ls -l $TMPF
-$MINIMODEM --rx --file $TMPF $minimodem_args | diff "$textfile" -
+#echo
+#echo "$MINIMODEM ... $minimodem_args < $textfile"
 
+$MINIMODEM --tx -T 1 --file $TMPF.wav $minimodem_args < "$textfile"
+
+# cp $TMPF.wav /tmp/x.wav
+
+$MINIMODEM --rx --file $TMPF.wav $minimodem_args \
+	> $TMPF.out 2> $TMPF.err || {
+    cat $TMPF.err
+    exit 1
+}
+
+cmp "$textfile" $TMPF.out
+
+{
+    read xlitcarrier
+    read xlithashes xlitnocarrier stats
+} < $TMPF.err
+
+
+result="OK       "
+exitcode=0
+
+[ $test_perfect -eq 1 ] && {
+    match="confidence=inf .* (rate perfect)"
+    if grep -q "$match" $TMPF.err
+    then
+	result="PERFECT  "
+    else
+	result="IMPERFECT"
+	exitcode=1
+    fi
+}
+
+echo -e "$result  $stats"
+
+exit $exitcode

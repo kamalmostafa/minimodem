@@ -20,7 +20,6 @@
 EXTRA_DIST = \
 	run-self-tests \
 	self-test \
-	self-test-perfect \
 	test-* \
 	testdata-*
 

@@ -1,2 +1,2 @@
-exec ./self-test-perfect testdata-ascii.txt \
+exec ./self-test -P testdata-ascii.txt \
 	1200 --samplerate 24000 -M 1200 -S 2400 --lut=0

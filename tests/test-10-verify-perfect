@@ -1,4 +1,4 @@
 # test for confidence=1.00 when using exact integer multiple frequencies
-exec ./self-test-perfect testdata-ascii.txt \
+exec ./self-test -P testdata-ascii.txt \
 	1200 --samplerate 24000 -M 1200 -S 2400
 
