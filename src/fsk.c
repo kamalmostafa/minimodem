@@ -75,6 +75,7 @@ fsk_plan_new(
 
     // FIXME check these:
     fskp->fftin  = fftwf_malloc(fskp->fftsize * sizeof(float) * pa_nchannels);
+    bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
     fskp->fftout = fftwf_malloc(fskp->nbands * sizeof(fftwf_complex) * pa_nchannels);
 
     /* complex fftw plan, works for N channels: */
@@ -124,8 +125,12 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 	float *bit_noise_mag_outp
 	)
 {
-    unsigned int pa_nchannels = 1;	// FIXME
-    bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
+    // FIXME: Fast and loose ... don't bzero fftin, just assume its only ever
+    // been used for bit_nsamples so the remainder is still zeroed.  Sketchy.
+    //
+    // unsigned int pa_nchannels = 1;	// FIXME
+    // bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
+
     memcpy(fskp->fftin, samples, bit_nsamples * sizeof(float));
 
     float magscalar = 2.0 / (float)bit_nsamples;
