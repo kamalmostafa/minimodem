@@ -710,7 +710,6 @@ main( int argc, char*argv[] )
     size_t		carrier_nsamples = 0;
 
     unsigned int	noconfidence = 0;
-    size_t		noconfidence_nsamples = 0;
     unsigned int	advance = 0;
 
     // Fraction of nsamples_per_bit that we will "overscan"; range (0.0 .. 1.0)
@@ -736,9 +735,6 @@ main( int argc, char*argv[] )
 
 	debug_log("advance=%u\n", advance);
 
-	if ( carrier && nframes_decoded > 0 )
-	    carrier_nsamples += advance;
-	
 	/* Shift the samples in samplebuf by 'advance' samples */
 	assert( advance <= samplebuf_size );
 	if ( advance == samplebuf_size ) {
@@ -868,9 +864,6 @@ main( int argc, char*argv[] )
 	    {
 		carrier_band = -1;
 		if ( carrier ) {
-		    carrier_nsamples -= noconfidence_nsamples;
-		    if ( nframes_decoded > 0 )
-			carrier_nsamples += nsamples_overscan;
 		    if ( !quiet_mode )
 			report_no_carrier(fskp, sample_rate, bfsk_data_rate,
 			    nsamples_per_bit, nframes_decoded,
@@ -886,13 +879,20 @@ main( int argc, char*argv[] )
 	     * next time around the loop we continue searching from where
 	     * we left off this time.		*/
 	    advance = try_max_nsamples;
-	    noconfidence_nsamples += advance;
-	    debug_log("@ NOCONFIDENCE=%u advance=%u nc_nsamples=%lu\n",
-			noconfidence, advance, noconfidence_nsamples);
+	    debug_log("@ NOCONFIDENCE=%u advance=%u\n", noconfidence, advance);
 	    continue;
 	}
 
-	if ( !carrier ) {
+	// Add a frame's worth of samples to the sample count
+	carrier_nsamples += nsamples_per_bit * (fskp->n_data_bits + 2);
+
+	if ( carrier ) {
+
+	    // If we already had carrier, adjust sample count +start -overscan
+	    carrier_nsamples += frame_start_sample;
+	    carrier_nsamples -= nsamples_overscan;
+
+	} else {
 	    if ( !quiet_mode ) {
 		if ( bfsk_data_rate >= 100 )
 		    fprintf(stderr, "### CARRIER %u @ %.1f Hz ###\n",
@@ -904,8 +904,6 @@ main( int argc, char*argv[] )
 			    fskp->b_mark * fskp->band_width);
 	    }
 	    carrier = 1;
-	    /* back up carrier_nsamples to account for the imminent advance */
-	    noconfidence_nsamples = frame_start_sample;
 	    bfsk_framebits_decode(0, 0, 0);	/* reset the frame processor */
 	}
 
@@ -961,9 +959,6 @@ main( int argc, char*argv[] )
     } /* end of the main loop */
 
     if ( carrier ) {
-	carrier_nsamples -= noconfidence_nsamples;
-	if ( nframes_decoded > 0 )
-	    carrier_nsamples += nsamples_overscan;
 	if ( !quiet_mode )
 	    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
 		nsamples_per_bit, nframes_decoded,
