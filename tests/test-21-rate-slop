@@ -1,0 +1,30 @@
+#!/bin/bash
+
+let rx_rate=300
+
+let count=0
+let fail=0
+
+function try_tx_rx_rate
+{
+    txr=$1
+    echo -n "$txr "
+    let count++
+    ./self-test testdata-ascii.txt $txr -- $rx_rate || let fail++
+}
+
+for adj in  \
+    	-8 -7 -6 -5 -4 -3 -2 -1 \
+	0 +1 +2 +3 +4 +5 +6 +7 +8
+do
+    let tx_rate="rx_rate + adj"
+    try_tx_rx_rate $tx_rate
+done
+
+if [ $fail -eq 0 ]
+then
+echo "  (all $count passed)"
+else
+echo "  ($fail/$count failed)"
+fi
+exit $fail
