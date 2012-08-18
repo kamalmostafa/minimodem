@@ -16,25 +16,44 @@ test_perfect=0
 }
 
 [ $# -ge 2 ] || {
-    echo "usage: self-test [-P] textfile minimodem_args" 1>&2
+    echo "usage: self-test [-P] textfile minimodem_tx_args [ -- minimodem_rx_args ]" 1>&2
     exit 1
 }
 textfile="$1"
 shift
-minimodem_args="$*"
+
+minimodem_tx_args="$1"
+shift
+while [ $# -gt 0 ]
+do
+    [ "$1" = "--" ] && {
+	shift
+	break
+    }
+    minimodem_tx_args="$minimodem_tx_args $1"
+    shift
+done
+if [ $# -gt 0 ]
+then
+    minimodem_rx_args="$*"
+else
+    minimodem_rx_args="$minimodem_tx_args"
+fi
+
 
 TMPF="/tmp/minimodem-test-$$"
 trap "rm -f $TMPF.*" 0
 
 set -e
 #echo
-#echo "$MINIMODEM ... $minimodem_args < $textfile"
+#echo "$MINIMODEM --tx ... $minimodem_tx_args"
+#echo "$MINIMODEM --rx ... $minimodem_rx_args"
 
-$MINIMODEM --tx -T 1 --file $TMPF.wav $minimodem_args < "$textfile"
+$MINIMODEM --tx -T 1 --file $TMPF.wav $minimodem_tx_args < "$textfile"
 
 # cp $TMPF.wav /tmp/x.wav
 
-$MINIMODEM --rx --file $TMPF.wav $minimodem_args \
+$MINIMODEM --rx --file $TMPF.wav $minimodem_rx_args \
 	> $TMPF.out 2> $TMPF.err || {
     cat $TMPF.err
     exit 1
@@ -45,6 +64,7 @@ cmp "$textfile" $TMPF.out
 {
     read xlitcarrier
     read xlithashes xlitnocarrier stats
+    stats="${stats% ###}"
 } < $TMPF.err
 
 
