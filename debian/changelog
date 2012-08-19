@@ -1,3 +1,12 @@
+minimodem (0.10.1-1) unstable; urgency=low
+
+  * better floating-point epsilon handling to fix (im)perfect test case
+      failures on i386
+  * debian: build --without-alsa on non-Linux platforms like kfreebsd-*
+      as their alsa-oss wrapper is insufficient
+
+ -- Kamal Mostafa <kamal@whence.com>  Sun, 19 Aug 2012 16:05:38 -0700
+
 minimodem (0.10-1) unstable; urgency=low
 
   * new confidence algo ("SNR")
