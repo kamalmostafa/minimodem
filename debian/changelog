@@ -1,3 +1,17 @@
+minimodem (0.10-1) unstable; urgency=low
+
+  * new confidence algo ("SNR")
+  * new performance vs. quality controls
+  * significant --rx fsk analyzer performance improvements
+  * minor --tx fsk generator performance improvements
+  * more 'make check' test cases
+
+  * minimodem new runtime command line switches:
+      -c, --confidence {min-snr-threshold}   default 2.0
+      -l, --limit {max-snr-search-limit}     default 2.3
+
+ -- Kamal Mostafa <kamal@whence.com>  Sun, 19 Aug 2012 08:58:07 -0700
+
 minimodem (0.9-1) unstable; urgency=low
 
   * runtime configurable audio sample rate and system audio backend
