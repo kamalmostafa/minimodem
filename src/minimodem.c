@@ -321,7 +321,7 @@ usage()
     "		    -r, --rx, --receive,  --read     (default)\n"
     "		[options]\n"
     "		    -a, --auto-carrier\n"
-    "		    -c, --confidence {threshold}\n"
+    "		    -c, --confidence {min-snr-threshold}\n"
     "		    -8, --ascii		ASCII  8-N-1\n"
     "		    -5, --baudot	Baudot 5-N-1\n"
     "		    -f, --file {filename.flac}\n"
@@ -360,7 +360,7 @@ main( int argc, char*argv[] )
     char *filename = NULL;
 
     float	carrier_autodetect_threshold = 0.0;
-    float	bfsk_confidence_threshold = 1.0;
+    float	bfsk_confidence_threshold = 2.0;
 
     sa_backend_t sa_backend = SA_BACKEND_SYSDEFAULT;
     sa_format_t sample_format = SA_SAMPLE_FORMAT_S16;
