@@ -9,5 +9,18 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+
+# kfreebsd in Debian supplies alsa via the alsa-oss wrapper package, but that
+# is missing snd_pcm_recover() at least, so build --without-alsa on the
+# non-Linux platforms:
+DEB_HOST_ARCH_OS ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+ifneq (linux,$(DEB_HOST_ARCH_OS))
+	configure_flags += --without-alsa
+endif
+
+
+override_dh_auto_configure:
+	dh_auto_configure -- $(configure_flags)
+
 %:
 	dh $@ 
