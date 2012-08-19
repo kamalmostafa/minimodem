@@ -717,7 +717,7 @@ main( int argc, char*argv[] )
     float	*samples_readptr = samplebuf;
     size_t	read_nsamples = samplebuf_size;
     size_t	samples_nvalid = 0;
-    debug_log("samplebuf_size=%lu\n", samplebuf_size);
+    debug_log("samplebuf_size=%zu\n", samplebuf_size);
 
     /*
      * Run the main loop
@@ -779,7 +779,7 @@ main( int argc, char*argv[] )
 	assert ( samples_nvalid + read_nsamples <= samplebuf_size );
 	ssize_t r;
 	r = simpleaudio_read(sa, samples_readptr, read_nsamples);
-	debug_log("simpleaudio_read(samplebuf+%ld, n=%lu) returns %ld\n",
+	debug_log("simpleaudio_read(samplebuf+%zd, n=%zu) returns %zd\n",
 		samples_readptr - samplebuf, read_nsamples, r);
 	if ( r < 0 ) {
 	    fprintf(stderr, "simpleaudio_read: error\n");
