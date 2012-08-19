@@ -224,6 +224,17 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 
 	if ( (expect_bits[bitnum] - '0') != bit_values[bitnum] )
 	    return 0.0; /* does not match expected; abort frame analysis. */
+
+	// FSK_MIN_MAGNITUDE serves as a noise limiter
+# define FSK_MIN_MAGNITUDE 0.10
+
+# ifdef FSK_MIN_MAGNITUDE
+	// Performance hack: reject frame early if sig mag isn't even half
+	// of FSK_MIN_MAGNITUDE
+	if ( bit_sig_mags[bitnum] < FSK_MIN_MAGNITUDE/2.0 )
+	    return 0.0; // too weak; abort frame analysis
+# endif
+
     }
 
 // Note: CONFIDENCE_ALGO 3 does not need AVOID_TRANSIENTS
@@ -278,12 +289,18 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     // Compute the "frame SNR"
     float snr = total_bit_sig / total_bit_noise;
 
-#ifdef FSK_DEBUG
     float avg_bit_sig   = total_bit_sig / (n_bits-1);
+#ifdef FSK_DEBUG
     float avg_bit_noise = total_bit_noise / (n_bits-1);
     debug_log("    snr=%.6f avg{ bit_sig=%.6f bit_noise=%.6f }\n",
 	    snr, avg_bit_sig, avg_bit_noise);
 #endif
+
+# ifdef FSK_MIN_MAGNITUDE
+    // noise limiter
+    if ( avg_bit_sig < FSK_MIN_MAGNITUDE )
+	return 0.0; // too weak; reject frame
+# endif
 
     // Frame confidence is the frame SNR
     confidence = snr;
