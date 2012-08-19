@@ -3377,6 +3377,25 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result:
+minimodem 0.10 configuration summary:
+	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-alsa           $with_alsa ($use_alsa)
+	--with-sndfile        $with_sndfile ($use_sndfile)
+	--with-benchmarks     $with_benchmarks ($use_benchmarks)
+	deps_packages:        $deps_packages
+" >&5
+$as_echo "
+minimodem 0.10 configuration summary:
+	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-alsa           $with_alsa ($use_alsa)
+	--with-sndfile        $with_sndfile ($use_sndfile)
+	--with-benchmarks     $with_benchmarks ($use_benchmarks)
+	deps_packages:        $deps_packages
+" >&6; }
+
+
 # Checks for libraries.
 
 
@@ -5069,18 +5088,3 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: minimodem 0.10 configuration summary:
-	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
-	--with-alsa           $with_alsa ($use_alsa)
-	--with-sndfile        $with_sndfile ($use_sndfile)
-	--with-benchmarks     $with_benchmarks ($use_benchmarks)
-	deps_packages:        $deps_packages
-" >&5
-$as_echo "minimodem 0.10 configuration summary:
-	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
-	--with-alsa           $with_alsa ($use_alsa)
-	--with-sndfile        $with_sndfile ($use_sndfile)
-	--with-benchmarks     $with_benchmarks ($use_benchmarks)
-	deps_packages:        $deps_packages
-" >&6; }

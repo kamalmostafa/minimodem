@@ -80,6 +80,17 @@ AS_IF([test "x$with_benchmarks" == "xno"],
 AC_DEFINE_UNQUOTED(USE_BENCHMARKS, $use_benchmarks,
 	[Define to 1 to enable internal benchmarks])
 
+
+AC_MSG_RESULT([
+PKG_NAME PKG_VERSION configuration summary:
+	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
+	--with-alsa           $with_alsa ($use_alsa)
+	--with-sndfile        $with_sndfile ($use_sndfile)
+	--with-benchmarks     $with_benchmarks ($use_benchmarks)
+	deps_packages:        $deps_packages
+])
+
+
 # Checks for libraries.
 PKG_CHECK_MODULES(DEPS, [ $deps_packages ])
 
@@ -104,11 +115,3 @@ AC_CONFIG_FILES([
 		])
 #                 testdata/Makefile
 AC_OUTPUT
-
-AC_MSG_RESULT([PKG_NAME PKG_VERSION configuration summary:
-	--with-pulseaudio     $with_pulseaudio ($use_pulseaudio)
-	--with-alsa           $with_alsa ($use_alsa)
-	--with-sndfile        $with_sndfile ($use_sndfile)
-	--with-benchmarks     $with_benchmarks ($use_benchmarks)
-	deps_packages:        $deps_packages
-])
