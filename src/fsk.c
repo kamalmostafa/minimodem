@@ -21,6 +21,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <math.h>	// fabs, hypotf
+#include <float.h>	// FLT_EPSILON
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -274,16 +275,13 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 
     float total_bit_sig = 0.0, total_bit_noise = 0.0;
     for ( bitnum=0; bitnum<(n_bits-1); bitnum++ ) {
+	// Deal with floating point data type quantization noise...
+	// If total_bit_noise <= FLT_EPSILON, then assume it to be 0.0,
+	// so that we end up with snr==inf.
 	total_bit_sig   += bit_sig_mags[bitnum];
-	total_bit_noise += bit_noise_mags[bitnum];
+	if ( bit_noise_mags[bitnum] > FLT_EPSILON )
+	    total_bit_noise += bit_noise_mags[bitnum];
     }
-
-    // Deal with floating point data type quantization noise...
-    // If total_bit_noise is so small that (sig-noise) appears to == sig,
-    // then force noise=0.0, so that we end up with snr==inf.
-    float d = total_bit_sig - total_bit_noise;
-    if ( d == total_bit_sig)
-	total_bit_noise = 0.0f;
 
     // Compute the "frame SNR"
     float snr = total_bit_sig / total_bit_noise;
@@ -291,8 +289,10 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     float avg_bit_sig   = total_bit_sig / (n_bits-1);
 #ifdef FSK_DEBUG
     float avg_bit_noise = total_bit_noise / (n_bits-1);
-    debug_log("    snr=%.6f avg{ bit_sig=%.6f bit_noise=%.6f }\n",
-	    snr, avg_bit_sig, avg_bit_noise);
+    debug_log("    snr=%.6f avg{ bit_sig=%.6f bit_noise=%.6f (%s) }\n",
+	    snr, avg_bit_sig, avg_bit_noise,
+	    avg_bit_noise == 0.0 ? "zero" : "non-zero"
+	    );
 #endif
 
 # ifdef FSK_MIN_MAGNITUDE
