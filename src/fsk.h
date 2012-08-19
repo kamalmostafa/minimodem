@@ -63,8 +63,10 @@ fsk_plan_destroy( fsk_plan *fskp );
 /* returns confidence value [0.0 to 1.0] */
 float
 fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
+	unsigned int try_first_sample,
 	unsigned int try_max_nsamples,
 	unsigned int try_step_nsamples,
+	float try_confidence_search_limit,
 	unsigned int *bits_outp,
 	unsigned int *frame_start_outp
 	);
@@ -78,7 +80,7 @@ fsk_set_tones_by_bandshift( fsk_plan *fskp, unsigned int b_mark, int b_shift );
 
 
 // FIXME move this?:
-//#define FSK_DEBUG
+// #define FSK_DEBUG
 #ifdef FSK_DEBUG
 # define debug_log(format, args...)  fprintf(stderr, format, ## args)
 #else

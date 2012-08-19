@@ -322,6 +322,7 @@ usage()
     "		[options]\n"
     "		    -a, --auto-carrier\n"
     "		    -c, --confidence {min-snr-threshold}\n"
+    "		    -l, --limit {max-snr-search-limit}\n"
     "		    -8, --ascii		ASCII  8-N-1\n"
     "		    -5, --baudot	Baudot 5-N-1\n"
     "		    -f, --file {filename.flac}\n"
@@ -360,7 +361,20 @@ main( int argc, char*argv[] )
     char *filename = NULL;
 
     float	carrier_autodetect_threshold = 0.0;
-    float	bfsk_confidence_threshold = 2.0;
+
+    // fsk_confidence_threshold : signal-to-noise squelch control
+    //
+    // The minimum SNR confidence level seen as "a signal".
+    float fsk_confidence_threshold = 2.0;
+
+    // fsk_confidence_search_limit : performance vs. quality
+    //
+    // If we find a frame with SNR confidence > confidence_search_limit,
+    // quit searching for a better frame.  confidence_search_limit has a
+    // dramatic effect on peformance (high value yields low performance, but
+    // higher decode quality, for noisy or hard-to-discern signals (Bell 103).
+    float fsk_confidence_search_limit = 2.3f;
+    // float fsk_confidence_search_limit = INFINITY;  /* for test */
 
     sa_backend_t sa_backend = SA_BACKEND_SYSDEFAULT;
     sa_format_t sample_format = SA_SAMPLE_FORMAT_S16;
@@ -403,6 +417,7 @@ main( int argc, char*argv[] )
 	    { "receive",	0, 0, 'r' },
 	    { "read",		0, 0, 'r' },
 	    { "confidence",	1, 0, 'c' },
+	    { "limit",		1, 0, 'l' },
 	    { "auto-carrier",	0, 0, 'a' },
 	    { "ascii",		0, 0, '8' },
 	    { "baudot",		0, 0, '5' },
@@ -438,7 +453,10 @@ main( int argc, char*argv[] )
 			TX_mode = 0;
 			break;
 	    case 'c':
-			bfsk_confidence_threshold = atof(optarg);
+			fsk_confidence_threshold = atof(optarg);
+			break;
+	    case 'l':
+			fsk_confidence_search_limit = atof(optarg);
 			break;
 	    case 'a':
 			carrier_autodetect_threshold = 0.001;
@@ -607,6 +625,9 @@ main( int argc, char*argv[] )
     if ( band_width > bfsk_data_rate )
 	band_width = bfsk_data_rate;
 
+    // sanitize confidence search limit
+    if ( fsk_confidence_search_limit < fsk_confidence_threshold )
+	fsk_confidence_search_limit = fsk_confidence_threshold;
 
     char *stream_name = NULL;;
 
@@ -842,9 +863,25 @@ main( int argc, char*argv[] )
 	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
 	unsigned int frame_start_sample = 0;
 
+	// If we don't have carrier, then set this try_confidence_search_limit
+	// to infinity (search for best possible frame) so to get the decoder
+	// into phase with the signal, so the next try_first_sample will match
+	// up with where the next frame should be.
+	unsigned int try_first_sample;
+	float try_confidence_search_limit;
+	if ( carrier ) {
+	    try_first_sample = nsamples_overscan;
+	    try_confidence_search_limit = fsk_confidence_search_limit;
+	} else {
+	    try_first_sample = 0;
+	    try_confidence_search_limit = INFINITY;
+	}
+
 	confidence = fsk_find_frame(fskp, samplebuf, frame_nsamples,
+			try_first_sample,
 			try_max_nsamples,
 			try_step_nsamples,
+			try_confidence_search_limit,
 			&bits,
 			&frame_start_sample
 			);
@@ -857,7 +894,7 @@ main( int argc, char*argv[] )
 
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
-	if ( confidence <= bfsk_confidence_threshold ) {
+	if ( confidence <= fsk_confidence_threshold ) {
 
 	    // FIXME: explain
 	    if ( ++noconfidence > FSK_MAX_NOCONFIDENCE_BITS )

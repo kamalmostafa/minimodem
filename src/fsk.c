@@ -409,8 +409,10 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 /* returns confidence value [0.0 to 1.0] */
 float
 fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
+	unsigned int try_first_sample,
 	unsigned int try_max_nsamples,
 	unsigned int try_step_nsamples,
+	float try_confidence_search_limit,
 	unsigned int *bits_outp,
 	unsigned int *frame_start_outp
 	)
@@ -419,25 +421,34 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     // try_step_nsamples = 1;	// pedantic TEST
 
-    unsigned int t;
     unsigned int best_t = 0;
     float best_c = 0.0;
     unsigned int best_bits = 0;
-    for ( t=0; t+try_step_nsamples<=try_max_nsamples; t+=try_step_nsamples )
+    
+    // Scan the frame positions starting with the one try_first_sample,
+    // alternating between a step above that, a step below that, above, below,
+    // and so on, until we've scanned the whole try_max_nsamples range.
+    int j;
+    for ( j=0; ; j++ )
     {
+	int up = j%2 ? 1 : -1;
+	int t = try_first_sample + up*((j+1)/2)*try_step_nsamples;
+	if ( t >= (int)try_max_nsamples )
+	    break;
+	if ( t < 0 )
+	    continue;
+
 	float c;
 	unsigned int bits_out = 0;
-	debug_log("try fsk_frame_analyze(skip=%+d)\n", t);
+	debug_log("try fsk_frame_analyze at t=%d\n", t);
 	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit, &bits_out);
 	if ( best_c < c ) {
 	    best_t = t;
 	    best_c = c;
 	    best_bits = bits_out;
-	    // TEST
-//	    if ( best_c > 100.0f )
-//		break;
-	    // if we find a perfect frame, stop scanning for a better one
-	    if ( best_c == INFINITY )
+	    // If we find a frame with confidence > try_confidence_search_limit
+	    // quit searching.
+	    if ( best_c >= try_confidence_search_limit )
 		break;
 	}
     }
