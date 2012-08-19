@@ -238,17 +238,16 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     }
 
 // Note: CONFIDENCE_ALGO 3 does not need AVOID_TRANSIENTS
-// #define AVOID_TRANSIENTS	0.7
+#define AVOID_TRANSIENTS	0.7
 //
 #ifdef AVOID_TRANSIENTS
     /* Compare strength of stop bit and start bit, to avoid detecting
      * a transient as a start bit, as often results in a single false
      * character when the mark "leader" tone begins.  Require that the
      * diff between start bit and stop bit strength not be "large". */
-    //float i_str = bit_strengths[0];
-    float s_str = bit_strengths[1];
-    float p_str = bit_strengths[fskp->n_data_bits + 2];
-    if ( fabs(s_str-p_str) > (s_str * AVOID_TRANSIENTS) ) {
+    float s_mag = bit_sig_mags[1];
+    float p_mag = bit_sig_mags[fskp->n_data_bits + 2];
+    if ( fabs(s_mag-p_mag) > (s_mag * AVOID_TRANSIENTS) ) {
 	debug_log(" avoid transient\n");
 	return 0.0;
     }
