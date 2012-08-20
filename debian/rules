@@ -18,6 +18,8 @@ ifneq (linux,$(DEB_HOST_ARCH_OS))
 	configure_flags += --without-alsa
 endif
 
+# enable hardening flags (for debian/compat<9):
+configure_flags += $(shell f=`dpkg-buildflags --export=configure` && echo $$f)
 
 override_dh_auto_configure:
 	dh_auto_configure -- $(configure_flags)
