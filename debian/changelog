@@ -1,3 +1,9 @@
+minimodem (0.10.1-2) unstable; urgency=low
+
+  * debian: enable build hardening flags
+
+ -- Kamal Mostafa <kamal@whence.com>  Tue, 21 Aug 2012 18:41:44 -0700
+
 minimodem (0.10.1-1) unstable; urgency=low
 
   * better floating-point epsilon handling to fix (im)perfect test case
