@@ -434,7 +434,7 @@ main( int argc, char*argv[] )
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:a85f:b:M:S:T:qAR:",
+	c = getopt_long(argc, argv, "Vtrc:l:a85f:b:M:S:T:qAR:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
