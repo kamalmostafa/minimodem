@@ -198,22 +198,23 @@ report_no_carrier( fsk_plan *fskp,
 	float bfsk_data_rate,
 	float nsamples_per_bit,
 	unsigned int nframes_decoded,
+	unsigned long long nbits_decoded,
 	size_t carrier_nsamples,
 	float confidence_total )
 {
-    unsigned long long nbits_total = nframes_decoded * (fskp->n_data_bits+2);
 #if 0
     fprintf(stderr, "nframes_decoded=%u\n", nframes_decoded);
-    fprintf(stderr, "nbits_total=%llu\n", nbits_total);
+    fprintf(stderr, "nbits_decoded=%llu\n", nbits_decoded);
     fprintf(stderr, "carrier_nsamples=%lu\n", carrier_nsamples);
     fprintf(stderr, "nsamples_per_bit=%f\n", nsamples_per_bit);
 #endif
-    float throughput_rate = nbits_total * sample_rate / (float)carrier_nsamples;
+    float throughput_rate =
+		nbits_decoded * sample_rate / (float)carrier_nsamples;
     fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.3f throughput=%.2f",
 	    nframes_decoded,
 	    confidence_total / nframes_decoded,
 	    throughput_rate);
-    if ( (size_t)(nbits_total * nsamples_per_bit + 0.5) == carrier_nsamples ) {
+    if ( (size_t)(nbits_decoded * nsamples_per_bit + 0.5) == carrier_nsamples ) {
 	fprintf(stderr, " (rate perfect) ###\n");
     } else {
 	float throughput_skew = (throughput_rate - bfsk_data_rate)
@@ -696,8 +697,7 @@ main( int argc, char*argv[] )
      */
 
     fsk_plan *fskp;
-    fskp = fsk_plan_new(sample_rate, bfsk_mark_f, bfsk_space_f,
-				band_width, bfsk_n_data_bits);
+    fskp = fsk_plan_new(sample_rate, bfsk_mark_f, bfsk_space_f, band_width);
     if ( !fskp ) {
         fprintf(stderr, "fsk_plan_new() failed\n");
         return 1;
@@ -728,6 +728,7 @@ main( int argc, char*argv[] )
     int			carrier = 0;
     float		confidence_total = 0;
     unsigned int	nframes_decoded = 0;
+    unsigned long long	nbits_decoded = 0;
     size_t		carrier_nsamples = 0;
 
     unsigned int	noconfidence = 0;
@@ -839,9 +840,38 @@ main( int argc, char*argv[] )
 
 	debug_log( "--------------------------\n");
 
-	unsigned int frame_nsamples = nsamples_per_bit * fskp->n_frame_bits;
+	// example expect_bits_string
+	//	  0123456789A
+	//	  isddddddddp	i == idle bit (a.k.a. prev_stop bit)
+	//			s == start bit  d == data bits  p == stop bit
+	// ebs = "10dddddddd1"  <-- expected mark/space framing pattern
+	//
+	// NOTE! expect_n_bits ends up being (frame_n_bits+1), because
+	// we expect the prev_stop bit in addition to this frame's own
+	// (start + n_data_bits + stop) bits.  But for each decoded frame,
+	// we will advance just frame_n_bits worth of samples, leaving us
+	// pointing at our stop bit -- it becomes the next frame's prev_stop.
+	//
+	//                  prev_stop--v
+	//                       start--v        v--stop
+	// char *expect_bits_string = "10dddddddd1";
+	//
+	char expect_bits_string[33] = "10dddddddddddddddddddddddddddddd";
+	expect_bits_string[bfsk_n_data_bits + 2] = '1';
+	expect_bits_string[bfsk_n_data_bits + 3] = 0;
+	unsigned int frame_n_bits   = bfsk_n_data_bits + 2;
+	unsigned int frame_bits_shift = 2;	// prev_stop + start
+	// FIXME - weird hardcode:
+	unsigned int frame_bits_mask  = 0xFF;
+	if ( bfsk_n_data_bits == 5 )
+	    frame_bits_mask = 0x1F;
 
-	if ( samples_nvalid < frame_nsamples )
+	unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits;
+
+	unsigned int expect_n_bits  = strlen(expect_bits_string);
+	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
+
+	if ( samples_nvalid < expect_nsamples )
 	    break;
 
 	// try_max_nsamples = nsamples_per_bit + nsamples_overscan;
@@ -877,20 +907,18 @@ main( int argc, char*argv[] )
 	    try_confidence_search_limit = INFINITY;
 	}
 
-	confidence = fsk_find_frame(fskp, samplebuf, frame_nsamples,
+	confidence = fsk_find_frame(fskp, samplebuf, expect_nsamples,
 			try_first_sample,
 			try_max_nsamples,
 			try_step_nsamples,
 			try_confidence_search_limit,
+			expect_bits_string,
 			&bits,
 			&frame_start_sample
 			);
 
-	// FIXME: hardcoded chop off framing bits
-	if ( fskp->n_data_bits == 5 )
-	    bits = ( bits >> 2 ) & 0x1F;
-	else
-	    bits = ( bits >> 2 ) & 0xFF;
+	// chop off framing bits
+	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
 
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
@@ -903,12 +931,13 @@ main( int argc, char*argv[] )
 		if ( carrier ) {
 		    if ( !quiet_mode )
 			report_no_carrier(fskp, sample_rate, bfsk_data_rate,
-			    nsamples_per_bit, nframes_decoded,
+			    nsamples_per_bit, nframes_decoded, nbits_decoded,
 			    carrier_nsamples, confidence_total);
 		    carrier = 0;
 		    carrier_nsamples = 0;
 		    confidence_total = 0;
 		    nframes_decoded = 0;
+		    nbits_decoded = 0;
 		}
 	    }
 
@@ -921,7 +950,7 @@ main( int argc, char*argv[] )
 	}
 
 	// Add a frame's worth of samples to the sample count
-	carrier_nsamples += nsamples_per_bit * (fskp->n_data_bits + 2);
+	carrier_nsamples += frame_nsamples;
 
 	if ( carrier ) {
 
@@ -944,27 +973,21 @@ main( int argc, char*argv[] )
 	    bfsk_framebits_decode(0, 0, 0);	/* reset the frame processor */
 	}
 
-
 	confidence_total += confidence;
 	nframes_decoded++;
+	nbits_decoded += frame_n_bits;
 	noconfidence = 0;
 
-	/* Advance the sample stream forward past the decoded frame
-	 * but not past the stop bit, since we want it to appear as
-	 * the prev_stop bit of the next frame, so ...
-	 *
-	 * advance = 1 prev_stop + 1 start + N data bits == n_data_bits+2
-	 *
-	 * but actually advance just a bit less than that to allow
-	 * for tracking slightly fast signals, hence - nsamples_overscan.
-	 */
-	advance = frame_start_sample
-		+ nsamples_per_bit * (float)(fskp->n_data_bits + 2)
-		- nsamples_overscan;
+	// Advance the sample stream forward past the junk before the
+	// frame starts (frame_start_sample), and then past decoded frame
+	// (see also NOTE about frame_n_bits and expect_n_bits)...
+	// But actually advance just a bit less than that to allow
+	// for tracking slightly fast signals, hence - nsamples_overscan.
+	advance = frame_start_sample + frame_nsamples - nsamples_overscan;
 
 	debug_log("@ nsamples_per_bit=%.3f n_data_bits=%u "
 			" frame_start=%u advance=%u\n",
-		    nsamples_per_bit, fskp->n_data_bits,
+		    nsamples_per_bit, bfsk_n_data_bits,
 		    frame_start_sample, advance);
 
 
@@ -998,7 +1021,7 @@ main( int argc, char*argv[] )
     if ( carrier ) {
 	if ( !quiet_mode )
 	    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
-		nsamples_per_bit, nframes_decoded,
+		nsamples_per_bit, nframes_decoded, nbits_decoded,
 		carrier_nsamples, confidence_total);
     }
 

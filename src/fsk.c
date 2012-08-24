@@ -35,8 +35,7 @@ fsk_plan_new(
 	float		sample_rate,
     	float		f_mark,
     	float		f_space,
-	float		filter_bw,
-	unsigned int	n_data_bits
+	float		filter_bw
 	)
 {
     fsk_plan *fskp = malloc(sizeof(fsk_plan));
@@ -46,10 +45,6 @@ fsk_plan_new(
     fskp->sample_rate = sample_rate;
     fskp->f_mark = f_mark;
     fskp->f_space = f_space;
-    fskp->n_data_bits = n_data_bits;
-
-    /* 1 prev_stop + n_data_bits + 1 start + 1 stop == n_data_bits + 3 */
-    fskp->n_frame_bits = fskp->n_data_bits + 3;
 
 #ifdef USE_FFT
     fskp->band_width = filter_bw;
@@ -182,24 +177,9 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 /* returns confidence value [0.0 to 1.0] */
 static float
 fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
+	int n_bits, const char *expect_bits_string,
 	unsigned int *bits_outp )
 {
-    int n_bits = fskp->n_frame_bits;
-//    char *expect_bit_string = "10dddddddd1";
-    char expect_bit_string[32];
-    memset(expect_bit_string, 'd', 32);
-    expect_bit_string[0] = '1';
-    expect_bit_string[1] = '0';
-    expect_bit_string[fskp->n_data_bits + 2] = '1';
-
-    // example...
-    // 0123456789A
-    // isddddddddp	i == idle bit (a.k.a. prev_stop bit)
-    //			s == start bit
-    //			d == data bits
-    //			p == stop bit
-    // MSddddddddM  <-- expected mark/space framing pattern
-
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
     unsigned int	bit_values[32];
@@ -208,7 +188,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     unsigned int	bit_begin_sample;
     int			bitnum;
 
-    char *expect_bits = expect_bit_string;
+    const char *expect_bits = expect_bits_string;
 
     /* pass #1 - process and check only the "required" (1/0) expect_bits */
     for ( bitnum=0; bitnum<n_bits; bitnum++ ) {
@@ -242,12 +222,16 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 #define AVOID_TRANSIENTS	0.7
 //
 #ifdef AVOID_TRANSIENTS
+    // FIXME: fsk_frame_analyze shouldn't care about start/stop bits,
+    // and this really is only correct for "10dd..dd1" format frames anyway:
+    // FIXME: this is totally defective, if the checked bits weren't
+    // even calculated in pass #1 (e.g. if there are no pass #1 expect bits).
     /* Compare strength of stop bit and start bit, to avoid detecting
      * a transient as a start bit, as often results in a single false
      * character when the mark "leader" tone begins.  Require that the
      * diff between start bit and stop bit strength not be "large". */
-    float s_mag = bit_sig_mags[1];
-    float p_mag = bit_sig_mags[fskp->n_data_bits + 2];
+    float s_mag = bit_sig_mags[1]; // start bit
+    float p_mag = bit_sig_mags[n_bits-1]; // stop bit
     if ( fabs(s_mag-p_mag) > (s_mag * AVOID_TRANSIENTS) ) {
 	debug_log(" avoid transient\n");
 	return 0.0;
@@ -397,6 +381,8 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 #endif /* CONFIDENCE_ALGO */
 
 
+    // least significant bit first ... reverse the bits as we place them
+    // into the bits_outp word.
     *bits_outp = 0;
     for ( bitnum=0; bitnum<n_bits; bitnum++ )
 	*bits_outp |= bit_values[bitnum] << bitnum;
@@ -413,11 +399,14 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	unsigned int try_max_nsamples,
 	unsigned int try_step_nsamples,
 	float try_confidence_search_limit,
+	const char *expect_bits_string,
 	unsigned int *bits_outp,
 	unsigned int *frame_start_outp
 	)
 {
-    float samples_per_bit = (float)frame_nsamples / fskp->n_frame_bits;
+    int expect_n_bits = strlen(expect_bits_string);
+
+    float samples_per_bit = (float)frame_nsamples / expect_n_bits;
 
     // try_step_nsamples = 1;	// pedantic TEST
 
@@ -441,7 +430,8 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	float c;
 	unsigned int bits_out = 0;
 	debug_log("try fsk_frame_analyze at t=%d\n", t);
-	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit, &bits_out);
+	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit,
+			expect_n_bits, expect_bits_string, &bits_out);
 	if ( best_c < c ) {
 	    best_t = t;
 	    best_c = c;
@@ -463,8 +453,12 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     // FIXME? hardcoded chop off framing bits for debug
 #ifdef FSK_DEBUG
-    unsigned char bitchar = ( best_bits >> 2 ) & 0xFF;
-    debug_log("FSK_FRAME datum='%c' (0x%02x)   c=%f  t=%d\n",
+    unsigned char bitchar = ( *bits_outp >> 2 ) & 0xFF;
+
+    debug_log("FSK_FRAME bits='");
+    for ( j=0; j<expect_n_bits; j++ )
+	debug_log("%c", ( *bits_outp >> j ) & 1 ? '1' : '0' );
+    debug_log("' datum='%c' (0x%02x)   c=%f  t=%d\n",
 	    isprint(bitchar)||isspace(bitchar) ? bitchar : '.',
 	    bitchar,
 	    confidence, best_t);

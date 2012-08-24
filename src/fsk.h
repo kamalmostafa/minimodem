@@ -32,9 +32,7 @@ struct fsk_plan {
     	float		f_mark;
     	float		f_space;
 	float		filter_bw;
-	unsigned int	n_data_bits;
 
-	unsigned int	n_frame_bits;
 #ifdef USE_FFT
 	int		fftsize;
 	unsigned int	nbands;
@@ -53,8 +51,7 @@ fsk_plan_new(
 	float		sample_rate,
     	float		f_mark,
     	float		f_space,
-	float		filter_bw,
-	unsigned int	n_data_bits
+	float		filter_bw
 	);
 
 void
@@ -67,6 +64,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	unsigned int try_max_nsamples,
 	unsigned int try_step_nsamples,
 	float try_confidence_search_limit,
+	const char *expect_bits_string,
 	unsigned int *bits_outp,
 	unsigned int *frame_start_outp
 	);
