@@ -69,20 +69,20 @@ cmp "$textfile" $TMPF.out
 } < $TMPF.err
 
 
-result="OK       "
+result="OK     "
 exitcode=0
 
 [ $test_perfect -eq 1 ] && {
     match="confidence=inf .* (rate perfect)"
     if grep -q "$match" $TMPF.err
     then
-	result="PERFECT  "
+	result="PERFECT"
     else
 	result="IMPERFECT"
 	exitcode=1
     fi
 }
 
-echo -e "$result  $stats"
+echo -e "$result $stats"
 
 exit $exitcode

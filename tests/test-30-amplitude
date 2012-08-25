@@ -1,0 +1,27 @@
+#!/bin/bash
+
+flags="1200 $*"
+
+let count=0
+let fail=0
+
+function try_tx_rx_ampl
+{
+    a="$1"
+    echo -n "$a "
+    let count++
+    ./self-test testdata-ascii.txt --volume $a $flags -- $flags || let fail++
+}
+
+for ampl in 3.50 1.00 0.30 0.01 " E  "
+do
+    try_tx_rx_ampl "$ampl"
+done
+
+if [ $fail -eq 0 ]
+then
+echo "  (all $count amplitude tests passed)"
+else
+echo "  ($fail/$count amplitude tests failed)"
+fi
+exit $fail
