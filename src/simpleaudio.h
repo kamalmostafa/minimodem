@@ -96,6 +96,6 @@ void
 simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur);
 
 void
-simpleaudio_tone_init( unsigned int new_sin_table_len );
+simpleaudio_tone_init( unsigned int new_sin_table_len, float mag );
 
 #endif

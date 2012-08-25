@@ -27,14 +27,17 @@
 
 
 
+static float tone_mag = 1.0;
+
 static unsigned int sin_table_len;
 static short *sin_table_short;
 static float *sin_table_float;
 
 void
-simpleaudio_tone_init( unsigned int new_sin_table_len )
+simpleaudio_tone_init( unsigned int new_sin_table_len, float mag )
 {
     sin_table_len = new_sin_table_len;
+    tone_mag = mag;
 
     if ( sin_table_len != 0 ) {
 	sin_table_short = realloc(sin_table_short, sin_table_len * sizeof(short));
@@ -45,10 +48,13 @@ simpleaudio_tone_init( unsigned int new_sin_table_len )
 	}
 
 	unsigned int i;
+	unsigned short mag_s = 32767.0 * tone_mag + 0.5f;
+	if ( mag_s < 2 ) // "short epsilon"
+	    mag_s = 2;
 	for ( i=0; i<sin_table_len; i++ )
-	    sin_table_short[i] = 32767 * sin(M_PI*2.0*(float)i/sin_table_len);
+	    sin_table_short[i] = mag_s * sin(M_PI*2.0*(float)i/sin_table_len);
 	for ( i=0; i<sin_table_len; i++ )
-	    sin_table_float[i] = sinf(M_PI*2.0*(float)i/sin_table_len);
+	    sin_table_float[i] = tone_mag * sinf(M_PI*2.0*(float)i/sin_table_len);
 
     } else {
 	if ( sin_table_short ) {
@@ -122,7 +128,7 @@ simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur)
 			    float_buf[i] = sin_lu_float(SINE_PHASE_TURNS);
 		    } else {
 			for ( i=0; i<nsamples_dur; i++ )
-			    float_buf[i] = sinf(SINE_PHASE_RADIANS);
+			    float_buf[i] = tone_mag * sinf(SINE_PHASE_RADIANS);
 		    }
 		}
 		break;
@@ -134,8 +140,11 @@ simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur)
 			for ( i=0; i<nsamples_dur; i++ )
 			    short_buf[i] = sin_lu_short(SINE_PHASE_TURNS);
 		    } else {
+			unsigned short mag_s = 32767.0 * tone_mag + 0.5f;
+			if ( mag_s < 2 ) // "short epsilon"
+			    mag_s = 2;
 			for ( i=0; i<nsamples_dur; i++ )
-			    short_buf[i] = 32767 * sinf(SINE_PHASE_RADIANS);
+			    short_buf[i] = mag_s * sinf(SINE_PHASE_RADIANS);
 		    }
 		    break;
 		}

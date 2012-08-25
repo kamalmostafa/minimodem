@@ -73,6 +73,11 @@ encode or decode an audio file (extension sets audio format)
 .TP
 .B \-b, \-\-bandwidth {rx_bandwidth}
 .TP
+.B \-v, \-\-volume {tx_amplitude or 'E'}
+Sets the generated signal amplitude (default is 1.0).  As a special case
+useful for testing, the value 'E' sets the amplitude to the very small value
+FLT_EPSILON.  (This option applies to \-\-tx mode only).
+.TP
 .B \-M, \-\-mark {mark_freq}
 .TP
 .B \-S, \-\-space {space_freq}

@@ -26,6 +26,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <float.h>
 #include <assert.h>
 #include <signal.h>
 #include <sys/time.h>
@@ -257,7 +258,7 @@ benchmarks()
 
 
     // enable the sine wave LUT
-    simpleaudio_tone_init(1024);
+    simpleaudio_tone_init(1024, 1.0);
 
     sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
 			SA_SAMPLE_FORMAT_S16, sample_rate, 1,
@@ -277,7 +278,7 @@ benchmarks()
 
 
     // disable the sine wave LUT
-    simpleaudio_tone_init(0);
+    simpleaudio_tone_init(0, 1.0);
 
     sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
 			SA_SAMPLE_FORMAT_S16, sample_rate, 1,
@@ -328,6 +329,7 @@ usage()
     "		    -5, --baudot	Baudot 5-N-1\n"
     "		    -f, --file {filename.flac}\n"
     "		    -b, --bandwidth {rx_bandwidth}\n"
+    "		    -v, --volume {amplitude or 'E'}\n"
     "		    -M, --mark {mark_freq}\n"
     "		    -S, --space {space_freq}\n"
     "		    -T, --txstopbits {m.n}\n"
@@ -382,6 +384,7 @@ main( int argc, char*argv[] )
     unsigned int sample_rate = 48000;
     unsigned int nchannels = 1; // FIXME: only works with one channel
 
+    float tx_amplitude = 1.0;
     unsigned int tx_sin_table_len = 4096;
 
     /* validate the default system audio mechanism */
@@ -424,6 +427,7 @@ main( int argc, char*argv[] )
 	    { "baudot",		0, 0, '5' },
 	    { "file",		1, 0, 'f' },
 	    { "bandwidth",	1, 0, 'b' },
+	    { "volume",		1, 0, 'v' },
 	    { "mark",		1, 0, 'M' },
 	    { "space",		1, 0, 'S' },
 	    { "txstopbits",	1, 0, 'T' },
@@ -435,7 +439,7 @@ main( int argc, char*argv[] )
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:l:a85f:b:M:S:T:qAR:",
+	c = getopt_long(argc, argv, "Vtrc:l:a85f:b:v:M:S:T:qAR:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -474,6 +478,13 @@ main( int argc, char*argv[] )
 	    case 'b':
 			band_width = atof(optarg);
 			assert( band_width != 0 );
+			break;
+	    case 'v':
+			if ( optarg[0] == 'E' )
+			    tx_amplitude = FLT_EPSILON;
+			else
+			    tx_amplitude = atof(optarg);
+			assert( tx_amplitude > 0.0 );
 			break;
 	    case 'M':
 			bfsk_mark_f = atoi(optarg);
@@ -642,7 +653,7 @@ main( int argc, char*argv[] )
      */
     if ( TX_mode ) {
 
-	simpleaudio_tone_init(tx_sin_table_len);
+	simpleaudio_tone_init(tx_sin_table_len, tx_amplitude);
 
 	int tx_interactive = 0;
 	if ( ! stream_name ) {
