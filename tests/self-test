@@ -63,6 +63,7 @@ cmp "$textfile" $TMPF.out
 
 {
     read xlitcarrier
+    read xlitblankline
     read xlithashes xlitnocarrier stats
     stats="${stats% ###}"
 } < $TMPF.err

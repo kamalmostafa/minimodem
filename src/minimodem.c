@@ -201,7 +201,8 @@ report_no_carrier( fsk_plan *fskp,
 	unsigned int nframes_decoded,
 	unsigned long long nbits_decoded,
 	size_t carrier_nsamples,
-	float confidence_total )
+	float confidence_total,
+	float amplitude_total )
 {
 #if 0
     fprintf(stderr, "nframes_decoded=%u\n", nframes_decoded);
@@ -211,9 +212,10 @@ report_no_carrier( fsk_plan *fskp,
 #endif
     float throughput_rate =
 		nbits_decoded * sample_rate / (float)carrier_nsamples;
-    fprintf(stderr, "### NOCARRIER ndata=%u confidence=%.3f throughput=%.2f",
+    fprintf(stderr, "\n### NOCARRIER ndata=%u confidence=%.3f ampl=%.3f bps=%.2f",
 	    nframes_decoded,
 	    confidence_total / nframes_decoded,
+	    amplitude_total / nframes_decoded,
 	    throughput_rate);
     if ( (size_t)(nbits_decoded * nsamples_per_bit + 0.5) == carrier_nsamples ) {
 	fprintf(stderr, " (rate perfect) ###\n");
@@ -738,6 +740,7 @@ main( int argc, char*argv[] )
 
     int			carrier = 0;
     float		confidence_total = 0;
+    float		amplitude_total = 0;
     unsigned int	nframes_decoded = 0;
     unsigned long long	nbits_decoded = 0;
     size_t		carrier_nsamples = 0;
@@ -898,7 +901,7 @@ main( int argc, char*argv[] )
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
 
-	float confidence;
+	float confidence, amplitude;
 	unsigned int bits = 0;
 	/* Note: frame_start_sample is actually the sample where the
 	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
@@ -925,6 +928,7 @@ main( int argc, char*argv[] )
 			try_confidence_search_limit,
 			expect_bits_string,
 			&bits,
+			&amplitude,
 			&frame_start_sample
 			);
 
@@ -943,10 +947,11 @@ main( int argc, char*argv[] )
 		    if ( !quiet_mode )
 			report_no_carrier(fskp, sample_rate, bfsk_data_rate,
 			    nsamples_per_bit, nframes_decoded, nbits_decoded,
-			    carrier_nsamples, confidence_total);
+			    carrier_nsamples, confidence_total, amplitude_total);
 		    carrier = 0;
 		    carrier_nsamples = 0;
 		    confidence_total = 0;
+		    amplitude_total = 0;
 		    nframes_decoded = 0;
 		    nbits_decoded = 0;
 		}
@@ -985,6 +990,7 @@ main( int argc, char*argv[] )
 	}
 
 	confidence_total += confidence;
+	amplitude_total += amplitude;
 	nframes_decoded++;
 	nbits_decoded += frame_n_bits;
 	noconfidence = 0;
@@ -1033,7 +1039,7 @@ main( int argc, char*argv[] )
 	if ( !quiet_mode )
 	    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
 		nsamples_per_bit, nframes_decoded, nbits_decoded,
-		carrier_nsamples, confidence_total);
+		carrier_nsamples, confidence_total, amplitude_total);
     }
 
     simpleaudio_close(sa);

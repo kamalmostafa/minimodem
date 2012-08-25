@@ -178,7 +178,7 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 static float
 fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	int n_bits, const char *expect_bits_string,
-	unsigned int *bits_outp )
+	unsigned int *bits_outp, float *ampl_outp )
 {
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
@@ -288,6 +288,8 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     // Frame confidence is the frame SNR
     confidence = snr;
 
+    *ampl_outp = avg_bit_sig;
+
 #elif CONFIDENCE_ALGO == 4
 
     /* compute average bit strengths: v_mark and v_space */
@@ -387,8 +389,8 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     for ( bitnum=0; bitnum<n_bits; bitnum++ )
 	*bits_outp |= bit_values[bitnum] << bitnum;
 
-    debug_log("    frame confidence (algo #%u) = %f\n",
-	    CONFIDENCE_ALGO, confidence);
+    debug_log("    frame algo=%u confidence=%f ampl=%f\n",
+	    CONFIDENCE_ALGO, confidence, *ampl_outp);
     return confidence;
 }
 
@@ -401,6 +403,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	float try_confidence_search_limit,
 	const char *expect_bits_string,
 	unsigned int *bits_outp,
+	float *ampl_outp,
 	unsigned int *frame_start_outp
 	)
 {
@@ -411,7 +414,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     // try_step_nsamples = 1;	// pedantic TEST
 
     unsigned int best_t = 0;
-    float best_c = 0.0;
+    float best_c = 0.0, best_a = 0.0;
     unsigned int best_bits = 0;
     
     // Scan the frame positions starting with the one try_first_sample,
@@ -427,14 +430,16 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	if ( t < 0 )
 	    continue;
 
-	float c;
+	float c, ampl_out;
 	unsigned int bits_out = 0;
 	debug_log("try fsk_frame_analyze at t=%d\n", t);
 	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit,
-			expect_n_bits, expect_bits_string, &bits_out);
+			expect_n_bits, expect_bits_string,
+			&bits_out, &ampl_out);
 	if ( best_c < c ) {
 	    best_t = t;
 	    best_c = c;
+	    best_a = ampl_out;
 	    best_bits = bits_out;
 	    // If we find a frame with confidence > try_confidence_search_limit
 	    // quit searching.
@@ -444,6 +449,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     }
 
     *bits_outp = best_bits;
+    *ampl_outp = best_a;
     *frame_start_outp = best_t;
 
     float confidence = best_c;
@@ -458,10 +464,10 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     debug_log("FSK_FRAME bits='");
     for ( j=0; j<expect_n_bits; j++ )
 	debug_log("%c", ( *bits_outp >> j ) & 1 ? '1' : '0' );
-    debug_log("' datum='%c' (0x%02x)   c=%f  t=%d\n",
+    debug_log("' datum='%c' (0x%02x)   c=%f  a=%f  t=%d\n",
 	    isprint(bitchar)||isspace(bitchar) ? bitchar : '.',
 	    bitchar,
-	    confidence, best_t);
+	    confidence, best_a, best_t);
 #endif
 
     return confidence;
