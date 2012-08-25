@@ -174,7 +174,7 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 }
 
 
-/* returns confidence value [0.0 to 1.0] */
+/* returns confidence value [0.0 to INFINITY] */
 static float
 fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	int n_bits, const char *expect_bits_string,
@@ -187,6 +187,11 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     float		bit_noise_mags[32];
     unsigned int	bit_begin_sample;
     int			bitnum;
+
+// various deprecated noise limiter schemes:
+//#define FSK_MIN_BIT_SNR 1.4
+//#define FSK_MIN_MAGNITUDE 0.10
+//#define FSK_AVOID_TRANSIENTS	0.7
 
     const char *expect_bits = expect_bits_string;
 
@@ -206,8 +211,11 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	if ( (expect_bits[bitnum] - '0') != bit_values[bitnum] )
 	    return 0.0; /* does not match expected; abort frame analysis. */
 
-	// FSK_MIN_MAGNITUDE serves as a noise limiter
-# define FSK_MIN_MAGNITUDE 0.10
+#ifdef FSK_MIN_BIT_SNR
+	float bit_snr = bit_sig_mags[bitnum] / bit_noise_mags[bitnum];
+	if ( bit_snr < FSK_MIN_BIT_SNR )
+	    return 0.0;
+#endif
 
 # ifdef FSK_MIN_MAGNITUDE
 	// Performance hack: reject frame early if sig mag isn't even half
@@ -215,13 +223,9 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	if ( bit_sig_mags[bitnum] < FSK_MIN_MAGNITUDE/2.0 )
 	    return 0.0; // too weak; abort frame analysis
 # endif
-
     }
 
-// Note: CONFIDENCE_ALGO 3 does not need AVOID_TRANSIENTS
-#define AVOID_TRANSIENTS	0.7
-//
-#ifdef AVOID_TRANSIENTS
+#ifdef FSK_AVOID_TRANSIENTS
     // FIXME: fsk_frame_analyze shouldn't care about start/stop bits,
     // and this really is only correct for "10dd..dd1" format frames anyway:
     // FIXME: this is totally defective, if the checked bits weren't
@@ -232,7 +236,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
      * diff between start bit and stop bit strength not be "large". */
     float s_mag = bit_sig_mags[1]; // start bit
     float p_mag = bit_sig_mags[n_bits-1]; // stop bit
-    if ( fabs(s_mag-p_mag) > (s_mag * AVOID_TRANSIENTS) ) {
+    if ( fabs(s_mag-p_mag) > (s_mag * FSK_AVOID_TRANSIENTS) ) {
 	debug_log(" avoid transient\n");
 	return 0.0;
     }
@@ -248,17 +252,24 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 		&bit_values[bitnum],
 		&bit_sig_mags[bitnum],
 		&bit_noise_mags[bitnum]);
+
+#ifdef FSK_MIN_BIT_SNR
+	float bit_snr = bit_sig_mags[bitnum] / bit_noise_mags[bitnum];
+	if ( bit_snr < FSK_MIN_BIT_SNR )
+	    return 0.0;
+#endif
     }
 
 
-#define CONFIDENCE_ALGO	5
+//#define CONFIDENCE_ALGO 	5
+#define CONFIDENCE_ALGO 	6
 
     float confidence;
 
-#if CONFIDENCE_ALGO == 5
+#if CONFIDENCE_ALGO == 5 || CONFIDENCE_ALGO == 6
 
     float total_bit_sig = 0.0, total_bit_noise = 0.0;
-    for ( bitnum=0; bitnum<(n_bits-1); bitnum++ ) {
+    for ( bitnum=0; bitnum<n_bits; bitnum++ ) {
 	// Deal with floating point data type quantization noise...
 	// If total_bit_noise <= FLT_EPSILON, then assume it to be 0.0,
 	// so that we end up with snr==inf.
@@ -270,23 +281,47 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     // Compute the "frame SNR"
     float snr = total_bit_sig / total_bit_noise;
 
-    float avg_bit_sig   = total_bit_sig / (n_bits-1);
+    // Compute avg bit sig and noise magnitudes
+    float avg_bit_sig   = total_bit_sig / n_bits;
+
+#if CONFIDENCE_ALGO == 6
+    // Compute average "divergence": bit_mag_divergence / other_bits_mag
+    float divergence = 0.0;
+    for ( bitnum=0; bitnum<n_bits; bitnum++ ) {
+	float avg_bit_sig_other = (total_bit_sig - fabs(bit_sig_mags[bitnum]))
+					/ (n_bits - 1);
+	divergence += fabs(bit_sig_mags[bitnum] - avg_bit_sig_other)
+					/ avg_bit_sig_other;
+    }
+    divergence *= 2;
+    divergence /= n_bits;
+#endif
+
 #ifdef FSK_DEBUG
-    float avg_bit_noise = total_bit_noise / (n_bits-1);
-    debug_log("    snr=%.6f avg{ bit_sig=%.6f bit_noise=%.6f (%s) }\n",
+    float avg_bit_noise = total_bit_noise / n_bits;
+    debug_log("    divg=%.3f snr=%.3f avg{bit_sig=%.3f bit_noise=%.3f(%s)}\n",
+# if CONFIDENCE_ALGO == 6
+	    divergence,
+# else
+	    0.0,
+# endif
 	    snr, avg_bit_sig, avg_bit_noise,
 	    avg_bit_noise == 0.0 ? "zero" : "non-zero"
 	    );
 #endif
 
 # ifdef FSK_MIN_MAGNITUDE
-    // noise limiter
     if ( avg_bit_sig < FSK_MIN_MAGNITUDE )
 	return 0.0; // too weak; reject frame
 # endif
 
+#if CONFIDENCE_ALGO == 6
+    // Frame confidence is the frame ( SNR * consistency )
+    confidence = snr * (1.0 - divergence);
+#else
     // Frame confidence is the frame SNR
     confidence = snr;
+#endif
 
     *ampl_outp = avg_bit_sig;
 
