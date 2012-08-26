@@ -49,10 +49,12 @@ simpleaudio_tone_init( unsigned int new_sin_table_len, float mag )
 
 	unsigned int i;
 	unsigned short mag_s = 32767.0 * tone_mag + 0.5f;
-	if ( mag_s < 2 ) // "short epsilon"
-	    mag_s = 2;
+	if ( tone_mag > 1.0f ) // clamp to 1.0 to avoid overflow
+	    mag_s = 32767;
+	if ( mag_s < 1 ) // "short epsilon"
+	    mag_s = 1;
 	for ( i=0; i<sin_table_len; i++ )
-	    sin_table_short[i] = mag_s * sin(M_PI*2.0*(float)i/sin_table_len);
+	    sin_table_short[i] = lroundf( mag_s * sin(M_PI*2.0*(float)i/sin_table_len) );
 	for ( i=0; i<sin_table_len; i++ )
 	    sin_table_float[i] = tone_mag * sinf(M_PI*2.0*(float)i/sin_table_len);
 
@@ -141,10 +143,12 @@ simpleaudio_tone(simpleaudio *sa_out, float tone_freq, size_t nsamples_dur)
 			    short_buf[i] = sin_lu_short(SINE_PHASE_TURNS);
 		    } else {
 			unsigned short mag_s = 32767.0 * tone_mag + 0.5f;
-			if ( mag_s < 2 ) // "short epsilon"
-			    mag_s = 2;
+			if ( tone_mag > 1.0f ) // clamp to 1.0 to avoid overflow
+			    mag_s = 32767;
+			if ( mag_s < 1 ) // "short epsilon"
+			    mag_s = 1;
 			for ( i=0; i<nsamples_dur; i++ )
-			    short_buf[i] = mag_s * sinf(SINE_PHASE_RADIANS);
+			    short_buf[i] = lroundf( mag_s * sinf(SINE_PHASE_RADIANS) );
 		    }
 		    break;
 		}
