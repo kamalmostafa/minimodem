@@ -325,8 +325,8 @@ usage()
     "		    -r, --rx, --receive,  --read     (default)\n"
     "		[options]\n"
     "		    -a, --auto-carrier\n"
-    "		    -c, --confidence {min-snr-threshold}\n"
-    "		    -l, --limit {max-snr-search-limit}\n"
+    "		    -c, --confidence {min-confidence-threshold}\n"
+    "		    -l, --limit {max-confidence-search-limit}\n"
     "		    -8, --ascii		ASCII  8-N-1\n"
     "		    -5, --baudot	Baudot 5-N-1\n"
     "		    -f, --file {filename.flac}\n"
@@ -370,15 +370,16 @@ main( int argc, char*argv[] )
 
     // fsk_confidence_threshold : signal-to-noise squelch control
     //
-    // The minimum SNR confidence level seen as "a signal".
-    float fsk_confidence_threshold = 2.0;
+    // The minimum SNR-ish confidence level seen as "a signal".
+    float fsk_confidence_threshold = 1.5;
 
     // fsk_confidence_search_limit : performance vs. quality
     //
-    // If we find a frame with SNR confidence > confidence_search_limit,
+    // If we find a frame with confidence > confidence_search_limit,
     // quit searching for a better frame.  confidence_search_limit has a
     // dramatic effect on peformance (high value yields low performance, but
-    // higher decode quality, for noisy or hard-to-discern signals (Bell 103).
+    // higher decode quality, for noisy or hard-to-discern signals (Bell 103,
+    // or skewed rates).
     float fsk_confidence_search_limit = 2.3f;
     // float fsk_confidence_search_limit = INFINITY;  /* for test */
 

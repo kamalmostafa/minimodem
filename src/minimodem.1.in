@@ -48,19 +48,23 @@ receive mode: decode audio tones
 .B \-a, \-\-auto-carrier
 automatically detect mark and space frequences from carrier
 .TP
-.B \-c, \-\-confidence min-snr-threshold
-Set receive confidence minimum SNR threshold (default 2.0).
+.B \-c, \-\-confidence min-confidence-threshold
+Set receive confidence minimum threshold (default 1.5).
+The "confidence" value is a metric based primarily on
+the SNR (signal-to-noise ratio) of the received signal.
 This value acts as an FSK decoder "squelch" control.
 Increase to accept only very clean signals (up to INFINITY, but
 a value around 5.0 is more practical).  Decrease to accept partial
-decoding of noisy signals (down to 1.0).
-.TP
-.B \-l, \-\-limit max-snr-search-limit
-Set receive confidence maximum SNR search limit (default 2.3).
+decoding of noisy signals (down to a minimum value of 1.0).
+(This option applies to \-\-rx mode only).
+.B \-l, \-\-limit max-confidence-search-limit
+Set receive confidence maximum search limit (default 2.3).
+The "confidence" value is as described above.
 This value acts as a performance vs. analysis quality control.
 Increase (up to INFINITY) for a more pedantic analysis
-and higher CPU usage.  Decrease (down to the min-snr-threshold)
+and higher CPU usage.  Decrease (down to the min-confidence-threshold)
 for a sloppier analysis, with lower CPU usage.
+(This option applies to \-\-rx mode only).
 .TP
 .B \-8, \-\-ascii
 ASCII  8\-N\-1
