@@ -783,6 +783,8 @@ main( int argc, char*argv[] )
     debug_log("fsk_frame_overscan=%f nsamples_overscan=%u\n",
 	    fsk_frame_overscan, nsamples_overscan);
 
+    float track_amplitude = 0.0;
+
     while ( 1 ) {
 
 	debug_log("advance=%u\n", advance);
@@ -948,6 +950,16 @@ main( int argc, char*argv[] )
 			&frame_start_sample
 			);
 
+	// no-confidence if amplitude drops abruptly to < 25% of the
+	// track_amplitude, which follows amplitude with hysteresis
+	if ( amplitude < track_amplitude * 0.25 ) {
+	    confidence = 0;
+	} else {
+	    track_amplitude = ( track_amplitude + amplitude ) / 2;
+	    debug_log("@ confidence=%.3f amplitude=%.3f track_amplitude=%.3f\n",
+		    confidence, amplitude, track_amplitude );
+	}
+
 	// chop off framing bits
 	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
 
@@ -970,6 +982,7 @@ main( int argc, char*argv[] )
 		    amplitude_total = 0;
 		    nframes_decoded = 0;
 		    nbits_decoded = 0;
+		    track_amplitude = 0.0;
 		}
 
 		if ( rx_one )
