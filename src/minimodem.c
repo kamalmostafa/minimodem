@@ -389,6 +389,8 @@ main( int argc, char*argv[] )
     float tx_amplitude = 1.0;
     unsigned int tx_sin_table_len = 4096;
 
+    float rxnoise_factor = 0.0;
+
     /* validate the default system audio mechanism */
 #if !(USE_PULSEAUDIO || USE_ALSA)
 # define _MINIMODEM_NO_SYSTEM_AUDIO
@@ -411,6 +413,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_LUT,
 	MINIMODEM_OPT_FLOAT_SAMPLES,
 	MINIMODEM_OPT_BENCHMARKS,
+	MINIMODEM_OPT_XRXNOISE,
     };
 
     while ( 1 ) {
@@ -439,6 +442,7 @@ main( int argc, char*argv[] )
 	    { "lut",		1, 0, MINIMODEM_OPT_LUT },
 	    { "float-samples",	0, 0, MINIMODEM_OPT_FLOAT_SAMPLES },
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
+	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
 	};
 	c = getopt_long(argc, argv, "Vtrc:l:a85f:b:v:M:S:T:qAR:",
@@ -524,6 +528,9 @@ main( int argc, char*argv[] )
 	    case MINIMODEM_OPT_BENCHMARKS:
 			benchmarks();
 			exit(0);
+			break;
+	    case MINIMODEM_OPT_XRXNOISE:
+			rxnoise_factor = atof(optarg);
 			break;
 	    default:
 			usage();
@@ -698,6 +705,8 @@ main( int argc, char*argv[] )
     if ( ! sa )
         return 1;
 
+    if ( rxnoise_factor != 0.0 )
+	simpleaudio_set_rxnoise(sa, rxnoise_factor);
 
     /*
      * Prepare the input sample chunk rate

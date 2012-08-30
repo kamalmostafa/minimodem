@@ -149,6 +149,12 @@ simpleaudio_get_samplesize( simpleaudio *sa )
     return sa->samplesize;
 }
 
+void
+simpleaudio_set_rxnoise( simpleaudio *sa, float rxnoise_factor )
+{
+    sa->rxnoise = rxnoise_factor;
+}
+
 ssize_t
 simpleaudio_read( simpleaudio *sa, void *buf, size_t nframes )
 {

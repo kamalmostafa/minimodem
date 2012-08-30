@@ -35,6 +35,7 @@ struct simpleaudio {
 	void *		backend_handle;
 	unsigned int	samplesize;
 	unsigned int	backend_framesize;
+	float		rxnoise;		// only for the sndfile backend
 };
 
 struct simpleaudio_backend {

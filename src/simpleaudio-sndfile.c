@@ -24,6 +24,7 @@
 #if USE_SNDFILE
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
 #include <assert.h>
@@ -60,6 +61,15 @@ sa_sndfile_read( simpleaudio *sa, void *buf, size_t nframes )
 	sf_perror(s);
 	return -1;
     }
+
+    if ( sa->rxnoise != 0.0 ) {
+	int i;
+	float *fbuf = buf;
+	float f = sa->rxnoise * 2;
+	for ( i=0; i<nframes; i++ )
+	    fbuf[i] += (drand48() - 0.5) * f;
+    }
+
     // fprintf(stderr, "sf_read: nframes=%ld n=%d\n", nframes, n);
     return n;
 }

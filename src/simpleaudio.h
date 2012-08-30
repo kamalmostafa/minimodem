@@ -75,6 +75,9 @@ simpleaudio_get_format( simpleaudio *sa );
 unsigned int
 simpleaudio_get_samplesize( simpleaudio *sa );
 
+void
+simpleaudio_set_rxnoise( simpleaudio *sa, float rxnoise_factor );
+
 ssize_t
 simpleaudio_read( simpleaudio *sa, void *buf, size_t nframes );
 
