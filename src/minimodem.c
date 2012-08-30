@@ -365,6 +365,7 @@ main( int argc, char*argv[] )
     float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
+    float bfsk_nstartbits = 1;		// hardcoded default 1 start bit
     float bfsk_nstopbits = 0;
     unsigned int bfsk_n_data_bits = 0;
     int autodetect_shift;
@@ -787,8 +788,8 @@ main( int argc, char*argv[] )
     debug_log("fsk_frame_overscan=%f nsamples_overscan=%u\n",
 	    fsk_frame_overscan, nsamples_overscan);
 
-    // n databits plus one start bit plus bfsk_nstopbits stop bit(s):
-    float frame_n_bits = bfsk_n_data_bits + 1 + bfsk_nstopbits;
+    // n databits plus bfsk_startbit start bits plus bfsk_nstopbit stop bits:
+    float frame_n_bits = bfsk_n_data_bits + bfsk_nstartbits + bfsk_nstopbits;
     unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5;
 
     float track_amplitude = 0.0;
