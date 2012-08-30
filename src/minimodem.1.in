@@ -86,7 +86,8 @@ FLT_EPSILON.  (This option applies to \-\-tx mode only).
 .TP
 .B \-S, \-\-space {space_freq}
 .TP
-.B \-T, \-\-txstopbits {m.n}
+.B \-T, \-\-stopbits {m.n}
+Sets the number of stop bits (default is 1.0, or 1.5 for rtty).
 .TP
 .B \-q, \-\-quiet
 Do not report CARRIER / NOCARRIER or signal analysis metrics.
@@ -130,7 +131,7 @@ default mark and space tone frequencies.
 	: Bell103   300 bps \-\-ascii
 .TP
 .B    rtty
-	: RTTY    45.45 bps \-\-baudot \-\-txstopbits 1.5
+	: RTTY    45.45 bps \-\-baudot \-\-stopbits 1.5
 .TP
 .B  {any floating point value N}
 	: Bell-like   N bps \-\-ascii

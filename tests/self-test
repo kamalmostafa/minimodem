@@ -49,7 +49,7 @@ set -e
 #echo "$MINIMODEM --tx ... $minimodem_tx_args"
 #echo "$MINIMODEM --rx ... $minimodem_rx_args"
 
-$MINIMODEM --tx -T 1 --file $TMPF.wav $minimodem_tx_args < "$textfile"
+$MINIMODEM --tx --file $TMPF.wav $minimodem_tx_args < "$textfile"
 
 # cp $TMPF.wav /tmp/x.wav
 

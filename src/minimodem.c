@@ -127,7 +127,7 @@ static void fsk_transmit_stdin(
 	float bfsk_mark_f,
 	float bfsk_space_f,
 	int n_data_bits,
-	float bfsk_txstopbits,
+	float bfsk_nstopbits,
 	int (*framebits_encoder)( unsigned int *databits_outp, char char_out )
 	)
 {
@@ -176,7 +176,7 @@ static void fsk_transmit_stdin(
 		simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
 	    }
 	    simpleaudio_tone(sa_out, bfsk_mark_f,
-				bit_nsamples * bfsk_txstopbits);	// stop
+				bit_nsamples * bfsk_nstopbits);	// stop
 	}
 
 	if ( tx_interactive )
@@ -197,18 +197,17 @@ static void
 report_no_carrier( fsk_plan *fskp,
 	unsigned int sample_rate,
 	float bfsk_data_rate,
-	float nsamples_per_bit,
+	float frame_n_bits,
 	unsigned int nframes_decoded,
-	unsigned long long nbits_decoded,
 	size_t carrier_nsamples,
 	float confidence_total,
 	float amplitude_total )
 {
+    float nbits_decoded = nframes_decoded * frame_n_bits;
 #if 0
     fprintf(stderr, "nframes_decoded=%u\n", nframes_decoded);
-    fprintf(stderr, "nbits_decoded=%llu\n", nbits_decoded);
+    fprintf(stderr, "nbits_decoded=%f\n", nbits_decoded);
     fprintf(stderr, "carrier_nsamples=%lu\n", carrier_nsamples);
-    fprintf(stderr, "nsamples_per_bit=%f\n", nsamples_per_bit);
 #endif
     float throughput_rate =
 		nbits_decoded * sample_rate / (float)carrier_nsamples;
@@ -217,7 +216,12 @@ report_no_carrier( fsk_plan *fskp,
 	    confidence_total / nframes_decoded,
 	    amplitude_total / nframes_decoded,
 	    throughput_rate);
-    if ( (size_t)(nbits_decoded * nsamples_per_bit + 0.5) == carrier_nsamples ) {
+#if 0
+    fprintf(stderr, " bits*sr=%llu rate*nsamp=%llu",
+	    (unsigned long long)(nbits_decoded * sample_rate + 0.5),
+	    (unsigned long long)(bfsk_data_rate * carrier_nsamples) );
+#endif
+    if ( (unsigned long long)(nbits_decoded * sample_rate + 0.5) == (unsigned long long)(bfsk_data_rate * carrier_nsamples) ) {
 	fprintf(stderr, " (rate perfect) ###\n");
     } else {
 	float throughput_skew = (throughput_rate - bfsk_data_rate)
@@ -334,7 +338,7 @@ usage()
     "		    -v, --volume {amplitude or 'E'}\n"
     "		    -M, --mark {mark_freq}\n"
     "		    -S, --space {space_freq}\n"
-    "		    -T, --txstopbits {m.n}\n"
+    "		    -T, --stopbits {m.n}\n"
     "		    -q, --quiet\n"
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
@@ -361,7 +365,7 @@ main( int argc, char*argv[] )
     float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
-    float bfsk_txstopbits = 0;
+    float bfsk_nstopbits = 0;
     unsigned int bfsk_n_data_bits = 0;
     int autodetect_shift;
     char *filename = NULL;
@@ -439,7 +443,7 @@ main( int argc, char*argv[] )
 	    { "volume",		1, 0, 'v' },
 	    { "mark",		1, 0, 'M' },
 	    { "space",		1, 0, 'S' },
-	    { "txstopbits",	1, 0, 'T' },
+	    { "stopbits",	1, 0, 'T' },
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		0, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
@@ -506,8 +510,8 @@ main( int argc, char*argv[] )
 			assert( bfsk_space_f > 0 );
 			break;
 	    case 'T':
-			bfsk_txstopbits = atof(optarg);
-			assert( bfsk_txstopbits > 0 );
+			bfsk_nstopbits = atof(optarg);
+			assert( bfsk_nstopbits > 0 );
 			break;
 	    case 'q':
 			quiet_mode = 1;
@@ -590,8 +594,8 @@ main( int argc, char*argv[] )
 	bfsk_data_rate = 45.45;
 	if ( bfsk_n_data_bits == 0 )
 	    bfsk_n_data_bits = 5;
-	if ( bfsk_txstopbits == 0 )
-	    bfsk_txstopbits = 1.5;
+	if ( bfsk_nstopbits == 0 )
+	    bfsk_nstopbits = 1.5;
     } else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
@@ -647,8 +651,8 @@ main( int argc, char*argv[] )
 	}
     }
 
-    if ( bfsk_txstopbits == 0 )
-	bfsk_txstopbits = 1.0;
+    if ( bfsk_nstopbits == 0 )
+	bfsk_nstopbits = 1.0;
 
     /* restrict band_width to <= data rate (FIXME?) */
     if ( band_width > bfsk_data_rate )
@@ -689,7 +693,7 @@ main( int argc, char*argv[] )
 				bfsk_data_rate,
 				bfsk_mark_f, bfsk_space_f,
 				bfsk_n_data_bits,
-				bfsk_txstopbits,
+				bfsk_nstopbits,
 				bfsk_framebits_encode
 				);
 
@@ -759,7 +763,6 @@ main( int argc, char*argv[] )
     float		confidence_total = 0;
     float		amplitude_total = 0;
     unsigned int	nframes_decoded = 0;
-    unsigned long long	nbits_decoded = 0;
     size_t		carrier_nsamples = 0;
 
     unsigned int	noconfidence = 0;
@@ -783,6 +786,10 @@ main( int argc, char*argv[] )
 	nsamples_overscan = 1;
     debug_log("fsk_frame_overscan=%f nsamples_overscan=%u\n",
 	    fsk_frame_overscan, nsamples_overscan);
+
+    // n databits plus one start bit plus bfsk_nstopbits stop bit(s):
+    float frame_n_bits = bfsk_n_data_bits + 1 + bfsk_nstopbits;
+    unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5;
 
     float track_amplitude = 0.0;
 
@@ -892,14 +899,11 @@ main( int argc, char*argv[] )
 	char expect_bits_string[33] = "10dddddddddddddddddddddddddddddd";
 	expect_bits_string[bfsk_n_data_bits + 2] = '1';
 	expect_bits_string[bfsk_n_data_bits + 3] = 0;
-	unsigned int frame_n_bits   = bfsk_n_data_bits + 2;
 	unsigned int frame_bits_shift = 2;	// prev_stop + start
 	// FIXME - weird hardcode:
 	unsigned int frame_bits_mask  = 0xFF;
 	if ( bfsk_n_data_bits == 5 )
 	    frame_bits_mask = 0x1F;
-
-	unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits;
 
 	unsigned int expect_n_bits  = strlen(expect_bits_string);
 	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
@@ -975,14 +979,13 @@ main( int argc, char*argv[] )
 		if ( carrier ) {
 		    if ( !quiet_mode )
 			report_no_carrier(fskp, sample_rate, bfsk_data_rate,
-			    nsamples_per_bit, nframes_decoded, nbits_decoded,
+			    frame_n_bits, nframes_decoded,
 			    carrier_nsamples, confidence_total, amplitude_total);
 		    carrier = 0;
 		    carrier_nsamples = 0;
 		    confidence_total = 0;
 		    amplitude_total = 0;
 		    nframes_decoded = 0;
-		    nbits_decoded = 0;
 		    track_amplitude = 0.0;
 		}
 
@@ -1025,7 +1028,6 @@ main( int argc, char*argv[] )
 	confidence_total += confidence;
 	amplitude_total += amplitude;
 	nframes_decoded++;
-	nbits_decoded += frame_n_bits;
 	noconfidence = 0;
 
 	// Advance the sample stream forward past the junk before the
@@ -1071,7 +1073,7 @@ main( int argc, char*argv[] )
     if ( carrier ) {
 	if ( !quiet_mode )
 	    report_no_carrier(fskp, sample_rate, bfsk_data_rate,
-		nsamples_per_bit, nframes_decoded, nbits_decoded,
+		frame_n_bits, nframes_decoded,
 		carrier_nsamples, confidence_total, amplitude_total);
     }
 
