@@ -134,7 +134,7 @@ sa_alsa_open_stream(
 		SND_PCM_ACCESS_RW_INTERLEAVED,
 		channels,
 		rate,
-		0 /* soft_resample (allow) */,
+		1 /* soft_resample (allow) */,
 		-1 /* latency */);
     if (error) {
 	fprintf(stderr, "E: %s\n", snd_strerror(error));
