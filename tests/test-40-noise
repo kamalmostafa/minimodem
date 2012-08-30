@@ -1,0 +1,31 @@
+#!/bin/bash
+
+flags="$*"
+[ -z "$flags" ] && flags="1200"
+
+let count=0
+let fail=0
+
+function try_tx_rx_noise
+{
+    a="$1"
+    echo -n "$a "
+    let count++
+    ./self-test testdata-ascii.txt \
+		$flags --volume 0.5 \
+		-- \
+		$flags --Xrxnoise $noise --rx-one || let fail++
+}
+
+for noise in 0.00 0.05 0.10 0.50
+do
+    try_tx_rx_noise "$noise"
+done
+
+if [ $fail -eq 0 ]
+then
+echo "  (all $count noise tests passed)"
+else
+echo "  ($fail/$count noise tests failed)"
+fi
+exit $fail
