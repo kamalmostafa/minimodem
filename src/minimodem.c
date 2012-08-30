@@ -341,6 +341,7 @@ usage()
     "		    -A, --alsa\n"
     "		    --lut={tx_sin_table_len}\n"
     "		    --float-samples\n"
+    "		    --rx-one\n"
     "		    --benchmarks\n"
     "		{baudmode}\n"
     "		    1200       Bell202  1200 bps --ascii\n"
@@ -389,6 +390,7 @@ main( int argc, char*argv[] )
     float tx_amplitude = 1.0;
     unsigned int tx_sin_table_len = 4096;
 
+    unsigned int rx_one = 0;
     float rxnoise_factor = 0.0;
 
     /* validate the default system audio mechanism */
@@ -412,6 +414,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
 	MINIMODEM_OPT_LUT,
 	MINIMODEM_OPT_FLOAT_SAMPLES,
+	MINIMODEM_OPT_RX_ONE,
 	MINIMODEM_OPT_BENCHMARKS,
 	MINIMODEM_OPT_XRXNOISE,
     };
@@ -441,6 +444,7 @@ main( int argc, char*argv[] )
 	    { "samplerate",	1, 0, 'R' },
 	    { "lut",		1, 0, MINIMODEM_OPT_LUT },
 	    { "float-samples",	0, 0, MINIMODEM_OPT_FLOAT_SAMPLES },
+	    { "rx-one",		0, 0, MINIMODEM_OPT_RX_ONE },
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
@@ -524,6 +528,9 @@ main( int argc, char*argv[] )
 			break;
 	    case MINIMODEM_OPT_FLOAT_SAMPLES:
 			sample_format = SA_SAMPLE_FORMAT_FLOAT;
+			break;
+	    case MINIMODEM_OPT_RX_ONE:
+			rx_one = 1;
 			break;
 	    case MINIMODEM_OPT_BENCHMARKS:
 			benchmarks();
@@ -964,6 +971,9 @@ main( int argc, char*argv[] )
 		    nframes_decoded = 0;
 		    nbits_decoded = 0;
 		}
+
+		if ( rx_one )
+		    break;
 	    }
 
 	    /* Advance the sample stream forward by try_max_nsamples so the
