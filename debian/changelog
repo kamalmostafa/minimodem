@@ -1,3 +1,22 @@
+minimodem (0.11-1) unstable; urgency=low
+
+  * new confidence algo: "SNR * (1-divergence)"
+    - improved sensitivity: handles signal amplitudes down to FLT_EPSILON
+    - improved noise rejection
+    - tightened --rx signal analysis metrics
+  * enabled ALSA soft-resampling
+  * more 'make check' test cases
+
+  * minimodem changed runtime command line switches:
+      -c, --confidence      new default reduced to 1.5
+      -T, --stopbits {m.n}  was --txstopbits, now also evaluated for rx metrics
+
+  * minimodem new runtime command line switches:
+      -v, --volume {amplitude or 'E'}    sets --tx output volume
+          --rx-one          quits after first carrier/no-carrier
+
+ -- Kamal Mostafa <kamal@whence.com>  Thu, 30 Aug 2012 16:30:41 -0700
+
 minimodem (0.10.1-2) unstable; urgency=low
 
   * debian: enable build hardening flags
