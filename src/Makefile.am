@@ -42,8 +42,14 @@ FSK_SRC = fsk.h fsk.c
 
 BAUDOT_SRC = baudot.h baudot.c
 
+DATABITS_SRC = \
+	databits.h \
+	databits_ascii.c \
+	databits_binary.c \
+	databits_baudot.c $(BAUDOT_SRC)
+
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c $(BAUDOT_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
+minimodem_SOURCES = minimodem.c $(DATABITS_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
 
 
 minimodem.1.html: minimodem.1 Makefile

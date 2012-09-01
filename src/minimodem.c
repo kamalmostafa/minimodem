@@ -39,58 +39,9 @@
 
 #include "simpleaudio.h"
 #include "fsk.h"
-#include "baudot.h"
+#include "databits.h"
 
 char *program_name = "";
-
-
-/*
- * ASCII 8-bit data framebits decoder/encoder (passthrough)
- */
-
-/* returns the number of datawords stuffed into *databits_outp */
-int
-framebits_encode_ascii8( unsigned int *databits_outp, char char_out )
-{
-    *databits_outp = char_out;
-    return 1;
-}
-
-/* returns nbytes decoded */
-static unsigned int
-framebits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits )
-{
-    if ( dataout_p == NULL )	// frame processor reset: noop
-	return 0;
-    assert( (bits & ~0xFF) == 0 );
-    assert( dataout_size >= 1);
-    *dataout_p = bits;
-    return 1;
-}
-
-
-/*
- * Baudot 5-bit data framebits decoder/encoder
- */
-
-#define framebits_encode_baudot baudot_encode
-
-/* returns nbytes decoded */
-static unsigned int
-framebits_decode_baudot( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits )
-{
-    if ( dataout_p == NULL ) {	// frame processor reset: reset Baudot state
-	    baudot_reset();
-	    return 0;
-    }
-    assert( (bits & ~0x1F) == 0 );
-    assert( dataout_size >= 1);
-    return baudot_decode(dataout_p, bits);
-}
-
-
 
 int		tx_transmitting = 0;
 int		tx_leader_bits_len = 2;
@@ -128,7 +79,7 @@ static void fsk_transmit_stdin(
 	float bfsk_space_f,
 	int n_data_bits,
 	float bfsk_nstopbits,
-	int (*framebits_encoder)( unsigned int *databits_outp, char char_out )
+	databits_encoder encode
 	)
 {
     size_t sample_rate = simpleaudio_get_rate(sa_out);
@@ -157,7 +108,7 @@ static void fsk_transmit_stdin(
 	// fprintf(stderr, "<c=%d>", c);
 	unsigned int nwords;
 	unsigned int bits[2];
-	nwords = framebits_encoder(bits, c);
+	nwords = encode(bits, c);
 
 	if ( !tx_transmitting )
 	{
@@ -586,10 +537,8 @@ main( int argc, char*argv[] )
 
 
     float	bfsk_data_rate = 0.0;
-    int (*bfsk_framebits_encode)( unsigned int *databits_outp, char char_out );
-
-    unsigned int (*bfsk_framebits_decode)( char *dataout_p, unsigned int dataout_size,
-					unsigned int bits );
+    databits_encoder	*bfsk_databits_encode;
+    databits_decoder	*bfsk_databits_decode;
 
     if ( strncasecmp(modem_mode, "rtty",5)==0 ) {
 	bfsk_data_rate = 45.45;
@@ -606,11 +555,11 @@ main( int argc, char*argv[] )
 	usage();
 
     if ( bfsk_n_data_bits == 8 ) {
-	bfsk_framebits_decode = framebits_decode_ascii8;
-	bfsk_framebits_encode = framebits_encode_ascii8;
+	bfsk_databits_decode = databits_decode_ascii8;
+	bfsk_databits_encode = databits_encode_ascii8;
     } else if ( bfsk_n_data_bits == 5 ) {
-	bfsk_framebits_decode = framebits_decode_baudot;
-	bfsk_framebits_encode = framebits_encode_baudot;
+	bfsk_databits_decode = databits_decode_baudot;
+	bfsk_databits_encode = databits_encode_baudot;
     } else {
 	assert( 0 && bfsk_n_data_bits );
     }
@@ -695,7 +644,7 @@ main( int argc, char*argv[] )
 				bfsk_mark_f, bfsk_space_f,
 				bfsk_n_data_bits,
 				bfsk_nstopbits,
-				bfsk_framebits_encode
+				bfsk_databits_encode
 				);
 
 	simpleaudio_close(sa_out);
@@ -1015,7 +964,7 @@ main( int argc, char*argv[] )
 			    fskp->b_mark * fskp->band_width);
 	    }
 	    carrier = 1;
-	    bfsk_framebits_decode(0, 0, 0);	/* reset the frame processor */
+	    bfsk_databits_decode(0, 0, 0, 0); // reset the frame processor
 	}
 
 	confidence_total += confidence;
@@ -1054,9 +1003,9 @@ main( int argc, char*argv[] )
 	char dataoutbuf[4096];
 	unsigned int dataout_nbytes = 0;
 
-	dataout_nbytes += bfsk_framebits_decode(dataoutbuf + dataout_nbytes,
+	dataout_nbytes += bfsk_databits_decode(dataoutbuf + dataout_nbytes,
 						dataout_size - dataout_nbytes,
-						bits);
+						bits, (int)bfsk_n_data_bits);
 
 	/*
 	 * Print the output buffer to stdout

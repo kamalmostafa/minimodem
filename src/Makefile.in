@@ -66,12 +66,14 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 = baudot.$(OBJEXT)
-am__objects_2 = fsk.$(OBJEXT)
-am__objects_3 = simpleaudio.$(OBJEXT) simple-tone-generator.$(OBJEXT) \
+am__objects_2 = databits_ascii.$(OBJEXT) databits_binary.$(OBJEXT) \
+	databits_baudot.$(OBJEXT) $(am__objects_1)
+am__objects_3 = fsk.$(OBJEXT)
+am__objects_4 = simpleaudio.$(OBJEXT) simple-tone-generator.$(OBJEXT) \
 	simpleaudio-pulse.$(OBJEXT) simpleaudio-alsa.$(OBJEXT) \
 	simpleaudio-benchmark.$(OBJEXT) simpleaudio-sndfile.$(OBJEXT)
-am_minimodem_OBJECTS = minimodem.$(OBJEXT) $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3)
+am_minimodem_OBJECTS = minimodem.$(OBJEXT) $(am__objects_2) \
+	$(am__objects_3) $(am__objects_4)
 minimodem_OBJECTS = $(am_minimodem_OBJECTS)
 am__DEPENDENCIES_1 =
 minimodem_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -222,8 +224,14 @@ SIMPLEAUDIO_SRC = \
 
 FSK_SRC = fsk.h fsk.c
 BAUDOT_SRC = baudot.h baudot.c
+DATABITS_SRC = \
+	databits.h \
+	databits_ascii.c \
+	databits_binary.c \
+	databits_baudot.c $(BAUDOT_SRC)
+
 minimodem_LDADD = $(DEPS_LIBS)
-minimodem_SOURCES = minimodem.c $(BAUDOT_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
+minimodem_SOURCES = minimodem.c $(DATABITS_SRC) $(FSK_SRC) $(SIMPLEAUDIO_SRC)
 all: all-am
 
 .SUFFIXES:
@@ -308,6 +316,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/baudot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/databits_ascii.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/databits_baudot.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/databits_binary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minimodem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simple-tone-generator.Po@am__quote@
