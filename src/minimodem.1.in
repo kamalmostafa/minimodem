@@ -122,6 +122,12 @@ default 16-bit signed integer format (applies to \-\-tx mode only;
 .B \-\-rx-one
 Quit after the first carrier/no-carrier event (applies to \-\-rx mode only).
 .TP
+.B \-\-binary-output
+Print received data bits as raw binary output using characters '0' and '1'.
+The bits are printed in the order they are received.  Framing bits (start
+and stop bits) are omitted from the output.
+(This option applies to \-\-rx mode only).
+.TP
 .B \-\-benchmarks
 Run and report internal performance tests (all other flags are ignored).
 .TP

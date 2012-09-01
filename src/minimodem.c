@@ -300,6 +300,7 @@ usage()
     "		    --float-samples\n"
     "		    --rx-one\n"
     "		    --benchmarks\n"
+    "		    --binary-output\n"
     "		{baudmode}\n"
     "		    1200       Bell202  1200 bps --ascii\n"
     "		     300       Bell103   300 bps --ascii\n"
@@ -354,6 +355,8 @@ main( int argc, char*argv[] )
     unsigned int rx_one = 0;
     float rxnoise_factor = 0.0;
 
+    int output_mode_binary = 0;
+
     /* validate the default system audio mechanism */
 #if !(USE_PULSEAUDIO || USE_ALSA)
 # define _MINIMODEM_NO_SYSTEM_AUDIO
@@ -380,6 +383,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_FLOAT_SAMPLES,
 	MINIMODEM_OPT_RX_ONE,
 	MINIMODEM_OPT_BENCHMARKS,
+	MINIMODEM_OPT_BINARY_OUTPUT,
 	MINIMODEM_OPT_XRXNOISE,
     };
 
@@ -412,6 +416,7 @@ main( int argc, char*argv[] )
 	    { "float-samples",	0, 0, MINIMODEM_OPT_FLOAT_SAMPLES },
 	    { "rx-one",		0, 0, MINIMODEM_OPT_RX_ONE },
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
+	    { "binary-output",	0, 0, MINIMODEM_OPT_BINARY_OUTPUT },
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
 	};
@@ -510,6 +515,9 @@ main( int argc, char*argv[] )
 			benchmarks();
 			exit(0);
 			break;
+	    case MINIMODEM_OPT_BINARY_OUTPUT:
+			output_mode_binary = 1;
+			break;
 	    case MINIMODEM_OPT_XRXNOISE:
 			rxnoise_factor = atof(optarg);
 			break;
@@ -591,6 +599,9 @@ main( int argc, char*argv[] )
     } else {
 	assert( 0 && bfsk_n_data_bits );
     }
+
+    if ( output_mode_binary )
+	bfsk_databits_decode = databits_decode_binary;
 
     if ( bfsk_data_rate >= 400 ) {
 	/*
