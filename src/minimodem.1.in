@@ -92,6 +92,13 @@ Sets the number of start bits (default is 1 for most baudmodes).
 .B \-\-stopbits {n.n}
 Sets the number of stop bits (default is 1.0 for most baudmodes).
 .TP
+.B \-\-sync-byte {0xXX}
+If this option is used, initial carrier acquisition will be suppressed
+until after one or more consecutive data frame(s) containing this value
+are received.  This can be used to synchronize the stream for protocols
+which include a fixed preamble byte.
+(This option applies to \-\-rx mode only).
+.TP
 .B \-q, \-\-quiet
 Do not report CARRIER / NOCARRIER or signal analysis metrics.
 .TP

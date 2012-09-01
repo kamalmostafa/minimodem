@@ -291,6 +291,7 @@ usage()
     "		    -S, --space {space_freq}\n"
     "		    --startbits {n}\n"
     "		    --stopbits {n.n}\n"
+    "		    --sync-byte {0xXX}\n"
     "		    -q, --quiet\n"
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
@@ -319,6 +320,8 @@ main( int argc, char*argv[] )
     unsigned int bfsk_space_f = 0;
     int bfsk_nstartbits = -1;	// actually only supports 0 or 1 startbit
     float bfsk_nstopbits = -1;
+    unsigned int bfsk_sync_on_data = 0;
+    unsigned int bfsk_sync_byte = -1;
     unsigned int bfsk_n_data_bits = 0;
     int autodetect_shift;
     char *filename = NULL;
@@ -372,6 +375,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
 	MINIMODEM_OPT_STARTBITS,
 	MINIMODEM_OPT_STOPBITS,
+	MINIMODEM_OPT_SYNC_BYTE,
 	MINIMODEM_OPT_LUT,
 	MINIMODEM_OPT_FLOAT_SAMPLES,
 	MINIMODEM_OPT_RX_ONE,
@@ -400,6 +404,7 @@ main( int argc, char*argv[] )
 	    { "space",		1, 0, 'S' },
 	    { "startbits",	1, 0, MINIMODEM_OPT_STARTBITS },
 	    { "stopbits",	1, 0, MINIMODEM_OPT_STOPBITS },
+	    { "sync-byte",	1, 0, MINIMODEM_OPT_SYNC_BYTE },
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		0, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
@@ -472,6 +477,10 @@ main( int argc, char*argv[] )
 	    case MINIMODEM_OPT_STOPBITS:
 			bfsk_nstopbits = atof(optarg);
 			assert( bfsk_nstopbits >= 0 );
+			break;
+	    case MINIMODEM_OPT_SYNC_BYTE:
+			bfsk_sync_on_data = 1;
+			bfsk_sync_byte = strtol(optarg, NULL, 0);
 			break;
 	    case 'q':
 			quiet_mode = 1;
@@ -927,6 +936,11 @@ main( int argc, char*argv[] )
 		    confidence, amplitude, track_amplitude );
 	}
 
+	if ( bfsk_sync_on_data ) {
+	    if ( ! carrier && bits != bfsk_sync_byte )
+		confidence = 0.0;
+	}
+
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
 	if ( confidence <= fsk_confidence_threshold ) {
@@ -1019,6 +1033,12 @@ main( int argc, char*argv[] )
 	unsigned int dataout_size = 4096;
 	char dataoutbuf[4096];
 	unsigned int dataout_nbytes = 0;
+
+	// suppress printing of bfsk_sync_byte bytes
+	if ( bfsk_sync_on_data ) {
+	    if ( dataout_nbytes == 0 && bits == bfsk_sync_byte )
+		continue;
+	}
 
 	dataout_nbytes += bfsk_databits_decode(dataoutbuf + dataout_nbytes,
 						dataout_size - dataout_nbytes,
