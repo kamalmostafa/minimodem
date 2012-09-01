@@ -563,6 +563,17 @@ main( int argc, char*argv[] )
 	    bfsk_n_data_bits = 5;
 	if ( bfsk_nstopbits < 0 )
 	    bfsk_nstopbits = 1.5;
+    } else if ( strncasecmp(modem_mode, "same",5)==0 ) {
+	// http://www.nws.noaa.gov/nwr/nwrsame.htm
+	bfsk_data_rate = 520.0 + 5/6.0;
+	bfsk_n_data_bits = 8;
+	bfsk_nstartbits = 0;
+	bfsk_nstopbits = 0;
+	bfsk_sync_on_data = 1;
+	bfsk_sync_byte = 0xAB;
+	bfsk_mark_f = 2083.0 + 1/3.0;
+	bfsk_space_f = 1562.5;
+	band_width = bfsk_data_rate;
     } else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )

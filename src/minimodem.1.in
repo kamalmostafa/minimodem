@@ -129,22 +129,27 @@ Run and report internal performance tests (all other flags are ignored).
 print program version
 .SH {baudmode}
 The required \fI{baudmode}\fR parameter may be any floating-point value to
-specify a baud rate, or the string "rtty".
+specify a baud rate, or either of the strings "rtty" or "same".
 The \fI{baudmode}\fR also implies certain other parameter defaults
 depending on the rate, including standard (or at least reasonable)
 default mark and space tone frequencies.
 .TP
+.B  {any floating point value N}
+: Bell-syle N bps \-\-ascii
+.TP
 .B    1200
-	: Bell202  1200 bps \-\-ascii
+: Bell202 1200 bps \-\-ascii
 .TP
 .B     300
-	: Bell103   300 bps \-\-ascii
+: Bell103 300 bps \-\-ascii
 .TP
 .B    rtty
-	: RTTY    45.45 bps \-\-baudot \-\-stopbits 1.5
+: RTTY 45.45 bps \-\-baudot \-\-stopbits 1.5
 .TP
-.B  {any floating point value N}
-	: Bell-like   N bps \-\-ascii
+.B    same
+: SAME 520.83 bps \-\-startbits 0 \-\-stopbits 0 \-\-sync-byte 0xAB
+.br
+	NOAA Specific Area Message Encoding (SAME) protocol
 .SH EXAMPLES
 .TP
 .B minimodem --tx 100
@@ -153,8 +158,13 @@ Transmit 100 baud tones from one computer ...
 .B minimodem --rx 100
 and receive 100 baud tones on another nearby computer.
 .TP
-.B minimodem --rx --auto-carrier rtty
+.B minimodem --rx -a rtty
 Decode amateur radio RTTY signals (listen near 14.085 MHz).
+.TP
+.B minimodem --rx same
+Decode NOAA SAME protocol emergency alert transmissions, e.g.
+.br
+http://en.wikipedia.org/wiki/Specific_Area_Message_Encoding
 .TP
 .B minimodem --tx 0.5
 Experiment with very low baud rates (works in noisy conditions).
