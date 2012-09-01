@@ -86,8 +86,11 @@ FLT_EPSILON.  (This option applies to \-\-tx mode only).
 .TP
 .B \-S, \-\-space {space_freq}
 .TP
-.B \-T, \-\-stopbits {m.n}
-Sets the number of stop bits (default is 1.0, or 1.5 for rtty).
+.B \-\-startbits {n}
+Sets the number of start bits (default is 1 for most baudmodes).
+.TP
+.B \-\-stopbits {n.n}
+Sets the number of stop bits (default is 1.0 for most baudmodes).
 .TP
 .B \-q, \-\-quiet
 Do not report CARRIER / NOCARRIER or signal analysis metrics.

@@ -289,7 +289,8 @@ usage()
     "		    -v, --volume {amplitude or 'E'}\n"
     "		    -M, --mark {mark_freq}\n"
     "		    -S, --space {space_freq}\n"
-    "		    -T, --stopbits {m.n}\n"
+    "		    --startbits {n}\n"
+    "		    --stopbits {n.n}\n"
     "		    -q, --quiet\n"
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
@@ -316,8 +317,8 @@ main( int argc, char*argv[] )
     float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
-    float bfsk_nstartbits = 1;		// hardcoded default 1 start bit
-    float bfsk_nstopbits = 0;
+    int bfsk_nstartbits = -1;	// actually only supports 0 or 1 startbit
+    float bfsk_nstopbits = -1;
     unsigned int bfsk_n_data_bits = 0;
     int autodetect_shift;
     char *filename = NULL;
@@ -369,6 +370,8 @@ main( int argc, char*argv[] )
     
     enum {
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
+	MINIMODEM_OPT_STARTBITS,
+	MINIMODEM_OPT_STOPBITS,
 	MINIMODEM_OPT_LUT,
 	MINIMODEM_OPT_FLOAT_SAMPLES,
 	MINIMODEM_OPT_RX_ONE,
@@ -395,7 +398,8 @@ main( int argc, char*argv[] )
 	    { "volume",		1, 0, 'v' },
 	    { "mark",		1, 0, 'M' },
 	    { "space",		1, 0, 'S' },
-	    { "stopbits",	1, 0, 'T' },
+	    { "startbits",	1, 0, MINIMODEM_OPT_STARTBITS },
+	    { "stopbits",	1, 0, MINIMODEM_OPT_STOPBITS },
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		0, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
@@ -461,9 +465,13 @@ main( int argc, char*argv[] )
 			bfsk_space_f = atoi(optarg);
 			assert( bfsk_space_f > 0 );
 			break;
-	    case 'T':
+	    case MINIMODEM_OPT_STARTBITS:
+			bfsk_nstartbits = atoi(optarg);
+			assert( bfsk_nstartbits == 0 || bfsk_nstartbits == 1 );
+			break;
+	    case MINIMODEM_OPT_STOPBITS:
 			bfsk_nstopbits = atof(optarg);
-			assert( bfsk_nstopbits > 0 );
+			assert( bfsk_nstopbits >= 0 );
 			break;
 	    case 'q':
 			quiet_mode = 1;
@@ -544,7 +552,7 @@ main( int argc, char*argv[] )
 	bfsk_data_rate = 45.45;
 	if ( bfsk_n_data_bits == 0 )
 	    bfsk_n_data_bits = 5;
-	if ( bfsk_nstopbits == 0 )
+	if ( bfsk_nstopbits < 0 )
 	    bfsk_nstopbits = 1.5;
     } else {
 	bfsk_data_rate = atof(modem_mode);
@@ -601,7 +609,10 @@ main( int argc, char*argv[] )
 	}
     }
 
-    if ( bfsk_nstopbits == 0 )
+    // defaults: 1 start bit, 1 stop bit
+    if ( bfsk_nstartbits < 0 )
+	bfsk_nstartbits = 1;
+    if ( bfsk_nstopbits < 0 )
 	bfsk_nstopbits = 1.0;
 
     /* restrict band_width to <= data rate (FIXME?) */
@@ -846,9 +857,15 @@ main( int argc, char*argv[] )
 	//                       start--v        v--stop
 	// char *expect_bits_string = "10dddddddd1";
 	//
-	char expect_bits_string[33] = "10dddddddddddddddddddddddddddddd";
-	expect_bits_string[bfsk_n_data_bits + 2] = '1';
-	expect_bits_string[bfsk_n_data_bits + 3] = 0;
+	char expect_bits_string[33] = "dddddddddddddddddddddddddddddddd";
+	int j = 0;
+	if ( bfsk_nstopbits != 0.0 )
+	    expect_bits_string[j++] = '1';
+	if ( bfsk_nstartbits != 0 )	// FIXME -- sets only one start bit
+	    expect_bits_string[j++] = '0';
+	if ( bfsk_nstopbits != 0.0 )
+	    expect_bits_string[bfsk_n_data_bits + j++] = '1';
+	expect_bits_string[bfsk_n_data_bits + j++] = 0;
 
 	unsigned int expect_n_bits  = strlen(expect_bits_string);
 	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
@@ -995,7 +1012,7 @@ main( int argc, char*argv[] )
 	 */
 
 	// chop off framing bits
-	unsigned int frame_bits_shift = (int)bfsk_nstartbits;
+	unsigned int frame_bits_shift = bfsk_nstartbits;
 	unsigned int frame_bits_mask = (int)(1<<bfsk_n_data_bits) - 1;
 	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
 
