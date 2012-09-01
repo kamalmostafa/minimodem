@@ -900,11 +900,6 @@ main( int argc, char*argv[] )
 	char expect_bits_string[33] = "10dddddddddddddddddddddddddddddd";
 	expect_bits_string[bfsk_n_data_bits + 2] = '1';
 	expect_bits_string[bfsk_n_data_bits + 3] = 0;
-	unsigned int frame_bits_shift = 2;	// prev_stop + start
-	// FIXME - weird hardcode:
-	unsigned int frame_bits_mask  = 0xFF;
-	if ( bfsk_n_data_bits == 5 )
-	    frame_bits_mask = 0x1F;
 
 	unsigned int expect_n_bits  = strlen(expect_bits_string);
 	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
@@ -965,9 +960,6 @@ main( int argc, char*argv[] )
 	    debug_log("@ confidence=%.3f amplitude=%.3f track_amplitude=%.3f\n",
 		    confidence, amplitude, track_amplitude );
 	}
-
-	// chop off framing bits
-	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
 
 #define FSK_MAX_NOCONFIDENCE_BITS	20
 
@@ -1043,11 +1035,20 @@ main( int argc, char*argv[] )
 		    nsamples_per_bit, bfsk_n_data_bits,
 		    frame_start_sample, advance);
 
+	// chop off the prev_stop bit
+	if ( bfsk_nstopbits != 0.0 )
+	    bits = bits >> 1;
+
 
 	/*
 	 * Send the raw data frame bits to the backend frame processor
 	 * for final conversion to output data bytes.
 	 */
+
+	// chop off framing bits
+	unsigned int frame_bits_shift = (int)bfsk_nstartbits;
+	unsigned int frame_bits_mask = (int)(1<<bfsk_n_data_bits) - 1;
+	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
 
 	unsigned int dataout_size = 4096;
 	char dataoutbuf[4096];
