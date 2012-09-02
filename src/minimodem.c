@@ -931,7 +931,7 @@ main( int argc, char*argv[] )
 #define FSK_ANALYZE_NSTEPS		10	/* accuracy vs. performance */
 		// Note: FSK_ANALYZE_NSTEPS has subtle effects on the
 		// "rate perfect" calculation.  oh well.
-	unsigned int try_step_nsamples = nsamples_per_bit / FSK_ANALYZE_NSTEPS;
+	unsigned int try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS;
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
 
