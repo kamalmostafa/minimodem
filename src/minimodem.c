@@ -877,15 +877,23 @@ main( int argc, char*argv[] )
 	//                       start--v        v--stop
 	// char *expect_bits_string = "10dddddddd1";
 	//
-	char expect_bits_string[33] = "dddddddddddddddddddddddddddddddd";
+	char expect_bits_string[33];
 	int j = 0;
 	if ( bfsk_nstopbits != 0.0 )
 	    expect_bits_string[j++] = '1';
 	if ( bfsk_nstartbits != 0 )	// FIXME -- sets only one start bit
 	    expect_bits_string[j++] = '0';
+	int i;
+	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
+	    if ( ! carrier && bfsk_sync_on_data )
+		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
+	    else
+		expect_bits_string[j] = 'd';
+	}
 	if ( bfsk_nstopbits != 0.0 )
-	    expect_bits_string[bfsk_n_data_bits + j++] = '1';
-	expect_bits_string[bfsk_n_data_bits + j++] = 0;
+	    expect_bits_string[j++] = '1';
+	expect_bits_string[j++] = 0;
+
 
 	unsigned int expect_n_bits  = strlen(expect_bits_string);
 	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
@@ -945,11 +953,6 @@ main( int argc, char*argv[] )
 	    track_amplitude = ( track_amplitude + amplitude ) / 2;
 	    debug_log("@ confidence=%.3f amplitude=%.3f track_amplitude=%.3f\n",
 		    confidence, amplitude, track_amplitude );
-	}
-
-	if ( bfsk_sync_on_data ) {
-	    if ( ! carrier && bits != bfsk_sync_byte )
-		confidence = 0.0;
 	}
 
 #define FSK_MAX_NOCONFIDENCE_BITS	20
