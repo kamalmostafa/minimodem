@@ -771,6 +771,9 @@ main( int argc, char*argv[] )
     // for optimal analysis:
     //   should be >= 0.5 (half a bit width) or we may not find the optimal bit
     //   should be <  1.0 (a full bit width) or we may skip over whole bits
+    // for encodings without start/stop bits:
+    //     MUST be <= 0.5 or we may accidentally skip a bit
+    //
     assert( fsk_frame_overscan >= 0.0 && fsk_frame_overscan < 1.0 );
 
     // ensure that we overscan at least a single sample
@@ -914,11 +917,16 @@ main( int argc, char*argv[] )
 	if ( samples_nvalid < expect_nsamples )
 	    break;
 
-	// try_max_nsamples = nsamples_per_bit + nsamples_overscan;
+	// try_max_nsamples
 	// serves two purposes
 	// 1. avoids finding a non-optimal first frame
 	// 2. allows us to track slightly slow signals
-	unsigned int try_max_nsamples = nsamples_per_bit + nsamples_overscan;
+	unsigned int try_max_nsamples;
+	if ( carrier )
+	    try_max_nsamples = nsamples_per_bit * 0.75 + 0.5;
+	else
+	    try_max_nsamples = nsamples_per_bit;
+	try_max_nsamples += nsamples_overscan;
 
 #define FSK_ANALYZE_NSTEPS		10	/* accuracy vs. performance */
 		// Note: FSK_ANALYZE_NSTEPS has subtle effects on the
