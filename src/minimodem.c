@@ -698,6 +698,8 @@ main( int argc, char*argv[] )
     if ( ! sa )
         return 1;
 
+    sample_rate = simpleaudio_get_rate(sa);
+
     if ( rxnoise_factor != 0.0 )
 	simpleaudio_set_rxnoise(sa, rxnoise_factor);
 
