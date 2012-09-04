@@ -46,7 +46,12 @@ receive mode: decode audio tones
 .SH OPTIONS
 .TP
 .B \-a, \-\-auto-carrier
-automatically detect mark and space frequences from carrier
+Automatically detect mark and space frequences from carrier.
+.TP
+.B \-i, \-\-inverted
+Invert the mark and space frequencies (applies whether the
+frequencies are defaults, discovered by \-\-auto-carrier,
+or specified manually).
 .TP
 .B \-c, \-\-confidence min-confidence-threshold
 Set receive confidence minimum threshold (default 1.5).

@@ -280,6 +280,7 @@ usage()
     "		    -r, --rx, --receive,  --read     (default)\n"
     "		[options]\n"
     "		    -a, --auto-carrier\n"
+    "		    -i, --inverted\n"
     "		    -c, --confidence {min-confidence-threshold}\n"
     "		    -l, --limit {max-confidence-search-limit}\n"
     "		    -8, --ascii		ASCII  8-N-1\n"
@@ -319,6 +320,7 @@ main( int argc, char*argv[] )
     float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
+    unsigned int bfsk_inverted_freqs = 0;
     int bfsk_nstartbits = -1;	// actually only supports 0 or 1 startbit
     float bfsk_nstopbits = -1;
     unsigned int bfsk_sync_on_data = 0;
@@ -399,6 +401,7 @@ main( int argc, char*argv[] )
 	    { "confidence",	1, 0, 'c' },
 	    { "limit",		1, 0, 'l' },
 	    { "auto-carrier",	0, 0, 'a' },
+	    { "inverted",	0, 0, 'i' },
 	    { "ascii",		0, 0, '8' },
 	    { "baudot",		0, 0, '5' },
 	    { "file",		1, 0, 'f' },
@@ -420,7 +423,7 @@ main( int argc, char*argv[] )
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:l:a85f:b:v:M:S:T:qAR:",
+	c = getopt_long(argc, argv, "Vtrc:l:ai85f:b:v:M:S:T:qAR:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -446,6 +449,9 @@ main( int argc, char*argv[] )
 			break;
 	    case 'a':
 			carrier_autodetect_threshold = 0.001;
+			break;
+	    case 'i':
+			bfsk_inverted_freqs = 1;
 			break;
 	    case 'f':
 			filename = optarg;
@@ -645,6 +651,12 @@ main( int argc, char*argv[] )
 	bfsk_nstartbits = 1;
     if ( bfsk_nstopbits < 0 )
 	bfsk_nstopbits = 1.0;
+
+    if ( bfsk_inverted_freqs ) {
+	float t = bfsk_mark_f;
+	bfsk_mark_f = bfsk_space_f;
+	bfsk_space_f = t;
+    }
 
     /* restrict band_width to <= data rate (FIXME?) */
     if ( band_width > bfsk_data_rate )
@@ -853,9 +865,11 @@ main( int argc, char*argv[] )
 		continue;
 	    }
 
-	    // FIXME: hardcoded negative shift
+	    // default negative shift -- reasonable?
 	    int b_shift = - (float)(autodetect_shift + fskp->band_width/2.0)
 						/ fskp->band_width;
+	    if ( bfsk_inverted_freqs )
+		b_shift *= -1;
 	    /* only accept a carrier as b_mark if it will not result
 	     * in a b_space band which is "too low". */
 	    if ( carrier_band + b_shift < 1 ) {
