@@ -928,9 +928,12 @@ main( int argc, char*argv[] )
 	    try_max_nsamples = nsamples_per_bit;
 	try_max_nsamples += nsamples_overscan;
 
-#define FSK_ANALYZE_NSTEPS		10	/* accuracy vs. performance */
-		// Note: FSK_ANALYZE_NSTEPS has subtle effects on the
-		// "rate perfect" calculation.  oh well.
+	// FSK_ANALYZE_NSTEPS Try 4 frame positions across the try_max_nsamples
+	// range.  Using a larger nsteps allows for more accurate tracking of
+	// fast/slow signals (at decreased performance).  Note also
+	// FSK_ANALYZE_NSTEPS_CARRIER_LOCK below, which refines the frame
+	// position upon first acquiring carrier.
+#define FSK_ANALYZE_NSTEPS		4
 	unsigned int try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS;
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
@@ -941,19 +944,11 @@ main( int argc, char*argv[] )
 	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
 	unsigned int frame_start_sample = 0;
 
-	// If we don't have carrier, then set this try_confidence_search_limit
-	// to infinity (search for best possible frame) so to get the decoder
-	// into phase with the signal, so the next try_first_sample will match
-	// up with where the next frame should be.
 	unsigned int try_first_sample;
 	float try_confidence_search_limit;
-	if ( carrier ) {
-	    try_first_sample = nsamples_overscan;
-	    try_confidence_search_limit = fsk_confidence_search_limit;
-	} else {
-	    try_first_sample = 0;
-	    try_confidence_search_limit = INFINITY;
-	}
+
+	try_confidence_search_limit = fsk_confidence_search_limit;
+	try_first_sample = carrier ? nsamples_overscan : 0;
 
 	confidence = fsk_find_frame(fskp, samplebuf, expect_nsamples,
 			try_first_sample,
@@ -1019,6 +1014,32 @@ main( int argc, char*argv[] )
 	    carrier_nsamples -= nsamples_overscan;
 
 	} else {
+
+	    // We just acquired carrier.
+
+	    if ( confidence < INFINITY && try_step_nsamples > 1 ) {
+		// FSK_ANALYZE_NSTEPS_CARRIER_LOCK:
+		// Scan again, but try harder to find the best frame upon
+		// acquiring carrier.  Since we found a valid confidence frame
+		// in the "sloppy" fsk_find_frame() call already, we're sure
+		// to find one at least as good this time.
+#define FSK_ANALYZE_NSTEPS_CARRIER_LOCK		100
+		try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS_CARRIER_LOCK;
+		if ( try_step_nsamples == 0 )
+		    try_step_nsamples = 1;
+		try_confidence_search_limit = INFINITY;
+		confidence = fsk_find_frame(fskp, samplebuf, expect_nsamples,
+			    try_first_sample,
+			    try_max_nsamples,
+			    try_step_nsamples,
+			    try_confidence_search_limit,
+			    expect_bits_string,
+			    &bits,
+			    &amplitude,
+			    &frame_start_sample
+			    );
+	    }
+
 	    if ( !quiet_mode ) {
 		if ( bfsk_data_rate >= 100 )
 		    fprintf(stderr, "### CARRIER %u @ %.1f Hz ###\n",
