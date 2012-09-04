@@ -33,19 +33,19 @@
 static char
 baudot_decode_table[32][3] = {
     // letter, U.S. figs, CCITT No.2 figs (Europe)
-    { '*', '*', '*' },	// NUL
+    { '_', '^', '^' },	// NUL (underscore and caret marks for debugging)
     { 'E', '3', '3' },
     { 0xA, 0xA, 0xA },	// LF
     { 'A', '-', '-' },
     { ' ', ' ', ' ' },	// SPACE
-    { 'S', '*', '\'' },	// BELL or apostrophe
+    { 'S', 0x7, '\'' },	// BELL or apostrophe
     { 'I', '8', '8' },
     { 'U', '7', '7' },
 
     { 0xD, 0xD, 0xD },	// CR
-    { 'D', '$', '*' },	// '$' or ENQ
+    { 'D', '$', '^' },	// '$' or ENQ
     { 'R', '4', '4' },
-    { 'J', '\'', '*' },	// apostrophe or BELL
+    { 'J', '\'', 0x7 },	// apostrophe or BELL
     { 'N', ',', ',' },
     { 'F', '!', '!' },
     { 'C', ':', ':' },
@@ -55,7 +55,7 @@ baudot_decode_table[32][3] = {
     { 'Z', '"', '+' },
     { 'L', ')', ')' },
     { 'W', '2', '2' },
-    { 'H', '#', '*' },	// '#' or British pounds symbol	// FIXME
+    { 'H', '#', '%' },	// '#' or British pounds symbol	// FIXME
     { 'Y', '6', '6' },
     { 'P', '0', '0' },
     { 'Q', '1', '1' },
@@ -63,11 +63,11 @@ baudot_decode_table[32][3] = {
     { 'O', '9', '9' },
     { 'B', '?', '?' },
     { 'G', '&', '&' },
-    { '*', '*', '*' },	// FIGS
+    { '%', '%', '%' },	// FIGS (symbol % for debug; won't be printed)
     { 'M', '.', '.' },
     { 'X', '/', '/' },
     { 'V', ';', '=' },
-    { '*', '*', '*' },	// LTRS
+    { '%', '%', '%' },	// LTRS (symbol % for debug; won't be printed)
 };
 
 static char
@@ -225,8 +225,15 @@ baudot_decode( char *char_outp, unsigned char databits )
     } else if ( databits == BAUDOT_SPACE ) {	/* RX un-shift on space */
 	baudot_charset = 1;
     }
-    if ( stuff_char )
-	*char_outp = baudot_decode_table[databits][baudot_charset-1];
+    if ( stuff_char ) {
+	int t;
+	if ( baudot_charset == 1 )
+	    t = 0;
+	else
+	    t = 1;	// U.S. figs
+	    // t = 2;	// CCITT figs
+	*char_outp = baudot_decode_table[databits][t];
+    }
     return stuff_char;
 }
 
