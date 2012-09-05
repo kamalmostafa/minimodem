@@ -303,10 +303,11 @@ usage()
     "		    --benchmarks\n"
     "		    --binary-output\n"
     "		{baudmode}\n"
-    "		    1200       Bell202  1200 bps --ascii\n"
-    "		     300       Bell103   300 bps --ascii\n"
-    "	    any_number_N       Bell103     N bps --ascii\n"
-    "		    rtty       RTTY    45.45 bps --baudot\n"
+    "	    any_number_N       Bell-like      N bps --ascii\n"
+    "		    1200       Bell202     1200 bps --ascii\n"
+    "		     300       Bell103      300 bps --ascii\n"
+    "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
+    "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
     );
     exit(1);
 }
