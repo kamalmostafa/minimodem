@@ -1005,10 +1005,10 @@ main( int argc, char*argv[] )
 		    amplitude_total = 0;
 		    nframes_decoded = 0;
 		    track_amplitude = 0.0;
-		}
 
-		if ( rx_one )
-		    break;
+		    if ( rx_one )
+			break;
+		}
 	    }
 
 	    /* Advance the sample stream forward by try_max_nsamples so the
