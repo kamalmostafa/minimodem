@@ -1,3 +1,20 @@
+minimodem (0.12-1) unstable; urgency=low
+
+  * FSK signal acquisition precision enhancements
+  * runtime performance enhancements
+  * fixed automatic setting of samplerate from audio file
+  * fixed defective --rx-one switch behavior
+
+  * minimodem new and changed runtime command line switches:
+      --rx same            NOAA S.A.M.E. protocol
+      -i, --inverted       swaps the mark/space frequencies
+      --startbits {n}
+      --stopbits {n.n}     *Note the -T synonym has been deprecated
+      --sync-byte {0xXX}
+      --binary-output
+
+ -- Kamal Mostafa <kamal@whence.com>  Wed, 05 Sep 2012 09:44:03 -0700
+
 minimodem (0.11-1) unstable; urgency=low
 
   * new confidence algo: "SNR * (1-divergence)"
