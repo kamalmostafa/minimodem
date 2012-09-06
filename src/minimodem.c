@@ -948,7 +948,7 @@ main( int argc, char*argv[] )
 	// fast/slow signals (at decreased performance).  Note also
 	// FSK_ANALYZE_NSTEPS_CARRIER_LOCK below, which refines the frame
 	// position upon first acquiring carrier.
-#define FSK_ANALYZE_NSTEPS		4
+#define FSK_ANALYZE_NSTEPS		3
 	unsigned int try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS;
 	if ( try_step_nsamples == 0 )
 	    try_step_nsamples = 1;
@@ -1032,39 +1032,51 @@ main( int argc, char*argv[] )
 
 	    // We just acquired carrier.
 
+	    if ( !quiet_mode ) {
+		if ( bfsk_data_rate >= 100 )
+		    fprintf(stderr, "### CARRIER %u @ %.1f Hz ",
+			    (unsigned int)(bfsk_data_rate + 0.5),
+			    fskp->b_mark * fskp->band_width);
+		else
+		    fprintf(stderr, "### CARRIER %.2f @ %.1f Hz ",
+			    bfsk_data_rate,
+			    fskp->b_mark * fskp->band_width);
+	    }
+
 	    if ( confidence < INFINITY && try_step_nsamples > 1 ) {
 		// FSK_ANALYZE_NSTEPS_CARRIER_LOCK:
 		// Scan again, but try harder to find the best frame upon
 		// acquiring carrier.  Since we found a valid confidence frame
 		// in the "sloppy" fsk_find_frame() call already, we're sure
 		// to find one at least as good this time.
-#define FSK_ANALYZE_NSTEPS_CARRIER_LOCK		100
+#define FSK_ANALYZE_NSTEPS_CARRIER_LOCK		8
 		try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS_CARRIER_LOCK;
 		if ( try_step_nsamples == 0 )
 		    try_step_nsamples = 1;
 		try_confidence_search_limit = INFINITY;
-		confidence = fsk_find_frame(fskp, samplebuf, expect_nsamples,
+		float confidence2, amplitude2;
+		unsigned int bits2;
+		unsigned int frame_start_sample2;
+		confidence2 = fsk_find_frame(fskp, samplebuf, expect_nsamples,
 			    try_first_sample,
 			    try_max_nsamples,
 			    try_step_nsamples,
 			    try_confidence_search_limit,
 			    expect_bits_string,
-			    &bits,
-			    &amplitude,
-			    &frame_start_sample
+			    &bits2,
+			    &amplitude2,
+			    &frame_start_sample2
 			    );
+		if ( confidence2 > confidence ) {
+		    bits = bits2;
+		    amplitude = amplitude2;
+		    frame_start_sample = frame_start_sample2;
+		}
 	    }
 
-	    if ( !quiet_mode ) {
-		if ( bfsk_data_rate >= 100 )
-		    fprintf(stderr, "### CARRIER %u @ %.1f Hz ###\n",
-			    (unsigned int)(bfsk_data_rate + 0.5),
-			    fskp->b_mark * fskp->band_width);
-		else
-		    fprintf(stderr, "### CARRIER %.2f @ %.1f Hz ###\n",
-			    bfsk_data_rate,
-			    fskp->b_mark * fskp->band_width);
-	    }
+	    if ( !quiet_mode )
+		fprintf(stderr, "###\n");
+
 	    carrier = 1;
 	    bfsk_databits_decode(0, 0, 0, 0); // reset the frame processor
 	}
