@@ -107,11 +107,21 @@ sa_alsa_open_stream(
     snd_pcm_t *pcm;
     int error;
 
-    if ( ! backend_device )
-	backend_device = "default";
+    char *be_device;
+    if ( ! backend_device ) {
+	be_device = "default";
+    } else {
+	be_device = alloca(32);
+	if ( strchr(backend_device, ':') )
+	    snprintf(be_device, 32, "%s", backend_device);
+	else if ( strchr(backend_device, ',') )
+	    snprintf(be_device, 32, "plughw:%s", backend_device);
+	else
+	    snprintf(be_device, 32, "plughw:%s,0", backend_device);
+    }
 
     error = snd_pcm_open(&pcm,
-		backend_device,
+		be_device,
 		sa_stream_direction == SA_STREAM_RECORD ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK,
 		0 /*mode*/);
     if (error) {

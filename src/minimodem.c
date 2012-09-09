@@ -217,7 +217,7 @@ benchmarks()
     // enable the sine wave LUT
     simpleaudio_tone_init(1024, 1.0);
 
-    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+    sa_out = simpleaudio_open_stream(backend, NULL, SA_STREAM_PLAYBACK,
 			SA_SAMPLE_FORMAT_S16, sample_rate, 1,
 			program_name, "generate-tones-lut1024-S16-mono");
     if ( ! sa_out )
@@ -225,7 +225,7 @@ benchmarks()
     generate_test_tones(sa_out, 10);
     simpleaudio_close(sa_out);
 
-    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+    sa_out = simpleaudio_open_stream(backend, NULL, SA_STREAM_PLAYBACK,
 			SA_SAMPLE_FORMAT_FLOAT, sample_rate, 1,
 			program_name, "generate-tones-lut1024-FLOAT-mono");
     if ( ! sa_out )
@@ -237,7 +237,7 @@ benchmarks()
     // disable the sine wave LUT
     simpleaudio_tone_init(0, 1.0);
 
-    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+    sa_out = simpleaudio_open_stream(backend, NULL, SA_STREAM_PLAYBACK,
 			SA_SAMPLE_FORMAT_S16, sample_rate, 1,
 			program_name, "generate-tones-nolut-S16-mono");
     if ( ! sa_out )
@@ -245,7 +245,7 @@ benchmarks()
     generate_test_tones(sa_out, 10);
     simpleaudio_close(sa_out);
 
-    sa_out = simpleaudio_open_stream(backend, SA_STREAM_PLAYBACK,
+    sa_out = simpleaudio_open_stream(backend, NULL, SA_STREAM_PLAYBACK,
 			SA_SAMPLE_FORMAT_FLOAT, sample_rate, 1,
 			program_name, "generate-tones-nolut-FLOAT-mono");
     if ( ! sa_out )
@@ -296,7 +296,7 @@ usage()
     "		    -q, --quiet\n"
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
-    "		    -A, --alsa\n"
+    "		    -A, --alsa[=plughw:X,Y]\n"
     "		    --lut={tx_sin_table_len}\n"
     "		    --float-samples\n"
     "		    --rx-one\n"
@@ -348,6 +348,7 @@ main( int argc, char*argv[] )
     // float fsk_confidence_search_limit = INFINITY;  /* for test */
 
     sa_backend_t sa_backend = SA_BACKEND_SYSDEFAULT;
+    char *sa_backend_device = NULL;
     sa_format_t sample_format = SA_SAMPLE_FORMAT_S16;
     unsigned int sample_rate = 48000;
     unsigned int nchannels = 1; // FIXME: only works with one channel
@@ -414,7 +415,7 @@ main( int argc, char*argv[] )
 	    { "stopbits",	1, 0, MINIMODEM_OPT_STOPBITS },
 	    { "sync-byte",	1, 0, MINIMODEM_OPT_SYNC_BYTE },
 	    { "quiet",		0, 0, 'q' },
-	    { "alsa",		0, 0, 'A' },
+	    { "alsa",		2, 0, 'A' },
 	    { "samplerate",	1, 0, 'R' },
 	    { "lut",		1, 0, MINIMODEM_OPT_LUT },
 	    { "float-samples",	0, 0, MINIMODEM_OPT_FLOAT_SAMPLES },
@@ -424,7 +425,7 @@ main( int argc, char*argv[] )
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:l:ai85f:b:v:M:S:T:qAR:",
+	c = getopt_long(argc, argv, "Vtrc:l:ai85f:b:v:M:S:T:qA::R:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -504,6 +505,8 @@ main( int argc, char*argv[] )
 	    case 'A':
 #if USE_ALSA
 			sa_backend = SA_BACKEND_ALSA;
+			if ( optarg )
+			    sa_backend_device = optarg;
 #else
 			fprintf(stderr, "E: This build of minimodem was configured without alsa support.\n");
 			exit(1);
@@ -667,11 +670,11 @@ main( int argc, char*argv[] )
     if ( fsk_confidence_search_limit < fsk_confidence_threshold )
 	fsk_confidence_search_limit = fsk_confidence_threshold;
 
-    char *stream_name = NULL;;
+    char *stream_name = NULL;
 
     if ( filename ) {
 	sa_backend = SA_BACKEND_FILE;
-	stream_name = filename;
+	sa_backend_device = filename;
     }
 
     /*
@@ -688,7 +691,8 @@ main( int argc, char*argv[] )
 	}
 
 	simpleaudio *sa_out;
-	sa_out = simpleaudio_open_stream(sa_backend, SA_STREAM_PLAYBACK,
+	sa_out = simpleaudio_open_stream(sa_backend, sa_backend_device,
+					SA_STREAM_PLAYBACK,
 					sample_format, sample_rate, nchannels,
 					program_name, stream_name);
 	if ( ! sa_out )
@@ -716,7 +720,8 @@ main( int argc, char*argv[] )
 	stream_name = "input audio";
 
     simpleaudio *sa;
-    sa = simpleaudio_open_stream(sa_backend, SA_STREAM_RECORD,
+    sa = simpleaudio_open_stream(sa_backend, sa_backend_device,
+				SA_STREAM_RECORD,
 				sample_format, sample_rate, nchannels,
 				program_name, stream_name);
     if ( ! sa )

@@ -110,9 +110,12 @@ Do not report CARRIER / NOCARRIER or signal analysis metrics.
 .B \-R, \-\-samplerate {rate}
 Set the audio sample rate (default rate is 48000 Hz).
 .TP
-.B \-A, \-\-alsa
+.B \-A, \-\-alsa[={plughw:X,Y | X,Y | X }]
 Use ALSA as the audio output system instead of the default
-PulseAudio (depending on build configuration options).
+PulseAudio (depending on build configuration options).  The ALSA
+device alias "default" is used, if a specific device is not specified.
+For example, the following options all select ALSA device #1, sub-device #0:
+ \-\-alsa=plughw:1,0  \-\-alsa=1,0  \-A1
 .TP
 .B \-\-lut={tx_sin_table_len}
 Minimodem uses a precomputed sine wave lookup table of 1024 elements,
