@@ -43,6 +43,7 @@ struct simpleaudio_backend {
 	int /* boolean 'ok' value */
 	(*simpleaudio_open_stream)(
 		simpleaudio *	sa,
+		const char	*backend_device,
 		sa_direction_t	sa_stream_direction,
 		sa_format_t sa_format,
 		unsigned int rate, unsigned int channels,

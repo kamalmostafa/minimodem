@@ -55,6 +55,7 @@ typedef enum {
 simpleaudio *
 simpleaudio_open_stream(
 		sa_backend_t	sa_backend,
+		const char	*backend_device,
 		sa_direction_t	sa_stream_direction,
 		sa_format_t	sa_format,
 		unsigned int rate, unsigned int channels,

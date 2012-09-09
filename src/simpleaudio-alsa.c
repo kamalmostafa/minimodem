@@ -98,6 +98,7 @@ sa_alsa_close( simpleaudio *sa )
 static int
 sa_alsa_open_stream(
 		simpleaudio *sa,
+		const char *backend_device,
 		sa_direction_t sa_stream_direction,
 		sa_format_t sa_format,
 		unsigned int rate, unsigned int channels,
@@ -106,8 +107,11 @@ sa_alsa_open_stream(
     snd_pcm_t *pcm;
     int error;
 
+    if ( ! backend_device )
+	backend_device = "default";
+
     error = snd_pcm_open(&pcm,
-		"plughw:0,0",
+		backend_device,
 		sa_stream_direction == SA_STREAM_RECORD ? SND_PCM_STREAM_CAPTURE : SND_PCM_STREAM_PLAYBACK,
 		0 /*mode*/);
     if (error) {

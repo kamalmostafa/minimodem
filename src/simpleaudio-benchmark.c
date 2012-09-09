@@ -83,6 +83,7 @@ sa_benchmark_close( simpleaudio *sa )
 static int
 sa_benchmark_open_stream(
 		simpleaudio *sa,
+		const char *backend_device,
 		sa_direction_t sa_stream_direction,
 		sa_format_t sa_format,
 		unsigned int rate, unsigned int channels,

@@ -160,12 +160,13 @@ sndfile_format_from_path( const char *path )
 static int
 sa_sndfile_open_stream(
 		simpleaudio *sa,
+		const char *backend_device,
 		sa_direction_t sa_stream_direction,
 		sa_format_t sa_format,
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
-    const char *path = stream_name;
+    const char *path = backend_device;
 
     int sf_format;
     switch ( sa->format ) {
