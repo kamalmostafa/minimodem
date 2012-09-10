@@ -1,3 +1,11 @@
+minimodem (0.13-1) unstable; urgency=low
+
+  * added ALSA device selection via minimodem --alsa[=plughw:X,Y]
+  * fixed ALSA latency
+  * fixed --auto-carrier crash on positive-shift modes
+
+ -- Kamal Mostafa <kamal@whence.com>  Sun, 09 Sep 2012 18:35:42 -0700
+
 minimodem (0.12.1-1) unstable; urgency=low
 
   * runtime performance fixes
