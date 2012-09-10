@@ -878,8 +878,9 @@ main( int argc, char*argv[] )
 		b_shift *= -1;
 	    /* only accept a carrier as b_mark if it will not result
 	     * in a b_space band which is "too low". */
-	    if ( carrier_band + b_shift < 1 ) {
-		debug_log("autodetected space band too low\n" );
+	    int b_space = carrier_band + b_shift;
+	    if ( b_space < 1 || b_space >= fskp->nbands ) {
+		debug_log("autodetected space band out of range\n" );
 		carrier_band = -1;
 		continue;
 	    }
