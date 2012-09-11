@@ -1,3 +1,9 @@
+minimodem (0.13.1-1) unstable; urgency=low
+
+  * fix --tx non-interactive behavior (no timeout for --file)... again.
+
+ -- Kamal Mostafa <kamal@whence.com>  Mon, 10 Sep 2012 20:45:36 -0700
+
 minimodem (0.13-1) unstable; urgency=low
 
   * added ALSA device selection via minimodem --alsa[=plughw:X,Y]
