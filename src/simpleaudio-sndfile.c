@@ -166,7 +166,7 @@ sa_sndfile_open_stream(
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
-    const char *path = backend_device;
+    const char *path = stream_name;
 
     int sf_format;
     switch ( sa->format ) {

@@ -674,7 +674,7 @@ main( int argc, char*argv[] )
 
     if ( filename ) {
 	sa_backend = SA_BACKEND_FILE;
-	sa_backend_device = filename;
+	stream_name = filename;
     }
 
     /*
