@@ -122,9 +122,9 @@ sa_pulse_open_stream(
     };
 
     attr.fragsize = 0;	/* set for lowest possible capture latency */
-
-    attr.prebuf = 1;	/* do not start stream until data available*/
     attr.tlength = 0;	/* set lowest possible playback latency */
+    // Do not mess with attr.prebuf!  Setting it =1 causes some playback (--tx)
+    // sessions to be wiped out by noise (I do not know why).
 
     /* Create the playback or recording stream */
     pa_simple *s;
