@@ -258,6 +258,15 @@ benchmarks()
 }
 
 
+static int rx_stop = 0;
+
+void
+rx_stop_sighandler( int sig )
+{
+    rx_stop = 1;
+}
+
+
 void
 version()
 {
@@ -810,7 +819,12 @@ main( int argc, char*argv[] )
 
     float track_amplitude = 0.0;
 
+    signal(SIGINT, rx_stop_sighandler);
+
     while ( 1 ) {
+
+	if ( rx_stop )
+	    break;
 
 	debug_log("advance=%u\n", advance);
 
@@ -1147,6 +1161,8 @@ main( int argc, char*argv[] )
 	}
 
     } /* end of the main loop */
+
+    signal(SIGINT, SIG_DFL);
 
     if ( carrier ) {
 	if ( !quiet_mode )
