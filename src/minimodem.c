@@ -754,14 +754,16 @@ main( int argc, char*argv[] )
      * we need 11 data-bits worth of samples, and we will scan through one bits
      * worth at a time, hence we need a minimum total input buffer size of 12
      * data-bits.  */
-// FIXME I should be able to reduce this to * 9 for 5-bit data, but
-// it SOMETIMES crashes -- probably due to non-integer nsamples_per_bit
-// FIXME by passing it down into the fsk code?
     // FIXME EXPLAIN +1 goes with extra bit when scanning
     size_t	samplebuf_size = ceilf(nsamples_per_bit) * (12+1);
+    samplebuf_size *= 2; // account for the half-buf filling method
+#define SAMPLE_BUF_DIVISOR 12
+#ifdef SAMPLE_BUF_DIVISOR
+    // For performance, use a larger samplebuf_size than necessary
+    if ( samplebuf_size < sample_rate / SAMPLE_BUF_DIVISOR )
+	samplebuf_size = sample_rate / SAMPLE_BUF_DIVISOR;
+#endif
     float	*samplebuf = malloc(samplebuf_size * sizeof(float));
-    float	*samples_readptr = samplebuf;
-    size_t	read_nsamples = samplebuf_size;
     size_t	samples_nvalid = 0;
     debug_log("samplebuf_size=%zu\n", samplebuf_size);
 
@@ -816,8 +818,6 @@ main( int argc, char*argv[] )
 	assert( advance <= samplebuf_size );
 	if ( advance == samplebuf_size ) {
 	    samples_nvalid = 0;
-	    samples_readptr = samplebuf;
-	    read_nsamples = samplebuf_size;
 	    advance = 0;
 	}
 	if ( advance ) {
@@ -826,24 +826,25 @@ main( int argc, char*argv[] )
 	    memmove(samplebuf, samplebuf+advance,
 		    (samplebuf_size-advance)*sizeof(float));
 	    samples_nvalid -= advance;
-	    samples_readptr = samplebuf + (samplebuf_size-advance);
-	    read_nsamples = advance;
 	}
 
-	/* Read more samples into samplebuf (fill it) */
-	assert ( read_nsamples > 0 );
-	assert ( samples_nvalid + read_nsamples <= samplebuf_size );
-	ssize_t r;
-	r = simpleaudio_read(sa, samples_readptr, read_nsamples);
-	debug_log("simpleaudio_read(samplebuf+%zd, n=%zu) returns %zd\n",
-		samples_readptr - samplebuf, read_nsamples, r);
-	if ( r < 0 ) {
-	    fprintf(stderr, "simpleaudio_read: error\n");
-	    ret = -1;
-            break;
-	}
-	else if ( r > 0 )
+	if ( samples_nvalid < samplebuf_size/2 ) {
+	    float	*samples_readptr = samplebuf + samples_nvalid;
+	    size_t	read_nsamples = samplebuf_size/2;
+	    /* Read more samples into samplebuf (fill it) */
+	    assert ( read_nsamples > 0 );
+	    assert ( samples_nvalid + read_nsamples <= samplebuf_size );
+	    ssize_t r;
+	    r = simpleaudio_read(sa, samples_readptr, read_nsamples);
+	    debug_log("simpleaudio_read(samplebuf+%zd, n=%zu) returns %zd\n",
+		    samples_readptr - samplebuf, read_nsamples, r);
+	    if ( r < 0 ) {
+		fprintf(stderr, "simpleaudio_read: error\n");
+		ret = -1;
+		break;
+	    }
 	    samples_nvalid += r;
+	}
 
 	if ( samples_nvalid == 0 )
 	    break;
