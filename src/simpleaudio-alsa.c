@@ -45,21 +45,27 @@ sa_alsa_read( simpleaudio *sa, void *buf, size_t nframes )
     snd_pcm_t *pcm = (snd_pcm_t *)sa->backend_handle;
     while ( frames_read < nframes ) {
 	ssize_t r;
-	r = snd_pcm_readi(pcm, buf+frames_read*sa->backend_framesize, nframes-frames_read);
-	if (r < 0) {
-	    /* recover from e.g. overruns, and try once more */
-	    fprintf(stderr, "snd_pcm_readi: reset for %s\n", snd_strerror(r));
+	void * data = buf+frames_read*sa->backend_framesize;
+	ssize_t count = nframes-frames_read;
+	r = snd_pcm_readi(pcm, data, count);
+	if ( r >= 0 ) {
+	    frames_read += r;
+	    if ( r != count )
+		fprintf(stderr, "#short+%zd#\n", r);
+	    continue;
+	}
+	if (r == -EPIPE) {	// Underrun
+	    fprintf(stderr, "#");
 	    snd_pcm_prepare(pcm);
-	    r = snd_pcm_readi(pcm, buf+frames_read*sa->backend_framesize, nframes-frames_read);
-	}
-	if (r < 0) {
+	} else  {
 	    fprintf(stderr, "snd_pcm_readi: %s\n", snd_strerror(r));
-	    return -1;
+	    if (r == -EAGAIN || r== -ESTRPIPE)
+		snd_pcm_wait(pcm, 1000);
+	    else
+		return r;
 	}
-	if (r == 0)
-	    break;
-	frames_read += r;
     }
+    // fprintf(stderr,("[%zd]\n"), frames_read);
     return frames_read;
 }
 
