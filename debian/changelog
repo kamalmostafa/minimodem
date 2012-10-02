@@ -1,3 +1,11 @@
+minimodem (0.14-1) unstable; urgency=low
+
+  * general --rx performance enhancements
+  * fix PulseAudio --tx latency (and intermittent white noise)
+  * fix ALSA --rx latency some more; print '#' on underruns
+
+ -- Kamal Mostafa <kamal@whence.com>  Mon, 01 Oct 2012 21:12:47 -0700
+
 minimodem (0.13.1-1) unstable; urgency=low
 
   * fix --tx non-interactive behavior (no timeout for --file)... again.
