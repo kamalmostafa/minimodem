@@ -22,6 +22,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdio.h>
 
 #include "simpleaudio.h"
 
