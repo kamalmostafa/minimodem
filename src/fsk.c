@@ -18,7 +18,7 @@
  */
 
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>	// fabs, hypotf
 #include <float.h>	// FLT_EPSILON

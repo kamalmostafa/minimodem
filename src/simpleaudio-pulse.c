@@ -24,7 +24,7 @@
 #if USE_PULSEAUDIO
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include <pulse/simple.h>

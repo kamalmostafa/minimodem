@@ -20,7 +20,7 @@
 #include "simpleaudio.h"
 #include "simpleaudio_internal.h"
 
-#include <malloc.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
 

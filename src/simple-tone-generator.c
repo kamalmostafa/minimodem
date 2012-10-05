@@ -20,7 +20,7 @@
 
 #include <math.h>
 #include <strings.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include "simpleaudio.h"

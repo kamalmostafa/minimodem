@@ -24,7 +24,7 @@
 #if USE_ALSA
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include <alsa/asoundlib.h>

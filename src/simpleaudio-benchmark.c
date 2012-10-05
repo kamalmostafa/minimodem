@@ -24,7 +24,7 @@
 #if USE_BENCHMARKS
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
