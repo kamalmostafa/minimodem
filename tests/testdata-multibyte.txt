@@ -1,0 +1,4 @@
+Minimodem unterstützt jetzt Deutsch!
+Beachten sie, dass wörter mit multibyte-zeichen korrekt gedruckt werden.
+Minimodem ahora soporta Español!
+Minimodem prend désormais en Français!

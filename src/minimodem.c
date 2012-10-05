@@ -21,6 +21,7 @@
 
 
 #include <getopt.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -311,6 +312,7 @@ usage()
     "		    --rx-one\n"
     "		    --benchmarks\n"
     "		    --binary-output\n"
+    "		    --print-filter\n"
     "		{baudmode}\n"
     "	    any_number_N       Bell-like      N bps --ascii\n"
     "		    1200       Bell202     1200 bps --ascii\n"
@@ -327,6 +329,7 @@ main( int argc, char*argv[] )
     char *modem_mode = NULL;
     int TX_mode = -1;
     int quiet_mode = 0;
+    int output_print_filter = 0;
     float band_width = 0;
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
@@ -397,6 +400,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_RX_ONE,
 	MINIMODEM_OPT_BENCHMARKS,
 	MINIMODEM_OPT_BINARY_OUTPUT,
+	MINIMODEM_OPT_PRINT_FILTER,
 	MINIMODEM_OPT_XRXNOISE,
     };
 
@@ -431,6 +435,7 @@ main( int argc, char*argv[] )
 	    { "rx-one",		0, 0, MINIMODEM_OPT_RX_ONE },
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { "binary-output",	0, 0, MINIMODEM_OPT_BINARY_OUTPUT },
+	    { "print-filter",	0, 0, MINIMODEM_OPT_PRINT_FILTER },
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
 	};
@@ -536,6 +541,9 @@ main( int argc, char*argv[] )
 			break;
 	    case MINIMODEM_OPT_BINARY_OUTPUT:
 			output_mode_binary = 1;
+			break;
+	    case MINIMODEM_OPT_PRINT_FILTER:
+			output_print_filter = 1;
 			break;
 	    case MINIMODEM_OPT_XRXNOISE:
 			rxnoise_factor = atof(optarg);
@@ -1148,16 +1156,22 @@ main( int argc, char*argv[] )
 						dataout_size - dataout_nbytes,
 						bits, (int)bfsk_n_data_bits);
 
+	if ( dataout_nbytes == 0 )
+	    continue;
+
 	/*
 	 * Print the output buffer to stdout
 	 */
-	if ( dataout_nbytes ) {
+	if ( output_print_filter == 0 ) {
+	    if ( write(1, dataoutbuf, dataout_nbytes) < 0 )
+		perror("write");
+	} else {
 	    char *p = dataoutbuf;
 	    for ( ; dataout_nbytes; p++,dataout_nbytes-- ) {
 		char printable_char = isprint(*p)||isspace(*p) ? *p : '.';
-		printf( "%c", printable_char );
+		if ( write(1, &printable_char, 1) < 0 )
+		    perror("write");
 	    }
-	    fflush(stdout);
 	}
 
     } /* end of the main loop */

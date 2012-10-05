@@ -136,6 +136,11 @@ The bits are printed in the order they are received.  Framing bits (start
 and stop bits) are omitted from the output.
 (This option applies to \-\-rx mode only).
 .TP
+.B \-\-print-filter
+Filter the received text output, replacing any "non-printable" bytes
+with a '.' character.
+(This option applies to \-\-rx mode only).
+.TP
 .B \-\-benchmarks
 Run and report internal performance tests (all other flags are ignored).
 .TP
