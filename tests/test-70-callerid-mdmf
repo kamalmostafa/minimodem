@@ -1,0 +1,54 @@
+#!/bin/bash
+
+MINIMODEM="${MINIMODEM-./minimodem}"
+[ -f "$MINIMODEM" ] || {
+    MINIMODEM="../src/minimodem"
+    [ -f "$MINIMODEM" ] || {
+	echo "E: cannot find minimodem in ./ or ../src/" 1>&2
+	exit 1
+    }
+}
+
+
+bytesfile="testdata-callerid-mdmf.bytes"
+[ "$1" != "" ] && bytesfile="$1"
+
+
+TMPF="/tmp/minimodem-test-$$"
+trap "rm -f $TMPF.*" 0
+
+set -e
+
+textfile="${bytesfile%%.bytes}.txt"
+
+
+minimodem_tx_args="1200 --ascii"
+minimodem_rx_args="callerid"
+
+
+$MINIMODEM --tx --file $TMPF.wav $minimodem_tx_args < "$bytesfile"
+
+# cp $TMPF.wav /tmp/x.wav
+
+$MINIMODEM --rx --file $TMPF.wav $minimodem_rx_args \
+	> $TMPF.out 2> $TMPF.err || {
+    cat $TMPF.err
+    exit 1
+}
+
+cmp "$textfile" $TMPF.out
+
+{
+    read xlitcarrier
+    read xlitblankline
+    read xlithashes xlitnocarrier stats
+    stats="${stats% ###}"
+} < $TMPF.err
+
+
+result="OK     "
+exitcode=0
+
+echo -e "$result $stats"
+
+exit $exitcode

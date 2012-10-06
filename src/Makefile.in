@@ -67,7 +67,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 = baudot.$(OBJEXT)
 am__objects_2 = databits_ascii.$(OBJEXT) databits_binary.$(OBJEXT) \
-	databits_baudot.$(OBJEXT) $(am__objects_1)
+	databits_callerid.$(OBJEXT) databits_baudot.$(OBJEXT) \
+	$(am__objects_1)
 am__objects_3 = fsk.$(OBJEXT)
 am__objects_4 = simpleaudio.$(OBJEXT) simple-tone-generator.$(OBJEXT) \
 	simpleaudio-pulse.$(OBJEXT) simpleaudio-alsa.$(OBJEXT) \
@@ -228,6 +229,7 @@ DATABITS_SRC = \
 	databits.h \
 	databits_ascii.c \
 	databits_binary.c \
+	databits_callerid.c \
 	databits_baudot.c $(BAUDOT_SRC)
 
 minimodem_LDADD = $(DEPS_LIBS)
@@ -319,6 +321,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/databits_ascii.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/databits_baudot.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/databits_binary.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/databits_callerid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/minimodem.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simple-tone-generator.Po@am__quote@

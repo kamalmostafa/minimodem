@@ -319,6 +319,7 @@ usage()
     "		     300       Bell103      300 bps --ascii\n"
     "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
     "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
+    "		callerid       Bell202 CID 1200 bps\n"
     );
     exit(1);
 }
@@ -592,7 +593,12 @@ main( int argc, char*argv[] )
     databits_encoder	*bfsk_databits_encode;
     databits_decoder	*bfsk_databits_decode;
 
+    bfsk_databits_decode = databits_decode_ascii8;
+    bfsk_databits_encode = databits_encode_ascii8;
+
     if ( strncasecmp(modem_mode, "rtty",5)==0 ) {
+	bfsk_databits_decode = databits_decode_baudot;
+	bfsk_databits_encode = databits_encode_baudot;
 	bfsk_data_rate = 45.45;
 	if ( bfsk_n_data_bits == 0 )
 	    bfsk_n_data_bits = 5;
@@ -609,6 +615,14 @@ main( int argc, char*argv[] )
 	bfsk_mark_f = 2083.0 + 1/3.0;
 	bfsk_space_f = 1562.5;
 	band_width = bfsk_data_rate;
+    } else if ( strncasecmp(modem_mode, "caller",6)==0 ) {
+	if ( TX_mode ) {
+	    fprintf(stderr, "E: callerid --tx mode is not supported.\n");
+	    return 1;
+	}
+	bfsk_databits_decode = databits_decode_callerid;
+	bfsk_data_rate = 1200;
+	bfsk_n_data_bits = 8;
     } else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
@@ -617,15 +631,6 @@ main( int argc, char*argv[] )
     if ( bfsk_data_rate == 0.0 )
 	usage();
 
-    if ( bfsk_n_data_bits == 8 ) {
-	bfsk_databits_decode = databits_decode_ascii8;
-	bfsk_databits_encode = databits_encode_ascii8;
-    } else if ( bfsk_n_data_bits == 5 ) {
-	bfsk_databits_decode = databits_decode_baudot;
-	bfsk_databits_encode = databits_encode_baudot;
-    } else {
-	assert( 0 && bfsk_n_data_bits );
-    }
 
     if ( output_mode_binary )
 	bfsk_databits_decode = databits_decode_binary;

@@ -43,6 +43,32 @@ transmit mode: generate audio tones
 .TP
 .B \-r, \-\-rx, \-\-receive,  \-\-read
 receive mode: decode audio tones
+.SH {baudmode}
+The required \fI{baudmode}\fR parameter may be any floating-point value to
+specify a baud rate, or any of the special keywords listed below.
+The \fI{baudmode}\fR also implies certain other parameter defaults
+depending on the rate, including standard (or at least reasonable)
+default mark and space tone frequencies.
+.TP
+.B  {any floating point value N}
+: Bell202-style at N bps \-\-ascii
+.TP
+.B    1200
+: Bell202 1200 bps \-\-ascii
+.TP
+.B     300
+: Bell103 300 bps \-\-ascii
+.TP
+.B    rtty
+: RTTY 45.45 bps \-\-baudot \-\-stopbits 1.5
+.TP
+.B    same
+: SAME 520.83 bps \-\-startbits 0 \-\-stopbits 0 \-\-sync-byte 0xAB
+.br
+	NOAA Specific Area Message Encoding (SAME) protocol
+.TP
+.B    callerid
+: Bell202 1200 bps Caller-ID (MDMF or SDMF) protocol
 .SH OPTIONS
 .TP
 .B \-a, \-\-auto-carrier
@@ -146,29 +172,6 @@ Run and report internal performance tests (all other flags are ignored).
 .TP
 .B \-V, \-\-version
 print program version
-.SH {baudmode}
-The required \fI{baudmode}\fR parameter may be any floating-point value to
-specify a baud rate, or either of the strings "rtty" or "same".
-The \fI{baudmode}\fR also implies certain other parameter defaults
-depending on the rate, including standard (or at least reasonable)
-default mark and space tone frequencies.
-.TP
-.B  {any floating point value N}
-: Bell-syle N bps \-\-ascii
-.TP
-.B    1200
-: Bell202 1200 bps \-\-ascii
-.TP
-.B     300
-: Bell103 300 bps \-\-ascii
-.TP
-.B    rtty
-: RTTY 45.45 bps \-\-baudot \-\-stopbits 1.5
-.TP
-.B    same
-: SAME 520.83 bps \-\-startbits 0 \-\-stopbits 0 \-\-sync-byte 0xAB
-.br
-	NOAA Specific Area Message Encoding (SAME) protocol
 .SH EXAMPLES
 .TP
 .B minimodem --tx 100

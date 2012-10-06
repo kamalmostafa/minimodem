@@ -46,6 +46,7 @@ DATABITS_SRC = \
 	databits.h \
 	databits_ascii.c \
 	databits_binary.c \
+	databits_callerid.c \
 	databits_baudot.c $(BAUDOT_SRC)
 
 minimodem_LDADD = $(DEPS_LIBS)

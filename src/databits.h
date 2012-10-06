@@ -51,3 +51,8 @@ databits_decode_binary( char *dataout_p, unsigned int dataout_size,
 	unsigned int bits, unsigned int n_databits );
 
 
+unsigned int
+databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
+	unsigned int bits, unsigned int n_databits );
+
+

@@ -1,0 +1,2 @@
+#!/bin/bash
+exec ./test-70-callerid-mdmf testdata-callerid-sdmf.bytes
