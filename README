@@ -1,10 +1,14 @@
-minimodem - software audio Bell-type or RTTY FSK modem
+minimodem - general-purpose software audio FSK modem
 Copyright (C) 2011-2012 Kamal Mostafa <kamal@whence.com>
 
-Minimodem is a command-line program which generates (or decodes) audio
-modem tones at any specified baud rate, emulating an old Bell-type or
-radio-teletype FSK modem.  The tones can be played to (or recorded from)
-the system audio (PulseAudio or ALSA) or to an audio file.
+Minimodem is a command-line program which decodes (or generates) audio
+modem tones at any specified baud rate, using various framing protocols.
+It acts a general-purpose software FSK modem, and includes support for
+various standard FSK protocols such as Bell103, Bell202, RTTY, NOAA SAME,
+and Caller-ID.
+
+Minimodem can play and capture audio modem tones in real-time via the
+system audio device, or in batched mode via audio files.
 
 Minimodem can be used to transfer data between nearby computers using an
 audio cable (or just via sound waves), or between remote computers using

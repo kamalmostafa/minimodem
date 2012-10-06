@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MINIMODEM 1 "August 19, 2012"
+.TH MINIMODEM 1 "October 5, 2012"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -16,7 +16,7 @@
 .\" .sp <n>    insert n+1 empty lines
 .\" for manpage-specific macros, see man(7)
 .SH NAME
-minimodem \- software audio Bell-type or RTTY FSK modem
+minimodem \- general-purpose software audio FSK modem
 .SH SYNOPSIS
 .B minimodem --tx
 .RI [ options ]
@@ -26,16 +26,21 @@ minimodem \- software audio Bell-type or RTTY FSK modem
 .RI [ options ]
 .I {baudmode}
 .SH DESCRIPTION
-.B minimodem
-is a command-line program which generates (or decodes) audio
-modem tones at any specified baud rate, emulating an old Bell-type or
-radio-teletype FSK modem.  The tones can be played to (or recorded from)
-the system audio (PulseAudio or ALSA) or to an audio file.
+.B Minimodem
+is a command-line program which decodes (or generates) audio
+modem tones at any specified baud rate, using various framing protocols.
+It acts a general-purpose software FSK modem, and includes support for
+various standard FSK protocols such as Bell103, Bell202, RTTY, NOAA SAME,
+and Caller-ID.
 .PP
-.B minimodem
-can be used to transfer data between nearby computers using an audio
-cable (or just via sound waves), or between remote computers using radio,
-telephone, or another audio communications medium.
+.B Minimodem
+can play and capture audio modem tones in real-time via the system
+audio device, or in batched mode via audio files.
+.PP
+.B Minimodem
+can be used to transfer data between nearby computers using an
+audio cable (or just via sound waves), or between remote computers using
+radio, telephone, or another audio communications medium.
 .SH "TX/RX MODE"
 .TP
 .B \-t, \-\-tx, \-\-transmit, \-\-write
