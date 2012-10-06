@@ -1,3 +1,16 @@
+minimodem (0.15-1) unstable; urgency=low
+
+  * caller-ID support
+  * fixed multibyte character and binary data transfer
+  * stats are printed after ^C interrupt
+  * portability fixes (thanks, Mike Tedesco)
+
+  * minimodem new runtime command line switches:
+      --rx callerid       Bell202 CID 1200 bps
+      --print-filter      inhibit printing non-printable bytes
+
+ -- Kamal Mostafa <kamal@whence.com>  Fri, 05 Oct 2012 20:08:24 -0700
+
 minimodem (0.14-1) unstable; urgency=low
 
   * general --rx performance enhancements
