@@ -137,6 +137,8 @@ databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
 	    cid_msgtype = CID_MSG_MDMF;
 	else if ( bits == CID_MSG_SDMF )
 	    cid_msgtype = CID_MSG_SDMF;
+	else
+	    return 0;
 	cid_buf[cid_ndata++] = bits;
 	return 0;
     }
