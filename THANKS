@@ -26,6 +26,11 @@ and hardware relating to the S.A.M.E. protocol.
 Thanks Chris!
 
 
+Mike Tedesco <mike.tedesco@venturesoft.com> provided encouragement and
+testing for the Caller-ID protocol handling, and portability fixes for OS X.
+Thanks Mike!
+
+
 My employer Canonical, Ltd. for encouraging me to spend time developing
 and maintaining this and other open-source projects.  Thanks, Canonical!
 
