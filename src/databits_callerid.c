@@ -60,13 +60,13 @@ decode_mdmf_callerid( char *dataout_p, unsigned int dataout_size )
 	unsigned int cid_datatype = *m++;
 	if ( cid_datatype >= CID_DATA_NAME_NA ) {
 	    // FIXME: bad datastream -- print something here
-	    return databits_decode_callerid(0, 0, 0, 0);	// reset
+	    return 0;
 	}
 
 	unsigned int cid_datalen = *m++;
 	if ( m + 2 + cid_datalen >= cid_buf + sizeof(cid_buf) ) {
 	    // FIXME: bad datastream -- print something here
-	    return databits_decode_callerid(0, 0, 0, 0);	// reset
+	    return 0;
 	}
 
 	// dataout_n += sprintf(dataout_p+dataout_n, "CID: %d (%d)\n", cid_datatype, cid_datalen);
@@ -119,6 +119,13 @@ decode_sdmf_callerid( char *dataout_p, unsigned int dataout_size )
     return dataout_n;
 }
 
+static unsigned int
+decode_cid_reset()
+{
+    cid_msgtype = 0;
+    cid_ndata = 0;
+    return 0;
+}
 
 // FIXME: doesn't respect dataout_size at all!
 /* returns nbytes decoded */
@@ -126,11 +133,8 @@ unsigned int
 databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
 	unsigned int bits, unsigned int n_databits )
 {
-    if ( ! dataout_p ) {	// databits processor reset
-	cid_msgtype = 0;
-	cid_ndata = 0;
-	return 0;
-    }
+    if ( ! dataout_p )	// databits processor reset
+	return decode_cid_reset();
 
     if ( cid_msgtype == 0 ) {
 	if ( bits == CID_MSG_MDMF )
@@ -145,7 +149,7 @@ databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
 
     if ( cid_ndata >= sizeof(cid_buf) ) {
 	// FIXME? buffer overflow; do what here?
-	return databits_decode_callerid(0, 0, 0, 0);	// reset
+	return decode_cid_reset();
     }
 
     cid_buf[cid_ndata++] = bits;
@@ -173,7 +177,7 @@ databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
 						dataout_size-dataout_n);
 
     // All done; reset for the next one
-    databits_decode_callerid(0, 0, 0, 0);
+    decode_cid_reset();
 
     return dataout_n;
 }
