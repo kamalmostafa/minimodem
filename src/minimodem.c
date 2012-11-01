@@ -79,6 +79,7 @@ static void fsk_transmit_stdin(
 	float bfsk_mark_f,
 	float bfsk_space_f,
 	int n_data_bits,
+	float bfsk_nstartbits,
 	float bfsk_nstopbits,
 	databits_encoder encode
 	)
@@ -120,15 +121,18 @@ static void fsk_transmit_stdin(
 	}
 	unsigned int j;
 	for ( j=0; j<nwords; j++ ) {
-	    simpleaudio_tone(sa_out, bfsk_space_f, bit_nsamples);	// start
+	    if ( bfsk_nstartbits > 0 )
+		simpleaudio_tone(sa_out, bfsk_space_f,
+				bit_nsamples * bfsk_nstartbits);	// start
 	    int i;
 	    for ( i=0; i<n_data_bits; i++ ) {				// data
 		unsigned int bit = ( bits[j] >> i ) & 1;
 		float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
 		simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
 	    }
-	    simpleaudio_tone(sa_out, bfsk_mark_f,
-				bit_nsamples * bfsk_nstopbits);	// stop
+	    if ( bfsk_nstopbits > 0 )
+		simpleaudio_tone(sa_out, bfsk_mark_f,
+				bit_nsamples * bfsk_nstopbits);		// stop
 	}
 
 	if ( tx_interactive )
@@ -724,6 +728,7 @@ main( int argc, char*argv[] )
 				bfsk_data_rate,
 				bfsk_mark_f, bfsk_space_f,
 				bfsk_n_data_bits,
+				bfsk_nstartbits,
 				bfsk_nstopbits,
 				bfsk_databits_encode
 				);
