@@ -840,6 +840,7 @@ main( int argc, char*argv[] )
     unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5;
 
     float track_amplitude = 0.0;
+    float peak_confidence = 0.0;
 
     signal(SIGINT, rx_stop_sighandler);
 
@@ -986,11 +987,11 @@ main( int argc, char*argv[] )
 	    try_max_nsamples = nsamples_per_bit;
 	try_max_nsamples += nsamples_overscan;
 
-	// FSK_ANALYZE_NSTEPS Try 4 frame positions across the try_max_nsamples
+	// FSK_ANALYZE_NSTEPS Try 3 frame positions across the try_max_nsamples
 	// range.  Using a larger nsteps allows for more accurate tracking of
 	// fast/slow signals (at decreased performance).  Note also
-	// FSK_ANALYZE_NSTEPS_CARRIER_LOCK below, which refines the frame
-	// position upon first acquiring carrier.
+	// FSK_ANALYZE_NSTEPS_FINE below, which refines the frame
+	// position upon first acquiring carrier, or if confidence falls.
 #define FSK_ANALYZE_NSTEPS		3
 	unsigned int try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS;
 	if ( try_step_nsamples == 0 )
@@ -1019,14 +1020,18 @@ main( int argc, char*argv[] )
 			&frame_start_sample
 			);
 
+	int do_refine_frame = 0;
+
+	if ( confidence < peak_confidence * 0.75 ) {
+	    do_refine_frame = 1;
+	    debug_log(" ... do_refine_frame rescan (confidence %.3f << %.3f peak)\n", confidence, peak_confidence);
+	    peak_confidence = 0;
+	}
+
 	// no-confidence if amplitude drops abruptly to < 25% of the
 	// track_amplitude, which follows amplitude with hysteresis
 	if ( amplitude < track_amplitude * 0.25 ) {
 	    confidence = 0;
-	} else {
-	    track_amplitude = ( track_amplitude + amplitude ) / 2;
-	    debug_log("@ confidence=%.3f amplitude=%.3f track_amplitude=%.3f\n",
-		    confidence, amplitude, track_amplitude );
 	}
 
 #define FSK_MAX_NOCONFIDENCE_BITS	20
@@ -1086,14 +1091,26 @@ main( int argc, char*argv[] )
 			    fskp->b_mark * fskp->band_width);
 	    }
 
+	    if ( !quiet_mode )
+		fprintf(stderr, "###\n");
+
+	    carrier = 1;
+	    bfsk_databits_decode(0, 0, 0, 0); // reset the frame processor
+
+	    do_refine_frame = 1;
+	    debug_log(" ... do_refine_frame rescan (acquired carrier)\n");
+	}
+
+	if ( do_refine_frame )
+	{
 	    if ( confidence < INFINITY && try_step_nsamples > 1 ) {
-		// FSK_ANALYZE_NSTEPS_CARRIER_LOCK:
-		// Scan again, but try harder to find the best frame upon
-		// acquiring carrier.  Since we found a valid confidence frame
-		// in the "sloppy" fsk_find_frame() call already, we're sure
-		// to find one at least as good this time.
-#define FSK_ANALYZE_NSTEPS_CARRIER_LOCK		8
-		try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS_CARRIER_LOCK;
+		// FSK_ANALYZE_NSTEPS_FINE:
+		// Scan again, but try harder to find the best frame.
+		// Since we found a valid confidence frame in the "sloppy"
+		// fsk_find_frame() call already, we're sure to find one at
+		// least as good this time.
+#define FSK_ANALYZE_NSTEPS_FINE		8
+		try_step_nsamples = try_max_nsamples / FSK_ANALYZE_NSTEPS_FINE;
 		if ( try_step_nsamples == 0 )
 		    try_step_nsamples = 1;
 		try_confidence_search_limit = INFINITY;
@@ -1116,13 +1133,13 @@ main( int argc, char*argv[] )
 		    frame_start_sample = frame_start_sample2;
 		}
 	    }
-
-	    if ( !quiet_mode )
-		fprintf(stderr, "###\n");
-
-	    carrier = 1;
-	    bfsk_databits_decode(0, 0, 0, 0); // reset the frame processor
 	}
+
+	track_amplitude = ( track_amplitude + amplitude ) / 2;
+	if ( peak_confidence < confidence )
+	    peak_confidence = confidence;
+	debug_log("@ confidence=%.3f peak_conf=%.3f amplitude=%.3f track_amplitude=%.3f\n",
+		confidence, peak_confidence, amplitude, track_amplitude );
 
 	confidence_total += confidence;
 	amplitude_total += amplitude;
