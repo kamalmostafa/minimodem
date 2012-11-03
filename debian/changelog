@@ -1,3 +1,11 @@
+minimodem (0.16-1) unstable; urgency=low
+
+  * refine frame position if confidence falls
+  * fix --tx mode startbits/stopbits handling
+  * do not transmit leader tone if no startbit
+
+ -- Kamal Mostafa <kamal@whence.com>  Sat, 03 Nov 2012 14:29:11 -0700
+
 minimodem (0.15.1-1) unstable; urgency=low
 
   * caller-ID parser fixes
