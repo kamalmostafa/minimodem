@@ -682,6 +682,10 @@ main( int argc, char*argv[] )
     if ( bfsk_nstopbits < 0 )
 	bfsk_nstopbits = 1.0;
 
+    // do not transmit any leader tone if no start bits
+    if ( bfsk_nstartbits == 0 )
+	tx_leader_bits_len = 0;
+
     if ( bfsk_inverted_freqs ) {
 	float t = bfsk_mark_f;
 	bfsk_mark_f = bfsk_space_f;
