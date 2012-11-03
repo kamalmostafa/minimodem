@@ -492,9 +492,20 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     if ( confidence == 0 )
 	return 0;
 
-    // FIXME? hardcoded chop off framing bits for debug
 #ifdef FSK_DEBUG
-    unsigned char bitchar = ( *bits_outp >> 2 ) & 0xFF;
+    unsigned char bitchar;
+    // FIXME? hardcoded chop off framing bits for debug
+    // Hmmm... we have now way to  distinguish between:
+    // 		8-bit data with no start/stopbits == 8 bits
+    // 		5-bit with prevstop+start+stop == 8 bits
+    switch ( expect_n_bits ) {
+      case 11:	bitchar = ( *bits_outp >> 2 ) & 0xFF;
+		break;
+      case 8:
+      default:
+		bitchar = *bits_outp & 0xFF;
+		break;
+    }
 
     debug_log("FSK_FRAME bits='");
     for ( j=0; j<expect_n_bits; j++ )
