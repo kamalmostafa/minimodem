@@ -1,3 +1,9 @@
+minimodem (0.16.1-1) unstable; urgency=low
+
+  * do not induce 'setitimer new_value NULL' kernel warning
+
+ -- Kamal Mostafa <kamal@whence.com>  Fri, 25 Jan 2013 15:06:54 -0800
+
 minimodem (0.16-1) unstable; urgency=low
 
   * refine frame position if confidence falls
