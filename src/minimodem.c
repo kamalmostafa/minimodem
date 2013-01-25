@@ -98,6 +98,11 @@ static void fsk_transmit_stdin(
 	{0, 1000000/(float)(data_rate+data_rate*0.03) }	// it_value
     };
 
+    struct itimerval itv_zero = {
+	{0, 0},						// it_interval
+	{0, 0}						// it_value
+    };
+
     if ( tx_interactive )
 	signal(SIGALRM, tx_stop_transmit_sighandler);
 
@@ -105,7 +110,7 @@ static void fsk_transmit_stdin(
     while ( (c = getchar()) != EOF )
     {
 	if ( tx_interactive )
-	    setitimer(ITIMER_REAL, NULL, NULL);
+	    setitimer(ITIMER_REAL, &itv_zero, NULL);
 
 	// fprintf(stderr, "<c=%d>", c);
 	unsigned int nwords;
@@ -139,7 +144,7 @@ static void fsk_transmit_stdin(
 	    setitimer(ITIMER_REAL, &itv, NULL);
     }
     if ( tx_interactive ) {
-	setitimer(ITIMER_REAL, NULL, NULL);
+	setitimer(ITIMER_REAL, &itv_zero, NULL);
 	signal(SIGALRM, SIG_DFL);
     }
     if ( !tx_transmitting )
