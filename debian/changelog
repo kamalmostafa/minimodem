@@ -1,3 +1,9 @@
+minimodem (0.17-1) unstable; urgency=low
+
+  * handle arbitrary --startbits N
+
+ -- Kamal Mostafa <kamal@whence.com>  Wed, 20 Mar 2013 12:07:13 -0700
+
 minimodem (0.16.1-1) unstable; urgency=low
 
   * do not induce 'setitimer new_value NULL' kernel warning
