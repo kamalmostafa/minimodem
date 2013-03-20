@@ -344,7 +344,7 @@ main( int argc, char*argv[] )
     unsigned int bfsk_mark_f = 0;
     unsigned int bfsk_space_f = 0;
     unsigned int bfsk_inverted_freqs = 0;
-    int bfsk_nstartbits = -1;	// actually only supports 0 or 1 startbit
+    int bfsk_nstartbits = -1;
     float bfsk_nstopbits = -1;
     unsigned int bfsk_sync_on_data = 0;
     unsigned int bfsk_sync_byte = -1;
@@ -509,7 +509,9 @@ main( int argc, char*argv[] )
 			break;
 	    case MINIMODEM_OPT_STARTBITS:
 			bfsk_nstartbits = atoi(optarg);
-			assert( bfsk_nstartbits == 0 || bfsk_nstartbits == 1 );
+			// Note: bfsk_nstartbits is limited by arrays
+		        //   expect_bits_string[32] and fsk.c:bit_something[32]
+			assert( bfsk_nstartbits >= 0 && bfsk_nstartbits <= 20 );
 			break;
 	    case MINIMODEM_OPT_STOPBITS:
 			bfsk_nstopbits = atof(optarg);
@@ -790,8 +792,14 @@ main( int argc, char*argv[] )
      * we need 11 data-bits worth of samples, and we will scan through one bits
      * worth at a time, hence we need a minimum total input buffer size of 12
      * data-bits.  */
+    unsigned int nbits = 0;
+    nbits += 1;			// prev stop bit (last whole stop bit)
+    nbits += bfsk_nstartbits;	// start bits
+    nbits += 8;			// (n_data_bits)
+    nbits += 1;			// stop bit (first whole stop bit)
+
     // FIXME EXPLAIN +1 goes with extra bit when scanning
-    size_t	samplebuf_size = ceilf(nsamples_per_bit) * (12+1);
+    size_t	samplebuf_size = ceilf(nsamples_per_bit) * (nbits+1);
     samplebuf_size *= 2; // account for the half-buf filling method
 #define SAMPLE_BUF_DIVISOR 12
 #ifdef SAMPLE_BUF_DIVISOR
@@ -957,13 +965,14 @@ main( int argc, char*argv[] )
 	//                       start--v        v--stop
 	// char *expect_bits_string = "10dddddddd1";
 	//
-	char expect_bits_string[33];
+	char expect_bits_string[32];
 	int j = 0;
 	if ( bfsk_nstopbits != 0.0 )
 	    expect_bits_string[j++] = '1';
-	if ( bfsk_nstartbits != 0 )	// FIXME -- sets only one start bit
-	    expect_bits_string[j++] = '0';
 	int i;
+	// Nb. only integer number of start bits works (for rx)
+	for ( i=0; i<bfsk_nstartbits; i++ )
+	    expect_bits_string[j++] = '0';
 	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
 	    if ( ! carrier && bfsk_sync_on_data )
 		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
@@ -977,6 +986,8 @@ main( int argc, char*argv[] )
 
 	unsigned int expect_n_bits  = strlen(expect_bits_string);
 	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
+
+	// fprintf(stderr, "ebs = '%s' (%lu)  ;  expect_nsamples=%u samples_nvalid=%lu\n", expect_bits_string, strlen(expect_bits_string), expect_nsamples, samples_nvalid);
 
 	if ( samples_nvalid < expect_nsamples )
 	    break;
