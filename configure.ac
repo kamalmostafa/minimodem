@@ -30,6 +30,8 @@ AC_PROG_CC
 
 # Configure dependency libs
 
+AC_CHECK_LIB([m],[lroundf])
+
 #   fftw3f
 deps_packages+=" fftw3f"
 
