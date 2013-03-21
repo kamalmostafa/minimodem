@@ -1,3 +1,10 @@
+minimodem (0.17.1-1) unstable; urgency=low
+
+  * (portability) link with -lm explicitly
+    - unbreaks Ubuntu 13.04 build.
+
+ -- Kamal Mostafa <kamal@whence.com>  Thu, 21 Mar 2013 13:06:42 -0700
+
 minimodem (0.17-1) unstable; urgency=low
 
   * handle arbitrary --startbits N
