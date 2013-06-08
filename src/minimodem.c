@@ -72,6 +72,32 @@ tx_stop_transmit_sighandler( int sig )
 /*
  * rudimentary BFSK transmitter
  */
+
+static void fsk_transmit_frame(
+	simpleaudio *sa_out,
+	unsigned int bits,
+	unsigned int n_data_bits,
+	size_t bit_nsamples,
+	float bfsk_mark_f,
+	float bfsk_space_f,
+	float bfsk_nstartbits,
+	float bfsk_nstopbits
+	)
+{
+    int i;
+    if ( bfsk_nstartbits > 0 )
+	simpleaudio_tone(sa_out, bfsk_space_f,
+			bit_nsamples * bfsk_nstartbits);	// start
+    for ( i=0; i<n_data_bits; i++ ) {				// data
+	unsigned int bit = ( bits >> i ) & 1;
+	float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
+	simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
+    }
+    if ( bfsk_nstopbits > 0 )
+	simpleaudio_tone(sa_out, bfsk_mark_f,
+			bit_nsamples * bfsk_nstopbits);		// stop
+}
+
 static void fsk_transmit_stdin(
 	simpleaudio *sa_out,
 	int tx_interactive,
@@ -125,20 +151,10 @@ static void fsk_transmit_stdin(
 		simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
 	}
 	unsigned int j;
-	for ( j=0; j<nwords; j++ ) {
-	    if ( bfsk_nstartbits > 0 )
-		simpleaudio_tone(sa_out, bfsk_space_f,
-				bit_nsamples * bfsk_nstartbits);	// start
-	    int i;
-	    for ( i=0; i<n_data_bits; i++ ) {				// data
-		unsigned int bit = ( bits[j] >> i ) & 1;
-		float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
-		simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
-	    }
-	    if ( bfsk_nstopbits > 0 )
-		simpleaudio_tone(sa_out, bfsk_mark_f,
-				bit_nsamples * bfsk_nstopbits);		// stop
-	}
+	for ( j=0; j<nwords; j++ )
+	    fsk_transmit_frame(sa_out, bits[j], n_data_bits,
+			bit_nsamples, bfsk_mark_f, bfsk_space_f,
+			bfsk_nstartbits, bfsk_nstopbits);
 
 	if ( tx_interactive )
 	    setitimer(ITIMER_REAL, &itv, NULL);
