@@ -107,6 +107,8 @@ static void fsk_transmit_stdin(
 	int n_data_bits,
 	float bfsk_nstartbits,
 	float bfsk_nstopbits,
+	unsigned int bfsk_do_tx_sync_bytes,
+	unsigned int bfsk_sync_byte,
 	databits_encoder encode
 	)
 {
@@ -141,16 +143,23 @@ static void fsk_transmit_stdin(
 	// fprintf(stderr, "<c=%d>", c);
 	unsigned int nwords;
 	unsigned int bits[2];
+	unsigned int j;
 	nwords = encode(bits, c);
 
 	if ( !tx_transmitting )
 	{
 	    tx_transmitting = 1;
-	    int j;
+	    /* emit leader tone (mark) */
 	    for ( j=0; j<tx_leader_bits_len; j++ )
 		simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
+	    /* emit "preamble" of sync bytes */
+	    for ( j=0; j<bfsk_do_tx_sync_bytes; j++ )
+		fsk_transmit_frame(sa_out, bfsk_sync_byte, n_data_bits,
+			    bit_nsamples, bfsk_mark_f, bfsk_space_f,
+			    bfsk_nstartbits, bfsk_nstopbits);
 	}
-	unsigned int j;
+
+	/* emit data bits */
 	for ( j=0; j<nwords; j++ )
 	    fsk_transmit_frame(sa_out, bits[j], n_data_bits,
 			bit_nsamples, bfsk_mark_f, bfsk_space_f,
@@ -363,6 +372,7 @@ main( int argc, char*argv[] )
     int bfsk_nstartbits = -1;
     float bfsk_nstopbits = -1;
     unsigned int bfsk_do_rx_sync = 0;
+    unsigned int bfsk_do_tx_sync_bytes = 0;
     unsigned int bfsk_sync_byte = -1;
     unsigned int bfsk_n_data_bits = 0;
     int autodetect_shift;
@@ -535,6 +545,7 @@ main( int argc, char*argv[] )
 			break;
 	    case MINIMODEM_OPT_SYNC_BYTE:
 			bfsk_do_rx_sync = 1;
+			bfsk_do_tx_sync_bytes = 16;
 			bfsk_sync_byte = strtol(optarg, NULL, 0);
 			break;
 	    case 'q':
@@ -638,6 +649,7 @@ main( int argc, char*argv[] )
 	bfsk_nstartbits = 0;
 	bfsk_nstopbits = 0;
 	bfsk_do_rx_sync = 1;
+	bfsk_do_tx_sync_bytes = 16;
 	bfsk_sync_byte = 0xAB;
 	bfsk_mark_f = 2083.0 + 1/3.0;
 	bfsk_space_f = 1562.5;
@@ -757,6 +769,8 @@ main( int argc, char*argv[] )
 				bfsk_n_data_bits,
 				bfsk_nstartbits,
 				bfsk_nstopbits,
+				bfsk_do_tx_sync_bytes,
+				bfsk_sync_byte,
 				bfsk_databits_encode
 				);
 
