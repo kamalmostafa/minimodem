@@ -346,7 +346,7 @@ main( int argc, char*argv[] )
     unsigned int bfsk_inverted_freqs = 0;
     int bfsk_nstartbits = -1;
     float bfsk_nstopbits = -1;
-    unsigned int bfsk_sync_on_data = 0;
+    unsigned int bfsk_do_rx_sync = 0;
     unsigned int bfsk_sync_byte = -1;
     unsigned int bfsk_n_data_bits = 0;
     int autodetect_shift;
@@ -518,7 +518,7 @@ main( int argc, char*argv[] )
 			assert( bfsk_nstopbits >= 0 );
 			break;
 	    case MINIMODEM_OPT_SYNC_BYTE:
-			bfsk_sync_on_data = 1;
+			bfsk_do_rx_sync = 1;
 			bfsk_sync_byte = strtol(optarg, NULL, 0);
 			break;
 	    case 'q':
@@ -621,7 +621,7 @@ main( int argc, char*argv[] )
 	bfsk_n_data_bits = 8;
 	bfsk_nstartbits = 0;
 	bfsk_nstopbits = 0;
-	bfsk_sync_on_data = 1;
+	bfsk_do_rx_sync = 1;
 	bfsk_sync_byte = 0xAB;
 	bfsk_mark_f = 2083.0 + 1/3.0;
 	bfsk_space_f = 1562.5;
@@ -974,7 +974,7 @@ main( int argc, char*argv[] )
 	for ( i=0; i<bfsk_nstartbits; i++ )
 	    expect_bits_string[j++] = '0';
 	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
-	    if ( ! carrier && bfsk_sync_on_data )
+	    if ( ! carrier && bfsk_do_rx_sync )
 		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
 	    else
 		expect_bits_string[j] = 'd';
@@ -1194,7 +1194,7 @@ main( int argc, char*argv[] )
 	unsigned int dataout_nbytes = 0;
 
 	// suppress printing of bfsk_sync_byte bytes
-	if ( bfsk_sync_on_data ) {
+	if ( bfsk_do_rx_sync ) {
 	    if ( dataout_nbytes == 0 && bits == bfsk_sync_byte )
 		continue;
 	}
