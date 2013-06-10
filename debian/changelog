@@ -1,3 +1,9 @@
+minimodem (0.18-1) unstable; urgency=low
+
+  * minimodem --tx SAME emits 16 sync-byte preamble
+
+ -- Kamal Mostafa <kamal@whence.com>  Mon, 10 Jun 2013 09:28:20 -0700
+
 minimodem (0.17.1-1) unstable; urgency=low
 
   * (portability) link with -lm explicitly
