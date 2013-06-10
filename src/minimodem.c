@@ -3,7 +3,7 @@
  *
  * minimodem - software audio Bell-type or RTTY FSK modem
  *
- * Copyright (C) 2011-2012 Kamal Mostafa <kamal@whence.com>
+ * Copyright (C) 2011-2013 Kamal Mostafa <kamal@whence.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -307,7 +307,7 @@ version()
 {
     printf(
     "minimodem %s\n"
-    "Copyright (C) 2011-2012 Kamal Mostafa <kamal@whence.com>\n"
+    "Copyright (C) 2011-2013 Kamal Mostafa <kamal@whence.com>\n"
     "License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.\n"
     "This is free software: you are free to change and redistribute it.\n"
     "There is NO WARRANTY, to the extent permitted by law.\n\n"

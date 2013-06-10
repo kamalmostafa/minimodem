@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH MINIMODEM 1 "October 5, 2012"
+.TH MINIMODEM 1 "June 10, 2013"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -214,7 +214,7 @@ The latest version is available at <http://www.whence.com/minimodem>.
 .B minimodem
 was written by Kamal Mostafa <kamal@whence.com>.
 .SH COPYRIGHT
-Copyright \(co 2011-2012 by Kamal Mostafa <kamal@whence.com>.
+Copyright \(co 2011-2013 by Kamal Mostafa <kamal@whence.com>.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
 .br
 This is free software: you are free to change and redistribute it.
