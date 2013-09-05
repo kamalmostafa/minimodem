@@ -409,6 +409,13 @@ main( int argc, char*argv[] )
 
     int output_mode_binary = 0;
 
+    float	bfsk_data_rate = 0.0;
+    databits_encoder	*bfsk_databits_encode;
+    databits_decoder	*bfsk_databits_decode;
+
+    bfsk_databits_decode = databits_decode_ascii8;
+    bfsk_databits_encode = databits_encode_ascii8;
+
     /* validate the default system audio mechanism */
 #if !(USE_PULSEAUDIO || USE_ALSA)
 # define _MINIMODEM_NO_SYSTEM_AUDIO
@@ -513,6 +520,8 @@ main( int argc, char*argv[] )
 			break;
 	    case '5':
 			bfsk_n_data_bits = 5;
+			bfsk_databits_decode = databits_decode_baudot;
+			bfsk_databits_encode = databits_encode_baudot;
 			break;
 	    case 'b':
 			band_width = atof(optarg);
@@ -626,13 +635,6 @@ main( int argc, char*argv[] )
 
     modem_mode = argv[optind++];
 
-
-    float	bfsk_data_rate = 0.0;
-    databits_encoder	*bfsk_databits_encode;
-    databits_decoder	*bfsk_databits_decode;
-
-    bfsk_databits_decode = databits_decode_ascii8;
-    bfsk_databits_encode = databits_encode_ascii8;
 
     if ( strncasecmp(modem_mode, "rtty",5)==0 ) {
 	bfsk_databits_decode = databits_decode_baudot;
