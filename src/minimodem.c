@@ -328,6 +328,7 @@ usage()
     "		    -c, --confidence {min-confidence-threshold}\n"
     "		    -l, --limit {max-confidence-search-limit}\n"
     "		    -8, --ascii		ASCII  8-N-1\n"
+    "		    -7,			ASCII  7-N-1\n"
     "		    -5, --baudot	Baudot 5-N-1\n"
     "		    -f, --file {filename.flac}\n"
     "		    -b, --bandwidth {rx_bandwidth}\n"
@@ -461,6 +462,7 @@ main( int argc, char*argv[] )
 	    { "auto-carrier",	0, 0, 'a' },
 	    { "inverted",	0, 0, 'i' },
 	    { "ascii",		0, 0, '8' },
+	    { "",		0, 0, '7' },
 	    { "baudot",		0, 0, '5' },
 	    { "file",		1, 0, 'f' },
 	    { "bandwidth",	1, 0, 'b' },
@@ -482,7 +484,7 @@ main( int argc, char*argv[] )
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:l:ai85f:b:v:M:S:T:qA::R:",
+	c = getopt_long(argc, argv, "Vtrc:l:ai875f:b:v:M:S:T:qA::R:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -517,6 +519,9 @@ main( int argc, char*argv[] )
 			break;
 	    case '8':
 			bfsk_n_data_bits = 8;
+			break;
+	    case '7':
+			bfsk_n_data_bits = 7;
 			break;
 	    case '5':
 			bfsk_n_data_bits = 5;
@@ -827,7 +832,7 @@ main( int argc, char*argv[] )
     unsigned int nbits = 0;
     nbits += 1;			// prev stop bit (last whole stop bit)
     nbits += bfsk_nstartbits;	// start bits
-    nbits += 8;			// (n_data_bits)
+    nbits += bfsk_n_data_bits;
     nbits += 1;			// stop bit (first whole stop bit)
 
     // FIXME EXPLAIN +1 goes with extra bit when scanning
