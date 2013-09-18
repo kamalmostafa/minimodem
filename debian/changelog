@@ -1,3 +1,10 @@
+minimodem (0.19-1) unstable; urgency=low
+
+  * minimodem new command line switch: -7 implements 7-bit ASCII
+  * fixed --baudot command line switch
+
+ -- Kamal Mostafa <kamal@whence.com>  Wed, 18 Sep 2013 09:08:47 -0700
+
 minimodem (0.18-1) unstable; urgency=low
 
   * minimodem --tx SAME emits 16 sync-byte preamble
