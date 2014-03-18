@@ -111,6 +111,13 @@ simpleaudio_open_stream(
 		backend_device, sa_stream_direction, sa_format,
 		rate, channels, app_name, stream_name);
 
+    if ( sa->channels != channels ) {
+	fprintf(stderr, "%s: input stream must be %u-channel (not %u)\n",
+		stream_name, channels, sa->channels);
+	simpleaudio_close(sa);
+	return 0;
+    }
+
     if ( ok ) {
 	assert( sa->backend_framesize == sa->channels * sa->samplesize );
 	return sa;
