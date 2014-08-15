@@ -28,7 +28,7 @@
 /* returns nbytes decoded */
 unsigned int
 databits_decode_baudot( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits )
+	unsigned long long bits, unsigned int n_databits )
 {
     if ( ! dataout_p ) {	// databits processor reset: reset Baudot state
 	    baudot_reset();

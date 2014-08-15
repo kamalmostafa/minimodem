@@ -34,7 +34,7 @@ databits_encode_ascii8( unsigned int *databits_outp, char char_out )
 /* returns nbytes decoded */
 unsigned int
 databits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits )
+	unsigned long long bits, unsigned int n_databits )
 {
     if ( ! dataout_p )	// databits processor reset: noop
 	return 0;

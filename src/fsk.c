@@ -178,13 +178,13 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 static float
 fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	int n_bits, const char *expect_bits_string,
-	unsigned int *bits_outp, float *ampl_outp )
+	unsigned long long *bits_outp, float *ampl_outp )
 {
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
-    unsigned int	bit_values[32];
-    float		bit_sig_mags[32];
-    float		bit_noise_mags[32];
+    unsigned int	bit_values[64];
+    float		bit_sig_mags[64];
+    float		bit_noise_mags[64];
     unsigned int	bit_begin_sample;
     int			bitnum;
 
@@ -453,9 +453,9 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	unsigned int try_step_nsamples,
 	float try_confidence_search_limit,
 	const char *expect_bits_string,
-	unsigned int *bits_outp,
+	unsigned long long *bits_outp,
 	float *ampl_outp,
-	unsigned int *frame_start_outp
+	unsigned long long *frame_start_outp
 	)
 {
     int expect_n_bits = strlen(expect_bits_string);
@@ -482,7 +482,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	    continue;
 
 	float c, ampl_out;
-	unsigned int bits_out = 0;
+	unsigned long long bits_out = 0;
 	debug_log("try fsk_frame_analyze at t=%d\n", t);
 	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit,
 			expect_n_bits, expect_bits_string,
