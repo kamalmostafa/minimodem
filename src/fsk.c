@@ -438,7 +438,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     // into the bits_outp word.
     *bits_outp = 0;
     for ( bitnum=0; bitnum<n_bits; bitnum++ )
-	*bits_outp |= bit_values[bitnum] << bitnum;
+	*bits_outp |= (unsigned long long) bit_values[bitnum] << bitnum;
 
     debug_log("    frame algo=%u confidence=%f ampl=%f\n",
 	    CONFIDENCE_ALGO, confidence, *ampl_outp);
@@ -455,7 +455,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	const char *expect_bits_string,
 	unsigned long long *bits_outp,
 	float *ampl_outp,
-	unsigned long long *frame_start_outp
+	unsigned int *frame_start_outp
 	)
 {
     int expect_n_bits = strlen(expect_bits_string);
@@ -466,7 +466,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     unsigned int best_t = 0;
     float best_c = 0.0, best_a = 0.0;
-    unsigned int best_bits = 0;
+    unsigned long long best_bits = 0;
     
     // Scan the frame positions starting with the one try_first_sample,
     // alternating between a step above that, a step below that, above, below,

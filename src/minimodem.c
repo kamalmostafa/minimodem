@@ -1089,7 +1089,7 @@ main( int argc, char*argv[] )
 	unsigned long long bits = 0;
 	/* Note: frame_start_sample is actually the sample where the
 	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
-	unsigned long long frame_start_sample = 0;
+	unsigned int frame_start_sample = 0;
 
 	unsigned int try_first_sample;
 	float try_confidence_search_limit;
@@ -1204,7 +1204,7 @@ main( int argc, char*argv[] )
 		try_confidence_search_limit = INFINITY;
 		float confidence2, amplitude2;
 		unsigned long long bits2;
-		unsigned long long frame_start_sample2;
+		unsigned int frame_start_sample2;
 		confidence2 = fsk_find_frame(fskp, samplebuf, expect_nsamples,
 			    try_first_sample,
 			    try_max_nsamples,
@@ -1258,7 +1258,8 @@ main( int argc, char*argv[] )
 
 	// chop off framing bits
 	unsigned int frame_bits_shift = bfsk_nstartbits;
-	unsigned int frame_bits_mask = (int)(1<<bfsk_n_data_bits) - 1;
+	unsigned long long frame_bits_mask = (long long)(1ULL<<bfsk_n_data_bits) - 1;
+	debug_log("Input: %08x%08x - Databits: %i - Shift: %i - Mask: %08x\n", (unsigned int)(bits >> 32), (unsigned int)bits, bfsk_n_data_bits, bfsk_nstartbits, (unsigned int)(frame_bits_mask >> 32), (unsigned int)(frame_bits_mask));
 	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
 
 	unsigned int dataout_size = 4096;
