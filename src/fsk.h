@@ -67,7 +67,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	const char *expect_bits_string,
 	unsigned long long *bits_outp,
 	float *ampl_outp,
-	unsigned long long *frame_start_outp
+	unsigned int *frame_start_outp
 	);
 
 int
