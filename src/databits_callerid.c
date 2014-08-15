@@ -131,7 +131,7 @@ decode_cid_reset()
 /* returns nbytes decoded */
 unsigned int
 databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits )
+	unsigned long long bits, unsigned int n_databits )
 {
     if ( ! dataout_p )	// databits processor reset
 	return decode_cid_reset();
@@ -157,7 +157,7 @@ databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
     // Collect input bytes until we've collected as many as the message
     // length byte says there will be, plus two (the message type byte
     // and the checksum byte)
-    unsigned int cid_msglen = cid_buf[1];
+    unsigned long long cid_msglen = cid_buf[1];
     if ( cid_ndata < cid_msglen + 2)
 	return 0;
 

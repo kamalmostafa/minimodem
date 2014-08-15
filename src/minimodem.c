@@ -1009,7 +1009,7 @@ main( int argc, char*argv[] )
 	//                       start--v        v--stop
 	// char *expect_bits_string = "10dddddddd1";
 	//
-	char expect_bits_string[32];
+	char expect_bits_string[64];
 	char start_bit_value = invert_start_stop ? '1' : '0';
 	char stop_bit_value = invert_start_stop ? '0' : '1';
 	int j = 0;
@@ -1060,10 +1060,10 @@ main( int argc, char*argv[] )
 	    try_step_nsamples = 1;
 
 	float confidence, amplitude;
-	unsigned int bits = 0;
+	unsigned long long bits = 0;
 	/* Note: frame_start_sample is actually the sample where the
 	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
-	unsigned int frame_start_sample = 0;
+	unsigned long long frame_start_sample = 0;
 
 	unsigned int try_first_sample;
 	float try_confidence_search_limit;
@@ -1177,8 +1177,8 @@ main( int argc, char*argv[] )
 		    try_step_nsamples = 1;
 		try_confidence_search_limit = INFINITY;
 		float confidence2, amplitude2;
-		unsigned int bits2;
-		unsigned int frame_start_sample2;
+		unsigned long long bits2;
+		unsigned long long frame_start_sample2;
 		confidence2 = fsk_find_frame(fskp, samplebuf, expect_nsamples,
 			    try_first_sample,
 			    try_max_nsamples,
