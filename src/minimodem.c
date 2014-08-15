@@ -337,6 +337,7 @@ usage()
     "		    -S, --space {space_freq}\n"
     "		    --startbits {n}\n"
     "		    --stopbits {n.n}\n"
+    "		    --invert-start-stop\n"
     "		    --sync-byte {0xXX}\n"
     "		    -q, --quiet\n"
     "		    -R, --samplerate {rate}\n"
@@ -376,6 +377,7 @@ main( int argc, char*argv[] )
     unsigned int bfsk_do_tx_sync_bytes = 0;
     unsigned int bfsk_sync_byte = -1;
     unsigned int bfsk_n_data_bits = 0;
+    int invert_start_stop = 0;
     int autodetect_shift;
     char *filename = NULL;
 
@@ -438,6 +440,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
 	MINIMODEM_OPT_STARTBITS,
 	MINIMODEM_OPT_STOPBITS,
+	MINIMODEM_OPT_INVERT_START_STOP,
 	MINIMODEM_OPT_SYNC_BYTE,
 	MINIMODEM_OPT_LUT,
 	MINIMODEM_OPT_FLOAT_SAMPLES,
@@ -471,6 +474,7 @@ main( int argc, char*argv[] )
 	    { "space",		1, 0, 'S' },
 	    { "startbits",	1, 0, MINIMODEM_OPT_STARTBITS },
 	    { "stopbits",	1, 0, MINIMODEM_OPT_STOPBITS },
+	    { "invert-start-stop", 0, 0, MINIMODEM_OPT_INVERT_START_STOP },
 	    { "sync-byte",	1, 0, MINIMODEM_OPT_SYNC_BYTE },
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		2, 0, 'A' },
@@ -556,6 +560,9 @@ main( int argc, char*argv[] )
 	    case MINIMODEM_OPT_STOPBITS:
 			bfsk_nstopbits = atof(optarg);
 			assert( bfsk_nstopbits >= 0 );
+			break;
+		case MINIMODEM_OPT_INVERT_START_STOP:
+			invert_start_stop = 1;
 			break;
 	    case MINIMODEM_OPT_SYNC_BYTE:
 			bfsk_do_rx_sync = 1;
@@ -1003,13 +1010,15 @@ main( int argc, char*argv[] )
 	// char *expect_bits_string = "10dddddddd1";
 	//
 	char expect_bits_string[32];
+	char start_bit_value = invert_start_stop ? '1' : '0';
+	char stop_bit_value = invert_start_stop ? '0' : '1';
 	int j = 0;
 	if ( bfsk_nstopbits != 0.0 )
-	    expect_bits_string[j++] = '1';
+	    expect_bits_string[j++] = stop_bit_value;
 	int i;
 	// Nb. only integer number of start bits works (for rx)
 	for ( i=0; i<bfsk_nstartbits; i++ )
-	    expect_bits_string[j++] = '0';
+	    expect_bits_string[j++] = start_bit_value;
 	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
 	    if ( ! carrier && bfsk_do_rx_sync )
 		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
@@ -1017,7 +1026,7 @@ main( int argc, char*argv[] )
 		expect_bits_string[j] = 'd';
 	}
 	if ( bfsk_nstopbits != 0.0 )
-	    expect_bits_string[j++] = '1';
+	    expect_bits_string[j++] = stop_bit_value;
 	expect_bits_string[j++] = 0;
 
 
