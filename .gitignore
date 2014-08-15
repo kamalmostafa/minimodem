@@ -5,3 +5,4 @@ Makefile
 /config.log
 /config.status
 /stamp-h1
+autom4te.cache
