@@ -890,19 +890,6 @@ main( int argc, char*argv[] )
     nbits += bfsk_n_data_bits;
     nbits += 1;			// stop bit (first whole stop bit)
 
-    // FIXME EXPLAIN +1 goes with extra bit when scanning
-    size_t	samplebuf_size = ceilf(nsamples_per_bit) * (nbits+1);
-    samplebuf_size *= 2; // account for the half-buf filling method
-#define SAMPLE_BUF_DIVISOR 12
-#ifdef SAMPLE_BUF_DIVISOR
-    // For performance, use a larger samplebuf_size than necessary
-    if ( samplebuf_size < sample_rate / SAMPLE_BUF_DIVISOR )
-	samplebuf_size = sample_rate / SAMPLE_BUF_DIVISOR;
-#endif
-    float	*samplebuf = malloc(samplebuf_size * sizeof(float));
-    size_t	samples_nvalid = 0;
-    debug_log("samplebuf_size=%zu\n", samplebuf_size);
-
     /*
      * Run the main loop
      */
@@ -959,8 +946,23 @@ main( int argc, char*argv[] )
 		expect_sync_string = expect_data_string;
 	}
 	fprintf(stderr, "ess = '%s' (%lu)\n", expect_sync_string, strlen(expect_sync_string));
-
+	
 	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
+
+    size_t	samplebuf_size = expect_nsamples * 2; // account for the half-buf filling method
+#define SAMPLE_BUF_DIVISOR 12
+#ifdef SAMPLE_BUF_DIVISOR
+    // For performance, use a larger samplebuf_size than necessary
+    if ( samplebuf_size < sample_rate / SAMPLE_BUF_DIVISOR )
+	{
+	debug_log("buffer too small (%i), ceiling to %i", samplebuf_size, sample_rate / SAMPLE_BUF_DIVISOR);
+	samplebuf_size = sample_rate / SAMPLE_BUF_DIVISOR;
+	}
+#endif
+    float	*samplebuf = malloc(samplebuf_size * sizeof(float));
+    size_t	samples_nvalid = 0;
+    debug_log("samplebuf_size=%zu\n", samplebuf_size);
+
     float track_amplitude = 0.0;
     float peak_confidence = 0.0;
 
@@ -1057,7 +1059,7 @@ main( int argc, char*argv[] )
 	 */
 
 	debug_log( "--------------------------\n");
-
+	//fprintf(stderr, "%i --- %i\n", samples_nvalid, expect_nsamples);
 	if ( samples_nvalid < expect_nsamples )
 	    break;
 
