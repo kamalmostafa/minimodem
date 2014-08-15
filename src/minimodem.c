@@ -361,6 +361,52 @@ usage()
 }
 
 int
+build_expect_bit_string(char * expect_bits_string,
+    int bfsk_nstartbits,
+    int bfsk_n_data_bits,
+    float bfsk_nstopbits,
+    int invert_start_stop,
+    unsigned long long bfsk_sync_byte)
+{
+	// example expect_bits_string
+	//	  0123456789A
+	//	  isddddddddp	i == idle bit (a.k.a. prev_stop bit)
+	//			s == start bit  d == data bits  p == stop bit
+	// ebs = "10dddddddd1"  <-- expected mark/space framing pattern
+	//
+	// NOTE! expect_n_bits ends up being (frame_n_bits+1), because
+	// we expect the prev_stop bit in addition to this frame's own
+	// (start + n_data_bits + stop) bits.  But for each decoded frame,
+	// we will advance just frame_n_bits worth of samples, leaving us
+	// pointing at our stop bit -- it becomes the next frame's prev_stop.
+	//
+	//                  prev_stop--v
+	//                       start--v        v--stop
+	// char *expect_bits_string = "10dddddddd1";
+	//
+	char start_bit_value = invert_start_stop ? '1' : '0';
+	char stop_bit_value = invert_start_stop ? '0' : '1';
+	int j = 0;
+	if ( bfsk_nstopbits != 0.0 )
+	    expect_bits_string[j++] = stop_bit_value;
+	int i;
+	// Nb. only integer number of start bits works (for rx)
+	for ( i=0; i<bfsk_nstartbits; i++ )
+	    expect_bits_string[j++] = start_bit_value;
+	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
+	    if ( (long long) bfsk_sync_byte >= 0 )
+		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
+	    else
+		expect_bits_string[j] = 'd';
+	}
+	if ( bfsk_nstopbits != 0.0 )
+	    expect_bits_string[j++] = stop_bit_value;
+	expect_bits_string[j] = 0;
+
+	return j;
+}
+
+int
 main( int argc, char*argv[] )
 {
     char *modem_mode = NULL;
@@ -375,8 +421,11 @@ main( int argc, char*argv[] )
     float bfsk_nstopbits = -1;
     unsigned int bfsk_do_rx_sync = 0;
     unsigned int bfsk_do_tx_sync_bytes = 0;
-    unsigned int bfsk_sync_byte = -1;
+    unsigned long long bfsk_sync_byte = -1;
     unsigned int bfsk_n_data_bits = 0;
+    char *expect_data_string = NULL;
+    char *expect_sync_string = NULL;
+    unsigned int expect_n_bits;
     int invert_start_stop = 0;
     int autodetect_shift;
     char *filename = NULL;
@@ -793,7 +842,6 @@ main( int argc, char*argv[] )
 	return 0;
     }
 
-
     /*
      * Open the input audio stream
      */
@@ -896,6 +944,23 @@ main( int argc, char*argv[] )
     float frame_n_bits = bfsk_n_data_bits + bfsk_nstartbits + bfsk_nstopbits;
     unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5;
 
+    char expect_data_string_buffer[64];
+    if (expect_data_string == NULL) {
+        expect_data_string = expect_data_string_buffer;
+        expect_n_bits = build_expect_bit_string(expect_data_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, (unsigned long long) -1);
+    }
+	fprintf(stderr, "eds = '%s' (%lu)\n", expect_data_string, strlen(expect_data_string));
+
+    char expect_sync_string_buffer[64];
+    if (expect_sync_string == NULL && bfsk_do_rx_sync && (long long) bfsk_sync_byte >= 0) {
+        expect_sync_string = expect_sync_string_buffer;
+        build_expect_bit_string(expect_sync_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, bfsk_sync_byte);
+    } else {
+		expect_sync_string = expect_data_string;
+	}
+	fprintf(stderr, "ess = '%s' (%lu)\n", expect_sync_string, strlen(expect_sync_string));
+
+	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
     float track_amplitude = 0.0;
     float peak_confidence = 0.0;
 
@@ -993,48 +1058,6 @@ main( int argc, char*argv[] )
 
 	debug_log( "--------------------------\n");
 
-	// example expect_bits_string
-	//	  0123456789A
-	//	  isddddddddp	i == idle bit (a.k.a. prev_stop bit)
-	//			s == start bit  d == data bits  p == stop bit
-	// ebs = "10dddddddd1"  <-- expected mark/space framing pattern
-	//
-	// NOTE! expect_n_bits ends up being (frame_n_bits+1), because
-	// we expect the prev_stop bit in addition to this frame's own
-	// (start + n_data_bits + stop) bits.  But for each decoded frame,
-	// we will advance just frame_n_bits worth of samples, leaving us
-	// pointing at our stop bit -- it becomes the next frame's prev_stop.
-	//
-	//                  prev_stop--v
-	//                       start--v        v--stop
-	// char *expect_bits_string = "10dddddddd1";
-	//
-	char expect_bits_string[64];
-	char start_bit_value = invert_start_stop ? '1' : '0';
-	char stop_bit_value = invert_start_stop ? '0' : '1';
-	int j = 0;
-	if ( bfsk_nstopbits != 0.0 )
-	    expect_bits_string[j++] = stop_bit_value;
-	int i;
-	// Nb. only integer number of start bits works (for rx)
-	for ( i=0; i<bfsk_nstartbits; i++ )
-	    expect_bits_string[j++] = start_bit_value;
-	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
-	    if ( ! carrier && bfsk_do_rx_sync )
-		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
-	    else
-		expect_bits_string[j] = 'd';
-	}
-	if ( bfsk_nstopbits != 0.0 )
-	    expect_bits_string[j++] = stop_bit_value;
-	expect_bits_string[j++] = 0;
-
-
-	unsigned int expect_n_bits  = strlen(expect_bits_string);
-	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
-
-	// fprintf(stderr, "ebs = '%s' (%lu)  ;  expect_nsamples=%u samples_nvalid=%lu\n", expect_bits_string, strlen(expect_bits_string), expect_nsamples, samples_nvalid);
-
 	if ( samples_nvalid < expect_nsamples )
 	    break;
 
@@ -1076,7 +1099,7 @@ main( int argc, char*argv[] )
 			try_max_nsamples,
 			try_step_nsamples,
 			try_confidence_search_limit,
-			expect_bits_string,
+			carrier ? expect_data_string : expect_sync_string,
 			&bits,
 			&amplitude,
 			&frame_start_sample
@@ -1184,7 +1207,7 @@ main( int argc, char*argv[] )
 			    try_max_nsamples,
 			    try_step_nsamples,
 			    try_confidence_search_limit,
-			    expect_bits_string,
+			    carrier ? expect_data_string : expect_sync_string,
 			    &bits2,
 			    &amplitude2,
 			    &frame_start_sample2
