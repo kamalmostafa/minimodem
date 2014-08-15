@@ -81,7 +81,8 @@ static void fsk_transmit_frame(
 	float bfsk_mark_f,
 	float bfsk_space_f,
 	float bfsk_nstartbits,
-	float bfsk_nstopbits
+	float bfsk_nstopbits,
+	int bfsk_msb_first
 	)
 {
     int i;
@@ -89,7 +90,13 @@ static void fsk_transmit_frame(
 	simpleaudio_tone(sa_out, bfsk_space_f,
 			bit_nsamples * bfsk_nstartbits);	// start
     for ( i=0; i<n_data_bits; i++ ) {				// data
-	unsigned int bit = ( bits >> i ) & 1;
+	unsigned int bit;
+	if (bfsk_msb_first) {
+		bit = ( bits >> (n_data_bits - i - 1) ) & 1;
+	} else {
+		bit = ( bits >> i ) & 1;
+	}
+
 	float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
 	simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
     }
@@ -107,6 +114,7 @@ static void fsk_transmit_stdin(
 	int n_data_bits,
 	float bfsk_nstartbits,
 	float bfsk_nstopbits,
+	int bfsk_msb_first,
 	unsigned int bfsk_do_tx_sync_bytes,
 	unsigned int bfsk_sync_byte,
 	databits_encoder encode
@@ -156,14 +164,14 @@ static void fsk_transmit_stdin(
 	    for ( j=0; j<bfsk_do_tx_sync_bytes; j++ )
 		fsk_transmit_frame(sa_out, bfsk_sync_byte, n_data_bits,
 			    bit_nsamples, bfsk_mark_f, bfsk_space_f,
-			    bfsk_nstartbits, bfsk_nstopbits);
+			    bfsk_nstartbits, bfsk_nstopbits, 0);
 	}
 
 	/* emit data bits */
 	for ( j=0; j<nwords; j++ )
 	    fsk_transmit_frame(sa_out, bits[j], n_data_bits,
 			bit_nsamples, bfsk_mark_f, bfsk_space_f,
-			bfsk_nstartbits, bfsk_nstopbits);
+			bfsk_nstartbits, bfsk_nstopbits, bfsk_msb_first);
 
 	if ( tx_interactive )
 	    setitimer(ITIMER_REAL, &itv, NULL);
@@ -356,6 +364,8 @@ usage()
     "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
     "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
     "		callerid       Bell202 CID 1200 bps\n"
+    "	       uic-train       UIC-751-3 Train-to-ground 600 bps\n"
+    "	      uic-ground       UIC-751-3 Ground-to-train 600 bps\n"
     );
     exit(1);
 }
@@ -424,6 +434,7 @@ main( int argc, char*argv[] )
     unsigned int bfsk_do_tx_sync_bytes = 0;
     unsigned long long bfsk_sync_byte = -1;
     unsigned int bfsk_n_data_bits = 0;
+    int bfsk_msb_first = 0;
     char *expect_data_string = NULL;
     char *expect_sync_string = NULL;
     unsigned int expect_n_bits;
@@ -488,6 +499,7 @@ main( int argc, char*argv[] )
     
     enum {
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
+	MINIMODEM_OPT_MSBFIRST,
 	MINIMODEM_OPT_STARTBITS,
 	MINIMODEM_OPT_STOPBITS,
 	MINIMODEM_OPT_INVERT_START_STOP,
@@ -517,6 +529,7 @@ main( int argc, char*argv[] )
 	    { "ascii",		0, 0, '8' },
 	    { "",		0, 0, '7' },
 	    { "baudot",		0, 0, '5' },
+	    { "msb-first",	0, 0, MINIMODEM_OPT_MSBFIRST },
 	    { "file",		1, 0, 'f' },
 	    { "bandwidth",	1, 0, 'b' },
 	    { "volume",		1, 0, 'v' },
@@ -581,6 +594,9 @@ main( int argc, char*argv[] )
 			bfsk_n_data_bits = 5;
 			bfsk_databits_decode = databits_decode_baudot;
 			bfsk_databits_encode = databits_encode_baudot;
+			break;
+	    case MINIMODEM_OPT_MSBFIRST:
+			bfsk_msb_first = 1;
 			break;
 	    case 'b':
 			band_width = atof(optarg);
@@ -728,6 +744,24 @@ main( int argc, char*argv[] )
 	bfsk_databits_decode = databits_decode_callerid;
 	bfsk_data_rate = 1200;
 	bfsk_n_data_bits = 8;
+	} else if ( strncasecmp(modem_mode, "uic-train", 9) == 0 || strncasecmp(modem_mode, "uic-ground", 10) == 0 ) {
+	if ( TX_mode ) {
+	    fprintf(stderr, "E: uic-751-3 --tx mode is not supported.\n");
+	    return 1;
+	}
+	// http://ec.europa.eu/transport/rail/interoperability/doc/ccs-tsi-en-annex.pdf
+	if (modem_mode[4] == 't' || modem_mode[4] == 'T')
+	    bfsk_databits_decode = databits_decode_uic_train;
+	else
+	    bfsk_databits_decode = databits_decode_uic_ground;
+	bfsk_data_rate = 600;
+	bfsk_n_data_bits = 39;
+	bfsk_mark_f = 1300;
+	bfsk_space_f = 1700;
+	bfsk_nstartbits = 8;
+	bfsk_nstopbits = 0;
+	expect_data_string = "11110010ddddddddddddddddddddddddddddddddddddddd";
+	expect_n_bits = 47;
     } else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
@@ -835,6 +869,7 @@ main( int argc, char*argv[] )
 				bfsk_n_data_bits,
 				bfsk_nstartbits,
 				bfsk_nstopbits,
+				bfsk_msb_first,
 				bfsk_do_tx_sync_bytes,
 				bfsk_sync_byte,
 				bfsk_databits_encode
@@ -1257,10 +1292,11 @@ main( int argc, char*argv[] )
 	 */
 
 	// chop off framing bits
-	unsigned int frame_bits_shift = bfsk_nstartbits;
-	unsigned long long frame_bits_mask = (long long)(1ULL<<bfsk_n_data_bits) - 1;
-	debug_log("Input: %08x%08x - Databits: %i - Shift: %i - Mask: %08x\n", (unsigned int)(bits >> 32), (unsigned int)bits, bfsk_n_data_bits, bfsk_nstartbits, (unsigned int)(frame_bits_mask >> 32), (unsigned int)(frame_bits_mask));
-	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
+	bits = bit_window(bits, bfsk_nstartbits, bfsk_n_data_bits);
+	if (bfsk_msb_first) {
+		bits = bit_reverse(bits, bfsk_n_data_bits);
+	}
+	debug_log("Input: %08x%08x - Databits: %i - Shift: %i\n", (unsigned int)(bits >> 32), (unsigned int)bits, bfsk_n_data_bits, bfsk_nstartbits);
 
 	unsigned int dataout_size = 4096;
 	char dataoutbuf[4096];

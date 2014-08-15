@@ -17,6 +17,32 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Reverses the ordering of the bits on an integer
+static inline unsigned long long
+bit_reverse(unsigned long long value,
+	unsigned int bits)
+{
+	unsigned int out = 0;
+
+	while (bits--) {
+		out = (out << 1) | (value & 1);
+		value >>= 1;
+	}
+
+	return out;
+}
+
+// Gets "bits" bits from "value" starting "offset" bits from the start
+static inline unsigned long long
+bit_window(unsigned long long value,
+	unsigned int offset,
+	unsigned int bits)
+{
+	unsigned long long mask = (1ULL << bits) - 1;
+	value = (value >> offset) & mask;
+	return value;
+}
+
 typedef int (databits_encoder)(
 	unsigned int *databits_outp, char char_out );
 
@@ -55,4 +81,10 @@ unsigned int
 databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
 	unsigned long long bits, unsigned int n_databits );
 
+unsigned int
+databits_decode_uic_ground( char *dataout_p, unsigned int dataout_size,
+	unsigned long long bits, unsigned int n_databits );
 
+unsigned int
+databits_decode_uic_train( char *dataout_p, unsigned int dataout_size,
+	unsigned long long bits, unsigned int n_databits );
