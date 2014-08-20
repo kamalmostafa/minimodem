@@ -742,7 +742,7 @@ main( int argc, char*argv[] )
 	bfsk_databits_decode = databits_decode_callerid;
 	bfsk_data_rate = 1200;
 	bfsk_n_data_bits = 8;
-	} else if ( strncasecmp(modem_mode, "uic-train", 9) || strncasecmp(modem_mode, "uic-ground", 10) ) {
+	} else if ( strncasecmp(modem_mode, "uic-train", 9) == 0 || strncasecmp(modem_mode, "uic-ground", 10) == 0 ) {
 	if ( TX_mode ) {
 	    fprintf(stderr, "E: uic-751-3 --tx mode is not supported.\n");
 	    return 1;
