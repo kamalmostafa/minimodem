@@ -82,12 +82,13 @@ static void fsk_transmit_frame(
 	float bfsk_space_f,
 	float bfsk_nstartbits,
 	float bfsk_nstopbits,
+	int invert_start_stop,
 	int bfsk_msb_first
 	)
 {
     int i;
     if ( bfsk_nstartbits > 0 )
-	simpleaudio_tone(sa_out, bfsk_space_f,
+	simpleaudio_tone(sa_out, invert_start_stop ? bfsk_mark_f : bfsk_space_f,
 			bit_nsamples * bfsk_nstartbits);	// start
     for ( i=0; i<n_data_bits; i++ ) {				// data
 	unsigned int bit;
@@ -101,7 +102,7 @@ static void fsk_transmit_frame(
 	simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
     }
     if ( bfsk_nstopbits > 0 )
-	simpleaudio_tone(sa_out, bfsk_mark_f,
+	simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f,
 			bit_nsamples * bfsk_nstopbits);		// stop
 }
 
@@ -114,6 +115,7 @@ static void fsk_transmit_stdin(
 	int n_data_bits,
 	float bfsk_nstartbits,
 	float bfsk_nstopbits,
+	int invert_start_stop,
 	int bfsk_msb_first,
 	unsigned int bfsk_do_tx_sync_bytes,
 	unsigned int bfsk_sync_byte,
@@ -159,19 +161,19 @@ static void fsk_transmit_stdin(
 	    tx_transmitting = 1;
 	    /* emit leader tone (mark) */
 	    for ( j=0; j<tx_leader_bits_len; j++ )
-		simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
+		simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f, bit_nsamples);
 	    /* emit "preamble" of sync bytes */
 	    for ( j=0; j<bfsk_do_tx_sync_bytes; j++ )
 		fsk_transmit_frame(sa_out, bfsk_sync_byte, n_data_bits,
 			    bit_nsamples, bfsk_mark_f, bfsk_space_f,
-			    bfsk_nstartbits, bfsk_nstopbits, 0);
+			    bfsk_nstartbits, bfsk_nstopbits, invert_start_stop, 0);
 	}
 
 	/* emit data bits */
 	for ( j=0; j<nwords; j++ )
 	    fsk_transmit_frame(sa_out, bits[j], n_data_bits,
 			bit_nsamples, bfsk_mark_f, bfsk_space_f,
-			bfsk_nstartbits, bfsk_nstopbits, bfsk_msb_first);
+			bfsk_nstartbits, bfsk_nstopbits, invert_start_stop, bfsk_msb_first);
 
 	if ( tx_interactive )
 	    setitimer(ITIMER_REAL, &itv, NULL);
@@ -869,6 +871,7 @@ main( int argc, char*argv[] )
 				bfsk_n_data_bits,
 				bfsk_nstartbits,
 				bfsk_nstopbits,
+				invert_start_stop,
 				bfsk_msb_first,
 				bfsk_do_tx_sync_bytes,
 				bfsk_sync_byte,
