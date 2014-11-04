@@ -191,7 +191,7 @@ Decode amateur radio RTTY signals (listen near 14.085 MHz).
 .B minimodem --rx same
 Decode NOAA SAME protocol emergency alert transmissions, e.g.
 .br
-http://en.wikipedia.org/wiki/Specific_Area_Message_Encoding
+<http://en.wikipedia.org/wiki/Specific_Area_Message_Encoding>.
 .TP
 .B minimodem --tx 0.5
 Experiment with very low baud rates (works in noisy conditions).
