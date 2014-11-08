@@ -58,7 +58,7 @@ decode_mdmf_callerid( char *dataout_p, unsigned int dataout_size )
     while ( cid_i < cid_msglen ) {
 
 	unsigned int cid_datatype = *m++;
-	if ( cid_datatype >= CID_DATA_NAME_NA ) {
+	if ( cid_datatype > CID_DATA_NAME_NA ) {
 	    // FIXME: bad datastream -- print something here
 	    return 0;
 	}
