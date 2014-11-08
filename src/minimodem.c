@@ -666,6 +666,8 @@ main( int argc, char*argv[] )
 	    fprintf(stderr, "E: callerid --tx mode is not supported.\n");
 	    return 1;
 	}
+	if ( carrier_autodetect_threshold > 0.0 )
+	    fprintf(stderr, "W: callerid with --auto-carrier is not recommended.\n");
 	bfsk_databits_decode = databits_decode_callerid;
 	bfsk_data_rate = 1200;
 	bfsk_n_data_bits = 8;
