@@ -74,15 +74,41 @@ decode_mdmf_callerid( char *dataout_p, unsigned int dataout_size )
 	dataout_n += sprintf(dataout_p+dataout_n, "%-6s ",
 				cid_datatype_names[cid_datatype]);
 
-	if ( cid_datatype == CID_DATA_DATETIME )
-	    dataout_n += sprintf(dataout_p+dataout_n, "%.2s/%.2s %.2s:%.2s\n",
-				m+0, m+2, m+4, m+6);
-	else if ( cid_datatype == CID_DATA_PHONE && cid_datalen == 10 )
-	    dataout_n += sprintf(dataout_p+dataout_n, "%.3s-%.3s-%.4s\n",
-				m+0, m+3, m+6);
-	else
-	    dataout_n += sprintf(dataout_p+dataout_n, "%.*s\n",
-				cid_datalen, m);
+	int prlen = 0;
+	char *prdata = NULL;
+	switch ( cid_datatype ) {
+	    case CID_DATA_DATETIME:
+		dataout_n += sprintf(dataout_p+dataout_n,
+			"%.2s/%.2s %.2s:%.2s\n", m+0, m+2, m+4, m+6);
+		break;
+	    case CID_DATA_PHONE:
+		if ( cid_datalen == 10 ) {
+		    dataout_n += sprintf(dataout_p+dataout_n,
+			    "%.3s-%.3s-%.4s\n", m+0, m+3, m+6);
+		    break;
+		} else {
+		    // fallthrough
+		}
+	    case CID_DATA_NAME:
+		prdata = (char *)m;
+		prlen = cid_datalen;
+		break;
+	    case CID_DATA_PHONE_NA:
+	    case CID_DATA_NAME_NA:
+		if ( cid_datalen == 1 && *m == 'O' ) {
+		    prdata = "[N/A]";
+		    prlen = 5;
+		} else if ( cid_datalen == 1 && *m == 'P' ) {
+		    prdata = "[blocked]";
+		    prlen = 9;
+		}
+		break;
+	    default:
+		// FIXME: warning here?
+		break;
+	}
+	if ( prdata )
+	    dataout_n += sprintf(dataout_p+dataout_n, "%.*s\n", prlen, prdata);
 
 	m     += cid_datalen;
 	cid_i += cid_datalen + 2;
