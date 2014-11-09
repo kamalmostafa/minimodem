@@ -361,12 +361,13 @@ usage()
 }
 
 int
-build_expect_bit_string(char * expect_bits_string,
-    int bfsk_nstartbits,
-    int bfsk_n_data_bits,
-    float bfsk_nstopbits,
-    int invert_start_stop,
-    unsigned long long bfsk_sync_byte)
+build_expect_bits_string( char *expect_bits_string,
+	int bfsk_nstartbits,
+	int bfsk_n_data_bits,
+	float bfsk_nstopbits,
+	int invert_start_stop,
+	int use_expect_bits,
+	unsigned long long expect_bits )
 {
 	// example expect_bits_string
 	//	  0123456789A
@@ -394,8 +395,8 @@ build_expect_bit_string(char * expect_bits_string,
 	for ( i=0; i<bfsk_nstartbits; i++ )
 	    expect_bits_string[j++] = start_bit_value;
 	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
-	    if ( (long long) bfsk_sync_byte >= 0 )
-		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
+	    if ( use_expect_bits )
+		expect_bits_string[j] = ( (expect_bits>>i)&1 ) + '0';
 	    else
 		expect_bits_string[j] = 'd';
 	}
@@ -949,18 +950,18 @@ main( int argc, char*argv[] )
     char expect_data_string_buffer[64];
     if (expect_data_string == NULL) {
         expect_data_string = expect_data_string_buffer;
-        expect_n_bits = build_expect_bit_string(expect_data_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, (unsigned long long) -1);
+        expect_n_bits = build_expect_bits_string(expect_data_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, 0, 0);
     }
-	fprintf(stderr, "eds = '%s' (%lu)\n", expect_data_string, strlen(expect_data_string));
+    debug_log("eds = '%s' (%lu)\n", expect_data_string, strlen(expect_data_string));
 
     char expect_sync_string_buffer[64];
     if (expect_sync_string == NULL && bfsk_do_rx_sync && (long long) bfsk_sync_byte >= 0) {
         expect_sync_string = expect_sync_string_buffer;
-        build_expect_bit_string(expect_sync_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, bfsk_sync_byte);
+        build_expect_bits_string(expect_sync_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, 1, bfsk_sync_byte);
     } else {
-		expect_sync_string = expect_data_string;
-	}
-	fprintf(stderr, "ess = '%s' (%lu)\n", expect_sync_string, strlen(expect_sync_string));
+	expect_sync_string = expect_data_string;
+    }
+    debug_log("ess = '%s' (%lu)\n", expect_sync_string, strlen(expect_sync_string));
 
 	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
     float track_amplitude = 0.0;
