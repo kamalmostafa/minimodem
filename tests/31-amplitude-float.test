@@ -1,0 +1,2 @@
+#!/bin/bash
+exec ./30-amplitude.test --float

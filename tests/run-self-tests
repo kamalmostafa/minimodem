@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for testcase in ./test-*
+for testcase in ./*.test
 do
    $testcase
    if [ $? -eq 0 ]

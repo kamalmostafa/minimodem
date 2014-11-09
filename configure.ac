@@ -99,6 +99,8 @@ PKG_CHECK_MODULES(DEPS, [ $deps_packages ])
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)
 
+AC_SUBST([auto_find_tests], ['$(sort $(wildcard *.test))'])
+
 # Checks for header files.
 # AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
 

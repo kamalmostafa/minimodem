@@ -1,0 +1,1 @@
+exec ./40-noise.test 1200 -M 1200 -S 2400

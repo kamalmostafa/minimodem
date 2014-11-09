@@ -20,8 +20,8 @@
 EXTRA_DIST = \
 	run-self-tests \
 	self-test \
-	test-* \
+	*.test \
 	testdata-*
 
-TESTS = test-*
+TESTS = @auto_find_tests@
 

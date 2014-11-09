@@ -589,6 +589,7 @@ ac_subst_vars='am__EXEEXT_FALSE
 am__EXEEXT_TRUE
 LTLIBOBJS
 LIBOBJS
+auto_find_tests
 DEPS_LIBS
 DEPS_CFLAGS
 PKG_CONFIG_LIBDIR
@@ -3720,6 +3721,9 @@ $as_echo "yes" >&6; }
 fi
 
 
+
+
+auto_find_tests='$(sort $(wildcard *.test))'
 
 
 # Checks for header files.
