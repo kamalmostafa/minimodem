@@ -178,13 +178,13 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 static float
 fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	int n_bits, const char *expect_bits_string,
-	unsigned int *bits_outp, float *ampl_outp )
+	unsigned long long *bits_outp, float *ampl_outp )
 {
     unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
 
-    unsigned int	bit_values[32];
-    float		bit_sig_mags[32];
-    float		bit_noise_mags[32];
+    unsigned int	bit_values[64];
+    float		bit_sig_mags[64];
+    float		bit_noise_mags[64];
     unsigned int	bit_begin_sample;
     int			bitnum;
 
@@ -422,7 +422,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     // into the bits_outp word.
     *bits_outp = 0;
     for ( bitnum=0; bitnum<n_bits; bitnum++ )
-	*bits_outp |= bit_values[bitnum] << bitnum;
+	*bits_outp |= (unsigned long long) bit_values[bitnum] << bitnum;
 
     debug_log("    frame algo=%u confidence=%f ampl=%f\n",
 	    CONFIDENCE_ALGO, confidence, *ampl_outp);
@@ -437,7 +437,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	unsigned int try_step_nsamples,
 	float try_confidence_search_limit,
 	const char *expect_bits_string,
-	unsigned int *bits_outp,
+	unsigned long long *bits_outp,
 	float *ampl_outp,
 	unsigned int *frame_start_outp
 	)
@@ -450,7 +450,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     unsigned int best_t = 0;
     float best_c = 0.0, best_a = 0.0;
-    unsigned int best_bits = 0;
+    unsigned long long best_bits = 0;
     
     // Scan the frame positions starting with the one try_first_sample,
     // alternating between a step above that, a step below that, above, below,
@@ -466,7 +466,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	    continue;
 
 	float c, ampl_out;
-	unsigned int bits_out = 0;
+	unsigned long long bits_out = 0;
 	debug_log("try fsk_frame_analyze at t=%d\n", t);
 	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit,
 			expect_n_bits, expect_bits_string,

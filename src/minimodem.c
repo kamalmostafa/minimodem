@@ -41,6 +41,7 @@
 #include "simpleaudio.h"
 #include "fsk.h"
 #include "databits.h"
+#include "misc.h"
 
 char *program_name = "";
 
@@ -81,20 +82,28 @@ static void fsk_transmit_frame(
 	float bfsk_mark_f,
 	float bfsk_space_f,
 	float bfsk_nstartbits,
-	float bfsk_nstopbits
+	float bfsk_nstopbits,
+	int invert_start_stop,
+	int bfsk_msb_first
 	)
 {
     int i;
     if ( bfsk_nstartbits > 0 )
-	simpleaudio_tone(sa_out, bfsk_space_f,
+	simpleaudio_tone(sa_out, invert_start_stop ? bfsk_mark_f : bfsk_space_f,
 			bit_nsamples * bfsk_nstartbits);	// start
     for ( i=0; i<n_data_bits; i++ ) {				// data
-	unsigned int bit = ( bits >> i ) & 1;
+	unsigned int bit;
+	if (bfsk_msb_first) {
+		bit = ( bits >> (n_data_bits - i - 1) ) & 1;
+	} else {
+		bit = ( bits >> i ) & 1;
+	}
+
 	float tone_freq = bit == 1 ? bfsk_mark_f : bfsk_space_f;
 	simpleaudio_tone(sa_out, tone_freq, bit_nsamples);
     }
     if ( bfsk_nstopbits > 0 )
-	simpleaudio_tone(sa_out, bfsk_mark_f,
+	simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f,
 			bit_nsamples * bfsk_nstopbits);		// stop
 }
 
@@ -107,6 +116,8 @@ static void fsk_transmit_stdin(
 	int n_data_bits,
 	float bfsk_nstartbits,
 	float bfsk_nstopbits,
+	int invert_start_stop,
+	int bfsk_msb_first,
 	unsigned int bfsk_do_tx_sync_bytes,
 	unsigned int bfsk_sync_byte,
 	databits_encoder encode
@@ -151,19 +162,19 @@ static void fsk_transmit_stdin(
 	    tx_transmitting = 1;
 	    /* emit leader tone (mark) */
 	    for ( j=0; j<tx_leader_bits_len; j++ )
-		simpleaudio_tone(sa_out, bfsk_mark_f, bit_nsamples);
+		simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f, bit_nsamples);
 	    /* emit "preamble" of sync bytes */
 	    for ( j=0; j<bfsk_do_tx_sync_bytes; j++ )
 		fsk_transmit_frame(sa_out, bfsk_sync_byte, n_data_bits,
 			    bit_nsamples, bfsk_mark_f, bfsk_space_f,
-			    bfsk_nstartbits, bfsk_nstopbits);
+			    bfsk_nstartbits, bfsk_nstopbits, invert_start_stop, 0);
 	}
 
 	/* emit data bits */
 	for ( j=0; j<nwords; j++ )
 	    fsk_transmit_frame(sa_out, bits[j], n_data_bits,
 			bit_nsamples, bfsk_mark_f, bfsk_space_f,
-			bfsk_nstartbits, bfsk_nstopbits);
+			bfsk_nstartbits, bfsk_nstopbits, invert_start_stop, bfsk_msb_first);
 
 	if ( tx_interactive )
 	    setitimer(ITIMER_REAL, &itv, NULL);
@@ -337,6 +348,7 @@ usage()
     "		    -S, --space {space_freq}\n"
     "		    --startbits {n}\n"
     "		    --stopbits {n.n}\n"
+    "		    --invert-start-stop\n"
     "		    --sync-byte {0xXX}\n"
     "		    -q, --quiet\n"
     "		    -R, --samplerate {rate}\n"
@@ -355,8 +367,56 @@ usage()
     "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
     "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
     "		callerid       Bell202 CID 1200 bps\n"
+    "	 uid-train       UIC-751-3 Train-to-ground 600 bps\n"
+    "	 uid-ground      UIC-751-3 Ground-to-train 600 bps\n"
     );
     exit(1);
+}
+
+int
+build_expect_bit_string(char * expect_bits_string,
+    int bfsk_nstartbits,
+    int bfsk_n_data_bits,
+    float bfsk_nstopbits,
+    int invert_start_stop,
+    unsigned long long bfsk_sync_byte)
+{
+	// example expect_bits_string
+	//	  0123456789A
+	//	  isddddddddp	i == idle bit (a.k.a. prev_stop bit)
+	//			s == start bit  d == data bits  p == stop bit
+	// ebs = "10dddddddd1"  <-- expected mark/space framing pattern
+	//
+	// NOTE! expect_n_bits ends up being (frame_n_bits+1), because
+	// we expect the prev_stop bit in addition to this frame's own
+	// (start + n_data_bits + stop) bits.  But for each decoded frame,
+	// we will advance just frame_n_bits worth of samples, leaving us
+	// pointing at our stop bit -- it becomes the next frame's prev_stop.
+	//
+	//                  prev_stop--v
+	//                       start--v        v--stop
+	// char *expect_bits_string = "10dddddddd1";
+	//
+	char start_bit_value = invert_start_stop ? '1' : '0';
+	char stop_bit_value = invert_start_stop ? '0' : '1';
+	int j = 0;
+	if ( bfsk_nstopbits != 0.0 )
+	    expect_bits_string[j++] = stop_bit_value;
+	int i;
+	// Nb. only integer number of start bits works (for rx)
+	for ( i=0; i<bfsk_nstartbits; i++ )
+	    expect_bits_string[j++] = start_bit_value;
+	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
+	    if ( (long long) bfsk_sync_byte >= 0 )
+		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
+	    else
+		expect_bits_string[j] = 'd';
+	}
+	if ( bfsk_nstopbits != 0.0 )
+	    expect_bits_string[j++] = stop_bit_value;
+	expect_bits_string[j] = 0;
+
+	return j;
 }
 
 int
@@ -374,8 +434,13 @@ main( int argc, char*argv[] )
     float bfsk_nstopbits = -1;
     unsigned int bfsk_do_rx_sync = 0;
     unsigned int bfsk_do_tx_sync_bytes = 0;
-    unsigned int bfsk_sync_byte = -1;
+    unsigned long long bfsk_sync_byte = -1;
     unsigned int bfsk_n_data_bits = 0;
+    int bfsk_msb_first = 0;
+    char *expect_data_string = NULL;
+    char *expect_sync_string = NULL;
+    unsigned int expect_n_bits;
+    int invert_start_stop = 0;
     int autodetect_shift;
     char *filename = NULL;
 
@@ -436,8 +501,10 @@ main( int argc, char*argv[] )
     
     enum {
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
+	MINIMODEM_OPT_MSBFIRST,
 	MINIMODEM_OPT_STARTBITS,
 	MINIMODEM_OPT_STOPBITS,
+	MINIMODEM_OPT_INVERT_START_STOP,
 	MINIMODEM_OPT_SYNC_BYTE,
 	MINIMODEM_OPT_LUT,
 	MINIMODEM_OPT_FLOAT_SAMPLES,
@@ -464,6 +531,7 @@ main( int argc, char*argv[] )
 	    { "ascii",		0, 0, '8' },
 	    { "",		0, 0, '7' },
 	    { "baudot",		0, 0, '5' },
+	    { "msb-first",	0, 0, MINIMODEM_OPT_MSBFIRST },
 	    { "file",		1, 0, 'f' },
 	    { "bandwidth",	1, 0, 'b' },
 	    { "volume",		1, 0, 'v' },
@@ -471,6 +539,7 @@ main( int argc, char*argv[] )
 	    { "space",		1, 0, 'S' },
 	    { "startbits",	1, 0, MINIMODEM_OPT_STARTBITS },
 	    { "stopbits",	1, 0, MINIMODEM_OPT_STOPBITS },
+	    { "invert-start-stop", 0, 0, MINIMODEM_OPT_INVERT_START_STOP },
 	    { "sync-byte",	1, 0, MINIMODEM_OPT_SYNC_BYTE },
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		2, 0, 'A' },
@@ -528,6 +597,9 @@ main( int argc, char*argv[] )
 			bfsk_databits_decode = databits_decode_baudot;
 			bfsk_databits_encode = databits_encode_baudot;
 			break;
+	    case MINIMODEM_OPT_MSBFIRST:
+			bfsk_msb_first = 1;
+			break;
 	    case 'b':
 			band_width = atof(optarg);
 			assert( band_width != 0 );
@@ -556,6 +628,9 @@ main( int argc, char*argv[] )
 	    case MINIMODEM_OPT_STOPBITS:
 			bfsk_nstopbits = atof(optarg);
 			assert( bfsk_nstopbits >= 0 );
+			break;
+		case MINIMODEM_OPT_INVERT_START_STOP:
+			invert_start_stop = 1;
 			break;
 	    case MINIMODEM_OPT_SYNC_BYTE:
 			bfsk_do_rx_sync = 1;
@@ -671,6 +746,24 @@ main( int argc, char*argv[] )
 	bfsk_databits_decode = databits_decode_callerid;
 	bfsk_data_rate = 1200;
 	bfsk_n_data_bits = 8;
+	} else if ( strncasecmp(modem_mode, "uic-train", 9) == 0 || strncasecmp(modem_mode, "uic-ground", 10) == 0 ) {
+	if ( TX_mode ) {
+	    fprintf(stderr, "E: uic-751-3 --tx mode is not supported.\n");
+	    return 1;
+	}
+	// http://ec.europa.eu/transport/rail/interoperability/doc/ccs-tsi-en-annex.pdf
+	if (modem_mode[4] == 't' || modem_mode[4] == 'T')
+	    bfsk_databits_decode = databits_decode_uic_train;
+	else
+	    bfsk_databits_decode = databits_decode_uic_ground;
+	bfsk_data_rate = 600;
+	bfsk_n_data_bits = 39;
+	bfsk_mark_f = 1300;
+	bfsk_space_f = 1700;
+	bfsk_nstartbits = 8;
+	bfsk_nstopbits = 0;
+	expect_data_string = "11110010ddddddddddddddddddddddddddddddddddddddd";
+	expect_n_bits = 47;
     } else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
@@ -778,6 +871,8 @@ main( int argc, char*argv[] )
 				bfsk_n_data_bits,
 				bfsk_nstartbits,
 				bfsk_nstopbits,
+				invert_start_stop,
+				bfsk_msb_first,
 				bfsk_do_tx_sync_bytes,
 				bfsk_sync_byte,
 				bfsk_databits_encode
@@ -787,7 +882,6 @@ main( int argc, char*argv[] )
 
 	return 0;
     }
-
 
     /*
      * Open the input audio stream
@@ -837,19 +931,6 @@ main( int argc, char*argv[] )
     nbits += bfsk_n_data_bits;
     nbits += 1;			// stop bit (first whole stop bit)
 
-    // FIXME EXPLAIN +1 goes with extra bit when scanning
-    size_t	samplebuf_size = ceilf(nsamples_per_bit) * (nbits+1);
-    samplebuf_size *= 2; // account for the half-buf filling method
-#define SAMPLE_BUF_DIVISOR 12
-#ifdef SAMPLE_BUF_DIVISOR
-    // For performance, use a larger samplebuf_size than necessary
-    if ( samplebuf_size < sample_rate / SAMPLE_BUF_DIVISOR )
-	samplebuf_size = sample_rate / SAMPLE_BUF_DIVISOR;
-#endif
-    float	*samplebuf = malloc(samplebuf_size * sizeof(float));
-    size_t	samples_nvalid = 0;
-    debug_log("samplebuf_size=%zu\n", samplebuf_size);
-
     /*
      * Run the main loop
      */
@@ -890,6 +971,38 @@ main( int argc, char*argv[] )
     // n databits plus bfsk_startbit start bits plus bfsk_nstopbit stop bits:
     float frame_n_bits = bfsk_n_data_bits + bfsk_nstartbits + bfsk_nstopbits;
     unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5;
+
+    char expect_data_string_buffer[64];
+    if (expect_data_string == NULL) {
+        expect_data_string = expect_data_string_buffer;
+        expect_n_bits = build_expect_bit_string(expect_data_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, (unsigned long long) -1);
+    }
+	//fprintf(stderr, "eds = '%s' (%lu)\n", expect_data_string, strlen(expect_data_string));
+
+    char expect_sync_string_buffer[64];
+    if (expect_sync_string == NULL && bfsk_do_rx_sync && (long long) bfsk_sync_byte >= 0) {
+        expect_sync_string = expect_sync_string_buffer;
+        build_expect_bit_string(expect_sync_string, bfsk_nstartbits, bfsk_n_data_bits, bfsk_nstopbits, invert_start_stop, bfsk_sync_byte);
+    } else {
+		expect_sync_string = expect_data_string;
+	}
+	//fprintf(stderr, "ess = '%s' (%lu)\n", expect_sync_string, strlen(expect_sync_string));
+	
+	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
+
+    size_t	samplebuf_size = expect_nsamples * 2; // account for the half-buf filling method
+#define SAMPLE_BUF_DIVISOR 12
+#ifdef SAMPLE_BUF_DIVISOR
+    // For performance, use a larger samplebuf_size than necessary
+    if ( samplebuf_size < sample_rate / SAMPLE_BUF_DIVISOR )
+	{
+	debug_log("buffer too small (%i), ceiling to %i", samplebuf_size, sample_rate / SAMPLE_BUF_DIVISOR);
+	samplebuf_size = sample_rate / SAMPLE_BUF_DIVISOR;
+	}
+#endif
+    float	*samplebuf = malloc(samplebuf_size * sizeof(float));
+    size_t	samples_nvalid = 0;
+    debug_log("samplebuf_size=%zu\n", samplebuf_size);
 
     float track_amplitude = 0.0;
     float peak_confidence = 0.0;
@@ -987,47 +1100,7 @@ main( int argc, char*argv[] )
 	 */
 
 	debug_log( "--------------------------\n");
-
-	// example expect_bits_string
-	//	  0123456789A
-	//	  isddddddddp	i == idle bit (a.k.a. prev_stop bit)
-	//			s == start bit  d == data bits  p == stop bit
-	// ebs = "10dddddddd1"  <-- expected mark/space framing pattern
-	//
-	// NOTE! expect_n_bits ends up being (frame_n_bits+1), because
-	// we expect the prev_stop bit in addition to this frame's own
-	// (start + n_data_bits + stop) bits.  But for each decoded frame,
-	// we will advance just frame_n_bits worth of samples, leaving us
-	// pointing at our stop bit -- it becomes the next frame's prev_stop.
-	//
-	//                  prev_stop--v
-	//                       start--v        v--stop
-	// char *expect_bits_string = "10dddddddd1";
-	//
-	char expect_bits_string[32];
-	int j = 0;
-	if ( bfsk_nstopbits != 0.0 )
-	    expect_bits_string[j++] = '1';
-	int i;
-	// Nb. only integer number of start bits works (for rx)
-	for ( i=0; i<bfsk_nstartbits; i++ )
-	    expect_bits_string[j++] = '0';
-	for ( i=0; i<bfsk_n_data_bits; i++,j++ ) {
-	    if ( ! carrier && bfsk_do_rx_sync )
-		expect_bits_string[j] = ( (bfsk_sync_byte>>i)&1 ) + '0';
-	    else
-		expect_bits_string[j] = 'd';
-	}
-	if ( bfsk_nstopbits != 0.0 )
-	    expect_bits_string[j++] = '1';
-	expect_bits_string[j++] = 0;
-
-
-	unsigned int expect_n_bits  = strlen(expect_bits_string);
-	unsigned int expect_nsamples = nsamples_per_bit * expect_n_bits;
-
-	// fprintf(stderr, "ebs = '%s' (%lu)  ;  expect_nsamples=%u samples_nvalid=%lu\n", expect_bits_string, strlen(expect_bits_string), expect_nsamples, samples_nvalid);
-
+	//fprintf(stderr, "%i --- %i\n", samples_nvalid, expect_nsamples);
 	if ( samples_nvalid < expect_nsamples )
 	    break;
 
@@ -1053,7 +1126,7 @@ main( int argc, char*argv[] )
 	    try_step_nsamples = 1;
 
 	float confidence, amplitude;
-	unsigned int bits = 0;
+	unsigned long long bits = 0;
 	/* Note: frame_start_sample is actually the sample where the
 	 * prev_stop bit begins (since the "frame" includes the prev_stop). */
 	unsigned int frame_start_sample = 0;
@@ -1069,7 +1142,7 @@ main( int argc, char*argv[] )
 			try_max_nsamples,
 			try_step_nsamples,
 			try_confidence_search_limit,
-			expect_bits_string,
+			carrier ? expect_data_string : expect_sync_string,
 			&bits,
 			&amplitude,
 			&frame_start_sample
@@ -1170,14 +1243,14 @@ main( int argc, char*argv[] )
 		    try_step_nsamples = 1;
 		try_confidence_search_limit = INFINITY;
 		float confidence2, amplitude2;
-		unsigned int bits2;
+		unsigned long long bits2;
 		unsigned int frame_start_sample2;
 		confidence2 = fsk_find_frame(fskp, samplebuf, expect_nsamples,
 			    try_first_sample,
 			    try_max_nsamples,
 			    try_step_nsamples,
 			    try_confidence_search_limit,
-			    expect_bits_string,
+			    carrier ? expect_data_string : expect_sync_string,
 			    &bits2,
 			    &amplitude2,
 			    &frame_start_sample2
@@ -1224,9 +1297,10 @@ main( int argc, char*argv[] )
 	 */
 
 	// chop off framing bits
-	unsigned int frame_bits_shift = bfsk_nstartbits;
-	unsigned int frame_bits_mask = (int)(1<<bfsk_n_data_bits) - 1;
-	bits = ( bits >> frame_bits_shift ) & frame_bits_mask;
+	bits = bit_window(bits, bfsk_nstartbits, bfsk_n_data_bits);
+	if (bfsk_msb_first) {
+		bits = bit_reverse(bits, bfsk_n_data_bits);
+	}
 
 	unsigned int dataout_size = 4096;
 	char dataoutbuf[4096];

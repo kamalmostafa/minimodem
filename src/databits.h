@@ -22,7 +22,7 @@ typedef int (databits_encoder)(
 
 typedef unsigned int (databits_decoder)(
 	char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits );
+	unsigned long long bits, unsigned int n_databits );
 
 
 int
@@ -30,7 +30,7 @@ databits_encode_ascii8( unsigned int *databits_outp, char char_out );
 
 unsigned int
 databits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits );
+	unsigned long long bits, unsigned int n_databits );
 
 
 #include "baudot.h"
@@ -40,7 +40,7 @@ databits_decode_ascii8( char *dataout_p, unsigned int dataout_size,
 
 unsigned int
 databits_decode_baudot( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits );
+	unsigned long long bits, unsigned int n_databits );
 
 
 int
@@ -48,11 +48,17 @@ databits_encode_binary( unsigned int *databits_outp, char char_out );
 
 unsigned int
 databits_decode_binary( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits );
+	unsigned long long bits, unsigned int n_databits );
 
 
 unsigned int
 databits_decode_callerid( char *dataout_p, unsigned int dataout_size,
-	unsigned int bits, unsigned int n_databits );
+	unsigned long long bits, unsigned int n_databits );
 
+unsigned int
+databits_decode_uic_ground( char *dataout_p, unsigned int dataout_size,
+	unsigned long long bits, unsigned int n_databits );
 
+unsigned int
+databits_decode_uic_train( char *dataout_p, unsigned int dataout_size,
+	unsigned long long bits, unsigned int n_databits );
