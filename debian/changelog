@@ -1,3 +1,13 @@
+minimodem (0.20-1) unstable; urgency=medium
+
+  * fix stereo input file crash (thanks goblin@github)
+  * fix man page URL (thanks David Aitcheson)
+  * fix caller-id for blocked info (thanks Billseph Gamesh)
+  * test harness update for automake >= 1.13
+  * debian/control housekeeping
+
+ -- Kamal Mostafa <kamal@whence.com>  Thu, 13 Nov 2014 10:31:57 -0800
+
 minimodem (0.19-1) unstable; urgency=low
 
   * minimodem new command line switch: -7 implements 7-bit ASCII
