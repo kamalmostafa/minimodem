@@ -3,10 +3,10 @@ Section: comm
 Priority: optional
 Maintainer: Kamal Mostafa <kamal@whence.com>
 Build-Depends: debhelper (>= 7.0.50~), libfftw3-dev, libpulse-dev, libasound2-dev [linux-any], libsndfile1-dev 
-Standards-Version: 3.9.4
+Standards-Version: 3.9.6
 Homepage: http://www.whence.com/minimodem
-Vcs-Git: git://git.whence.com/minimodem
-Vcs-Browser: http://git.whence.com/?p=minimodem;a=summary
+Vcs-Git: https://github.com/kamalmostafa/minimodem.git
+Vcs-Browser: https://github.com/kamalmostafa/minimodem
 
 Package: minimodem
 Architecture: any
