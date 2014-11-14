@@ -1262,6 +1262,8 @@ main( int argc, char*argv[] )
 
     } /* end of the main loop */
 
+    free(samplebuf);
+
     signal(SIGINT, SIG_DFL);
 
     if ( carrier ) {
