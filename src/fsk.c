@@ -269,6 +269,8 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 #if CONFIDENCE_ALGO == 5 || CONFIDENCE_ALGO == 6
 
     float total_bit_sig = 0.0, total_bit_noise = 0.0;
+    float avg_mark_sig = 0.0, avg_space_sig = 0.0;
+    unsigned int n_mark = 0, n_space = 0;
     for ( bitnum=0; bitnum<n_bits; bitnum++ ) {
 	// Deal with floating point data type quantization noise...
 	// If total_bit_noise <= FLT_EPSILON, then assume it to be 0.0,
@@ -276,6 +278,14 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	total_bit_sig   += bit_sig_mags[bitnum];
 	if ( bit_noise_mags[bitnum] > FLT_EPSILON )
 	    total_bit_noise += bit_noise_mags[bitnum];
+
+	if ( bit_values[bitnum] == 1 ) {
+	    avg_mark_sig += bit_sig_mags[bitnum];
+	    n_mark++;
+	} else {
+	    avg_space_sig += bit_sig_mags[bitnum];
+	    n_space++;
+	}
     }
 
     // Compute the "frame SNR"
@@ -284,12 +294,18 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     // Compute avg bit sig and noise magnitudes
     float avg_bit_sig   = total_bit_sig / n_bits;
 
+    // Compute separate avg bit sig for mark and space
+    if ( n_mark )
+	avg_mark_sig /= n_mark;
+    if ( n_space )
+	avg_space_sig /= n_space;
+
 #if CONFIDENCE_ALGO == 6
     // Compute average "divergence": bit_mag_divergence / other_bits_mag
     float divergence = 0.0;
     for ( bitnum=0; bitnum<n_bits; bitnum++ ) {
-	float avg_bit_sig_other = (total_bit_sig - fabs(bit_sig_mags[bitnum]))
-					/ (n_bits - 1);
+	float avg_bit_sig_other;
+	avg_bit_sig_other = bit_values[bitnum] ? avg_mark_sig : avg_space_sig;
 	divergence += fabs(bit_sig_mags[bitnum] - avg_bit_sig_other)
 					/ avg_bit_sig_other;
     }
