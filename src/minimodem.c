@@ -366,8 +366,7 @@ usage()
     "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
     "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
     "		callerid       Bell202 CID 1200 bps\n"
-    "	       uic-train       UIC-751-3 Train-to-ground 600 bps\n"
-    "	      uic-ground       UIC-751-3 Ground-to-train 600 bps\n"
+    "     uic{-train,-ground}       UIC-751-3 Train/Ground 600 bps\n"
     );
     exit(1);
 }
@@ -746,13 +745,13 @@ main( int argc, char*argv[] )
 	bfsk_databits_decode = databits_decode_callerid;
 	bfsk_data_rate = 1200;
 	bfsk_n_data_bits = 8;
-	} else if ( strncasecmp(modem_mode, "uic-train", 9) == 0 || strncasecmp(modem_mode, "uic-ground", 10) == 0 ) {
+    } else if ( strncasecmp(modem_mode, "uic", 3) == 0 ) {
 	if ( TX_mode ) {
 	    fprintf(stderr, "E: uic-751-3 --tx mode is not supported.\n");
 	    return 1;
 	}
 	// http://ec.europa.eu/transport/rail/interoperability/doc/ccs-tsi-en-annex.pdf
-	if (modem_mode[4] == 't' || modem_mode[4] == 'T')
+	if (tolower(modem_mode[4]) == 't')
 	    bfsk_databits_decode = databits_decode_uic_train;
 	else
 	    bfsk_databits_decode = databits_decode_uic_ground;
