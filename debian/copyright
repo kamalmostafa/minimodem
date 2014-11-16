@@ -7,6 +7,10 @@ Files: *
 Copyright: 2011-2014 Kamal Mostafa <kamal@whence.com>
 License: GPL-3.0+
 
+Files: src/*uic*
+Copyright: 2014 Marcos Vives Del Sol <socram8888@gmail.com>
+License: GPL-3.0+
+
 Files: debian/*
 Copyright: 2011-2014 Kamal Mostafa <kamal@whence.com>
 License: GPL-3.0+
