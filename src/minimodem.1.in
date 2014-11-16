@@ -74,6 +74,12 @@ default mark and space tone frequencies.
 .TP
 .B    callerid
 : Bell202 1200 bps Caller-ID (MDMF or SDMF) protocol
+.TP
+.B    uic-train
+: UIC-751-3 600 bps train-to-ground message protocol
+.TP
+.B    uic-ground
+: UIC-751-3 600 bps ground-to-train message protocol
 .SH OPTIONS
 .TP
 .B \-a, \-\-auto-carrier
