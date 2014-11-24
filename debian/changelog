@@ -1,3 +1,17 @@
+minimodem (0.21-1) unstable; urgency=medium
+
+  [ Marcos Vives Del Sol ]
+
+  * UIC-751-3 600 bps train message modes (uic-train, uic-ground)
+  * minimodem --invert-start-stop option inverts polarity of framing bits
+
+  [ Kamal Mostafa ]
+
+  * fsk confidence algo: calc separate divergences for mark and space bits
+    (improves signal demodulation)
+
+ -- Kamal Mostafa <kamal@whence.com>  Mon, 24 Nov 2014 08:28:06 -0800
+
 minimodem (0.20-1) unstable; urgency=medium
 
   * fix stereo input file crash (thanks goblin@github)
