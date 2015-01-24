@@ -497,7 +497,7 @@ main( int argc, char*argv[] )
 
     int c;
     int option_index;
-    
+
     enum {
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
 	MINIMODEM_OPT_MSBFIRST,
@@ -763,7 +763,40 @@ main( int argc, char*argv[] )
 	bfsk_nstopbits = 0;
 	expect_data_string = "11110010ddddddddddddddddddddddddddddddddddddddd";
 	expect_n_bits = 47;
-    } else {
+    }
+    else if( strncasecmp(modem_mode, "tdd", 3) == 0 ) {
+        // 3GPP spec / documentation on TTY/TDD
+        //https://github.com/paigeadele/nBaudot/raw/master/C.S0028-A_v1.0_121503.pdf
+
+        if(bfsk_data_rate == 0)
+            bfsk_data_rate = 45.45;
+
+        if(bfsk_mark_f == 0)
+            bfsk_mark_f = 1400;
+
+        if(bfsk_space_f == 0)
+            bfsk_space_f = 1800;
+
+        if( bfsk_nstartbits == 0 )
+            bfsk_nstartbits = 1;
+
+        bfsk_databits_decode = databits_decode_baudot;
+        bfsk_databits_encode = databits_encode_baudot;
+
+        if ( bfsk_n_data_bits == 0 )
+            bfsk_n_data_bits = 5;
+
+        if ( bfsk_nstopbits < 0 )
+        {
+            //TODO I read somewhere that TTY/TDD called for 1 and a half stop
+            //bits but I think its possible that was wrong, based on the
+            //documentation above which says that it is 1-2 stop bits,
+            //the examples later in the documentation I mentioned above seems
+            //to indicate 2 as well.
+            bfsk_nstopbits = 1.5;
+        }
+    }
+    else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
 	    bfsk_n_data_bits = 8;
