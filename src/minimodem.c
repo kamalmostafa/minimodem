@@ -364,6 +364,7 @@ usage()
     "		    1200       Bell202     1200 bps --ascii\n"
     "		     300       Bell103      300 bps --ascii\n"
     "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
+    "		    tdd        TTY/TDD    45.45 bps --baudot --startbits=1 --stopbits=1.5 -M 1400 -S 1800\n"
     "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
     "		callerid       Bell202 CID 1200 bps\n"
     "     uic{-train,-ground}       UIC-751-3 Train/Ground 600 bps\n"
@@ -788,11 +789,27 @@ main( int argc, char*argv[] )
 
         if ( bfsk_nstopbits < 0 )
         {
-            //TODO I read somewhere that TTY/TDD called for 1 and a half stop
-            //bits but I think its possible that was wrong, based on the
-            //documentation above which says that it is 1-2 stop bits,
-            //the examples later in the documentation I mentioned above seems
-            //to indicate 2 as well.
+            /*
+             * TODO
+             * I read somewhere that TTY/TDD called for 1 and a half stop
+             * bits but I think its possible that was wrong, based on the
+             * documentation above which says that it is 1-2 stop bits,
+             * the examples later in the documentation I mentioned above seems
+             * to indicate 2 as well.
+             *
+             * Furthermore, there is a mark hold tone, which extends the
+             * length of time the stop bit is transmitted following the last
+             * character from 150 ms to 300 ms. The mark hold tone is not
+             * transmitted if the character is immediately followed by
+             * another character. The mark hold tone prevents the
+             * transmitting TTY device from receiving its echo and mistaking
+             * it for an incoming character. This mechanism is effective
+             * for wireline calls but may not be sufficient to mitigate
+             * echo in wireless scenarios because of the longer delays.
+             * Refer to the TTY specification for a solution to mitigating
+             * echo in wireless networks.
+             *
+             */
             bfsk_nstopbits = 1.5;
         }
     }
