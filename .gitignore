@@ -5,3 +5,9 @@ Makefile
 /config.log
 /config.status
 /stamp-h1
+Makefile.in
+aclocal.m4
+configure
+src/Makefile.in
+tests/Makefile.in
+autom4te.cache/
