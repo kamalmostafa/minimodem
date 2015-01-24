@@ -808,7 +808,6 @@ main( int argc, char*argv[] )
              * echo in wireless scenarios because of the longer delays.
              * Refer to the TTY specification for a solution to mitigating
              * echo in wireless networks.
-             *
              */
             bfsk_nstopbits = 1.5;
         }
@@ -849,17 +848,30 @@ main( int argc, char*argv[] )
 	if ( band_width == 0 )
 	    band_width = 50;	// close enough
     } else {
-	/*
-	 * RTTY:     baud=45.45 mark/space=variable shift=-170
-	 */
-	autodetect_shift = 170;
-	if ( bfsk_mark_f == 0 )
-	    bfsk_mark_f  = 1585;
-	if ( bfsk_space_f == 0 )
-	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
-	if ( band_width == 0 ) {
-	    band_width = 10;	// FIXME chosen arbitrarily
-	}
+        /*
+         * RTTY:     baud=45.45 mark/space=variable shift=-170
+         */
+        if(strncasecmp(modem_mode, "tdd", 3) != 0)
+        {
+            autodetect_shift = 170;
+            if ( bfsk_mark_f == 0 )
+                bfsk_mark_f  = 1585;
+            if ( bfsk_space_f == 0 )
+                bfsk_space_f = bfsk_mark_f - autodetect_shift;
+
+            if ( band_width == 0 ) {
+                band_width = 10;	// FIXME chosen arbitrarily
+            }
+        }
+        else
+        {
+            // TODO shift isn't indicated by an actual frequency shift for
+            // TTY/TDD, rather these bits are sent:
+            // 11011 11011 Shift to figure
+            //11111 11111 Shift to letters
+            autodetect_shift = 0;
+            band_width = (band_width == 0) ? 45.45 : band_width;
+        }
     }
 
     // defaults: 1 start bit, 1 stop bit
