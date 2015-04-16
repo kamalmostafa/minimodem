@@ -31,6 +31,7 @@
 #include <assert.h>
 #include <signal.h>
 #include <sys/time.h>
+#include <sys/select.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -119,12 +120,12 @@ static void fsk_transmit_stdin(
 	int bfsk_msb_first,
 	unsigned int bfsk_do_tx_sync_bytes,
 	unsigned int bfsk_sync_byte,
-	databits_encoder encode
+	databits_encoder encode,
+	int txcarrier
 	)
 {
     size_t sample_rate = simpleaudio_get_rate(sa_out);
     size_t bit_nsamples = sample_rate / data_rate + 0.5;
-    int c;
 
     tx_sa_out = sa_out;
     tx_bfsk_mark_f = bfsk_mark_f;
@@ -141,44 +142,85 @@ static void fsk_transmit_stdin(
 	{0, 0}						// it_value
     };
 
-    if ( tx_interactive )
+    int block_input = !( tx_interactive && txcarrier );
+    if ( block_input )
 	signal(SIGALRM, tx_stop_transmit_sighandler);
 
+    // Set up for select() should we need it
+    int fd = fileno(stdin);
+    fd_set fdset;
+
     tx_transmitting = 0;
-    while ( (c = getchar()) != EOF )
+    int end_of_file = 0;
+    unsigned char buf;
+    int n_read = 0;
+    int idle = 0;
+    while ( !end_of_file )
     {
-	if ( tx_interactive )
+        FD_ZERO(&fdset);
+        FD_SET(fd, &fdset);
+        struct timeval tv_zero = { 0, 0 };
+        if( block_input || select(fd+1, &fdset, NULL, NULL, &tv_zero) )
+        {
+	    n_read = read(fd, &buf, sizeof(buf));
+	    if( n_read <= 0 ) //Includes EOF (0) and errors (-1)
+	    {
+		end_of_file = 1;
+		continue;     //Do nothing else
+	    }
+            idle = 0;
+        }
+	else
+	    idle = 1;
+
+	// Cause any running timer to immediately trigger
+	if ( block_input )
 	    setitimer(ITIMER_REAL, &itv_zero, NULL);
 
-	// fprintf(stderr, "<c=%d>", c);
-	unsigned int nwords;
-	unsigned int bits[2];
-	unsigned int j;
-	nwords = encode(bits, c);
-
-	if ( !tx_transmitting )
+	if( !idle )
 	{
-	    tx_transmitting = 1;
-	    /* emit leader tone (mark) */
-	    for ( j=0; j<tx_leader_bits_len; j++ )
-		simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f, bit_nsamples);
-	    /* emit "preamble" of sync bytes */
-	    for ( j=0; j<bfsk_do_tx_sync_bytes; j++ )
-		fsk_transmit_frame(sa_out, bfsk_sync_byte, n_data_bits,
+	    // fprintf(stderr, "<c=%d>", c);
+	    unsigned int nwords;
+	    unsigned int bits[2];
+	    unsigned int j;
+	    nwords = encode(bits, buf);
+
+	    if ( !tx_transmitting )
+	    {
+	        tx_transmitting = 1;
+                /* emit leader tone (mark) */
+                for ( j=0; j<tx_leader_bits_len; j++ )
+                    simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f, bit_nsamples);
+	    }
+	    if ( tx_transmitting < 2)
+	    {
+		tx_transmitting = 2;
+		/* emit "preamble" of sync bytes */
+		for ( j=0; j<bfsk_do_tx_sync_bytes; j++ )
+		    fsk_transmit_frame(sa_out, bfsk_sync_byte, n_data_bits,
 			    bit_nsamples, bfsk_mark_f, bfsk_space_f,
 			    bfsk_nstartbits, bfsk_nstopbits, invert_start_stop, 0);
+	    }
+
+	    /* emit data bits */
+	    for ( j=0; j<nwords; j++ )
+		fsk_transmit_frame(sa_out, bits[j], n_data_bits,
+			    bit_nsamples, bfsk_mark_f, bfsk_space_f,
+			    bfsk_nstartbits, bfsk_nstopbits, invert_start_stop, bfsk_msb_first);
+        }
+        else
+        {
+	    tx_transmitting = 1;
+	    unsigned int j;
+            /* emit idle tone (mark) */
+            for ( j=0; j<tx_leader_bits_len; j++ )
+                simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f, sample_rate/50);
 	}
 
-	/* emit data bits */
-	for ( j=0; j<nwords; j++ )
-	    fsk_transmit_frame(sa_out, bits[j], n_data_bits,
-			bit_nsamples, bfsk_mark_f, bfsk_space_f,
-			bfsk_nstartbits, bfsk_nstopbits, invert_start_stop, bfsk_msb_first);
-
-	if ( tx_interactive )
+	if ( block_input )
 	    setitimer(ITIMER_REAL, &itv, NULL);
     }
-    if ( tx_interactive ) {
+    if ( block_input ) {
 	setitimer(ITIMER_REAL, &itv_zero, NULL);
 	signal(SIGALRM, SIG_DFL);
     }
@@ -360,6 +402,7 @@ usage()
     "		    --binary-output\n"
     "		    --binary-raw {nbits}\n"
     "		    --print-filter\n"
+    "		    --tx-carrier\n"
     "		{baudmode}\n"
     "	    any_number_N       Bell-like      N bps --ascii\n"
     "		    1200       Bell202     1200 bps --ascii\n"
@@ -473,6 +516,8 @@ main( int argc, char*argv[] )
     unsigned int rx_one = 0;
     float rxnoise_factor = 0.0;
 
+    int txcarrier = 0;
+
     int output_mode_binary = 0;
     int output_mode_raw_nbits = 0;
 
@@ -515,6 +560,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_BINARY_RAW,
 	MINIMODEM_OPT_PRINT_FILTER,
 	MINIMODEM_OPT_XRXNOISE,
+	MINIMODEM_OPT_TXCARRIER
     };
 
     while ( 1 ) {
@@ -554,6 +600,7 @@ main( int argc, char*argv[] )
 	    { "binary-raw",	1, 0, MINIMODEM_OPT_BINARY_RAW },
 	    { "print-filter",	0, 0, MINIMODEM_OPT_PRINT_FILTER },
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
+	    { "tx-carrier",      0, 0, MINIMODEM_OPT_TXCARRIER },
 	    { 0 }
 	};
 	c = getopt_long(argc, argv, "Vtrc:l:ai875f:b:v:M:S:T:qA::R:",
@@ -681,6 +728,9 @@ main( int argc, char*argv[] )
 			break;
 	    case MINIMODEM_OPT_XRXNOISE:
 			rxnoise_factor = atof(optarg);
+			break;
+	    case MINIMODEM_OPT_TXCARRIER:
+			txcarrier = 1;
 			break;
 	    default:
 			usage();
@@ -887,7 +937,8 @@ main( int argc, char*argv[] )
 				bfsk_msb_first,
 				bfsk_do_tx_sync_bytes,
 				bfsk_sync_byte,
-				bfsk_databits_encode
+				bfsk_databits_encode,
+				txcarrier
 				);
 
 	simpleaudio_close(sa_out);

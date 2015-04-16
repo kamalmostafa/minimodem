@@ -187,6 +187,10 @@ Filter the received text output, replacing any "non-printable" bytes
 with a '.' character.
 (This option applies to \-\-rx mode only).
 .TP
+.B \-\-tx-carrier
+When transmitting from a blocking source, keep a carrier going while waiting
+for more data.
+.TP
 .B \-\-benchmarks
 Run and report internal performance tests (all other flags are ignored).
 .TP
