@@ -155,7 +155,7 @@ sa_alsa_open_stream(
 		channels,
 		rate,
 		1 /* soft_resample (allow) */,
-		(unsigned int)-1 /* latency (allow max to avoid underruns) */);
+		100000 /* latency (us) */);
     if (error) {
 	fprintf(stderr, "E: %s\n", snd_strerror(error));
 	snd_pcm_close(pcm);
