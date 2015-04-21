@@ -358,6 +358,7 @@ usage()
     "		    --rx-one\n"
     "		    --benchmarks\n"
     "		    --binary-output\n"
+    "		    --binary-raw {nbits}\n"
     "		    --print-filter\n"
     "		{baudmode}\n"
     "	    any_number_N       Bell-like      N bps --ascii\n"
@@ -473,6 +474,7 @@ main( int argc, char*argv[] )
     float rxnoise_factor = 0.0;
 
     int output_mode_binary = 0;
+    int output_mode_raw_nbits = 0;
 
     float	bfsk_data_rate = 0.0;
     databits_encoder	*bfsk_databits_encode;
@@ -510,6 +512,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_RX_ONE,
 	MINIMODEM_OPT_BENCHMARKS,
 	MINIMODEM_OPT_BINARY_OUTPUT,
+	MINIMODEM_OPT_BINARY_RAW,
 	MINIMODEM_OPT_PRINT_FILTER,
 	MINIMODEM_OPT_XRXNOISE,
     };
@@ -548,6 +551,7 @@ main( int argc, char*argv[] )
 	    { "rx-one",		0, 0, MINIMODEM_OPT_RX_ONE },
 	    { "benchmarks",	0, 0, MINIMODEM_OPT_BENCHMARKS },
 	    { "binary-output",	0, 0, MINIMODEM_OPT_BINARY_OUTPUT },
+	    { "binary-raw",	1, 0, MINIMODEM_OPT_BINARY_RAW },
 	    { "print-filter",	0, 0, MINIMODEM_OPT_PRINT_FILTER },
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { 0 }
@@ -669,6 +673,9 @@ main( int argc, char*argv[] )
 	    case MINIMODEM_OPT_BINARY_OUTPUT:
 			output_mode_binary = 1;
 			break;
+	    case MINIMODEM_OPT_BINARY_RAW:
+			output_mode_raw_nbits = atoi(optarg);
+			break;
 	    case MINIMODEM_OPT_PRINT_FILTER:
 			output_print_filter = 1;
 			break;
@@ -772,8 +779,14 @@ main( int argc, char*argv[] )
 	usage();
 
 
-    if ( output_mode_binary )
+    if ( output_mode_binary || output_mode_raw_nbits )
 	bfsk_databits_decode = databits_decode_binary;
+
+    if ( output_mode_raw_nbits ) {
+	bfsk_nstartbits = 0;
+	bfsk_nstopbits = 0;
+	bfsk_n_data_bits = output_mode_raw_nbits;
+    }
 
     if ( bfsk_data_rate >= 400 ) {
 	/*

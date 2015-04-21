@@ -173,6 +173,15 @@ The bits are printed in the order they are received.  Framing bits (start
 and stop bits) are omitted from the output.
 (This option applies to \-\-rx mode only).
 .TP
+.B \-\-binary-raw {nbits}
+Print all received bits (data bits and any framing bits) as raw binary output
+using characters '0' and '1'.  Framing bits are not interpreted, but simply
+passed through to the output.  The bits are printed in the order they are
+received, in lines {nbits} wide.  So in order to display a standard 8-N-1
+bitstream (8 databits + 1 start bit + 1 stop bit), use "--binary-raw 10"
+ or a multiple of 10.
+(This option applies to \-\-rx mode only).
+.TP
 .B \-\-print-filter
 Filter the received text output, replacing any "non-printable" bytes
 with a '.' character.
