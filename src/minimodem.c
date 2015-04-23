@@ -408,6 +408,7 @@ usage()
     "		    1200       Bell202     1200 bps --ascii\n"
     "		     300       Bell103      300 bps --ascii\n"
     "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
+    "		    tdd        TTY/TDD    45.45 bps --baudot --startbits=1 --stopbits=1.5 -M 1400 -S 1800\n"
     "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
     "		callerid       Bell202 CID 1200 bps\n"
     "     uic{-train,-ground}       UIC-751-3 Train/Ground 600 bps\n"
@@ -544,7 +545,7 @@ main( int argc, char*argv[] )
 
     int c;
     int option_index;
-    
+
     enum {
 	MINIMODEM_OPT_UNUSED=256,	// placeholder
 	MINIMODEM_OPT_MSBFIRST,
@@ -820,7 +821,55 @@ main( int argc, char*argv[] )
 	bfsk_nstopbits = 0;
 	expect_data_string = "11110010ddddddddddddddddddddddddddddddddddddddd";
 	expect_n_bits = 47;
-    } else {
+    }
+    else if( strncasecmp(modem_mode, "tdd", 3) == 0 ) {
+        // 3GPP spec / documentation on TTY/TDD
+        //https://github.com/paigeadele/nBaudot/raw/master/C.S0028-A_v1.0_121503.pdf
+
+        if(bfsk_data_rate == 0)
+            bfsk_data_rate = 45.45;
+
+        if(bfsk_mark_f == 0)
+            bfsk_mark_f = 1400;
+
+        if(bfsk_space_f == 0)
+            bfsk_space_f = 1800;
+
+        if( bfsk_nstartbits == 0 )
+            bfsk_nstartbits = 1;
+
+        bfsk_databits_decode = databits_decode_baudot;
+        bfsk_databits_encode = databits_encode_baudot;
+
+        if ( bfsk_n_data_bits == 0 )
+            bfsk_n_data_bits = 5;
+
+        if ( bfsk_nstopbits < 0 )
+        {
+            /*
+             * TODO
+             * I read somewhere that TTY/TDD called for 1 and a half stop
+             * bits but I think its possible that was wrong, based on the
+             * documentation above which says that it is 1-2 stop bits,
+             * the examples later in the documentation I mentioned above seems
+             * to indicate 2 as well.
+             *
+             * Furthermore, there is a mark hold tone, which extends the
+             * length of time the stop bit is transmitted following the last
+             * character from 150 ms to 300 ms. The mark hold tone is not
+             * transmitted if the character is immediately followed by
+             * another character. The mark hold tone prevents the
+             * transmitting TTY device from receiving its echo and mistaking
+             * it for an incoming character. This mechanism is effective
+             * for wireline calls but may not be sufficient to mitigate
+             * echo in wireless scenarios because of the longer delays.
+             * Refer to the TTY specification for a solution to mitigating
+             * echo in wireless networks.
+             */
+            bfsk_nstopbits = 1.5;
+        }
+    }
+    else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
 	    bfsk_n_data_bits = 8;
@@ -862,17 +911,30 @@ main( int argc, char*argv[] )
 	if ( band_width == 0 )
 	    band_width = 50;	// close enough
     } else {
-	/*
-	 * RTTY:     baud=45.45 mark/space=variable shift=-170
-	 */
-	autodetect_shift = 170;
-	if ( bfsk_mark_f == 0 )
-	    bfsk_mark_f  = 1585;
-	if ( bfsk_space_f == 0 )
-	    bfsk_space_f = bfsk_mark_f - autodetect_shift;
-	if ( band_width == 0 ) {
-	    band_width = 10;	// FIXME chosen arbitrarily
-	}
+        /*
+         * RTTY:     baud=45.45 mark/space=variable shift=-170
+         */
+        if(strncasecmp(modem_mode, "tdd", 3) != 0)
+        {
+            autodetect_shift = 170;
+            if ( bfsk_mark_f == 0 )
+                bfsk_mark_f  = 1585;
+            if ( bfsk_space_f == 0 )
+                bfsk_space_f = bfsk_mark_f - autodetect_shift;
+
+            if ( band_width == 0 ) {
+                band_width = 10;	// FIXME chosen arbitrarily
+            }
+        }
+        else
+        {
+            // TODO shift isn't indicated by an actual frequency shift for
+            // TTY/TDD, rather these bits are sent:
+            // 11011 11011 Shift to figure
+            //11111 11111 Shift to letters
+            autodetect_shift = 0;
+            band_width = (band_width == 0) ? 45.45 : band_width;
+        }
     }
 
     // defaults: 1 start bit, 1 stop bit
