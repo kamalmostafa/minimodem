@@ -20,7 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>	// fabs, hypotf
+#include <math.h>	// fabsf, hypotf
 #include <float.h>	// FLT_EPSILON
 #include <errno.h>
 #include <stdio.h>
@@ -49,7 +49,7 @@ fsk_plan_new(
 #ifdef USE_FFT
     fskp->band_width = filter_bw;
 
-    float fft_half_bw = fskp->band_width / 2.0;
+    float fft_half_bw = fskp->band_width / 2.0f;
     fskp->fftsize = (sample_rate + fft_half_bw) / fskp->band_width;
     fskp->nbands = fskp->fftsize / 2 + 1;
 
@@ -129,7 +129,7 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 
     memcpy(fskp->fftin, samples, bit_nsamples * sizeof(float));
 
-    float magscalar = 2.0 / (float)bit_nsamples;
+    float magscalar = 2.0f / (float)bit_nsamples;
 
 #if 0
     //// apodization window
@@ -148,7 +148,7 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
 	float zoff = 0.0; // 0.5  // FIXME which is it??
 	unsigned int z = bit_nsamples /* not -1  ... explain */;
 	float w = a0
-		- a1 * cos((2.0*M_PI*((float)i+zoff)) / z);
+		- a1 * cosf((2.0*M_PI*((float)i+zoff)) / z);
 	fskp->fftin[i] *= w;
     }
 #endif
@@ -180,7 +180,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	int n_bits, const char *expect_bits_string,
 	unsigned long long *bits_outp, float *ampl_outp )
 {
-    unsigned int bit_nsamples = (float)(samples_per_bit + 0.5);
+    unsigned int bit_nsamples = (float)(samples_per_bit + 0.5f);
 
     unsigned int	bit_values[64];
     float		bit_sig_mags[64];
@@ -201,7 +201,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	    continue;
 	assert( expect_bits[bitnum] == '1' || expect_bits[bitnum] == '0' );
 
-	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5);
+	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5f);
 	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
 		&bit_values[bitnum],
@@ -236,7 +236,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
      * diff between start bit and stop bit strength not be "large". */
     float s_mag = bit_sig_mags[1]; // start bit
     float p_mag = bit_sig_mags[n_bits-1]; // stop bit
-    if ( fabs(s_mag-p_mag) > (s_mag * FSK_AVOID_TRANSIENTS) ) {
+    if ( fabsf(s_mag-p_mag) > (s_mag * FSK_AVOID_TRANSIENTS) ) {
 	debug_log(" avoid transient\n");
 	return 0.0;
     }
@@ -246,7 +246,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     for ( bitnum=0; bitnum<n_bits; bitnum++ ) {
 	if ( expect_bits[bitnum] != 'd' )
 	    continue;
-	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5);
+	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5f);
 	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
 		&bit_values[bitnum],
@@ -306,7 +306,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     for ( bitnum=0; bitnum<n_bits; bitnum++ ) {
 	float avg_bit_sig_other;
 	avg_bit_sig_other = bit_values[bitnum] ? avg_mark_sig : avg_space_sig;
-	divergence += fabs(bit_sig_mags[bitnum] - avg_bit_sig_other)
+	divergence += fabsf(bit_sig_mags[bitnum] - avg_bit_sig_other)
 					/ avg_bit_sig_other;
     }
     divergence *= 2;
@@ -333,7 +333,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 
 #if CONFIDENCE_ALGO == 6
     // Frame confidence is the frame ( SNR * consistency )
-    confidence = snr * (1.0 - divergence);
+    confidence = snr * (1.0f - divergence);
 #else
     // Frame confidence is the frame SNR
     confidence = snr;
@@ -388,8 +388,8 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	else
 	    normalized_bit_str = bit_strengths[bitnum] - v_space;
 	debug_log("%.2f  ", normalized_bit_str);
-	// float divergence = fabs(1.0 - normalized_bit_str);
-	float divergence = fabs(normalized_bit_str);
+	// float divergence = fabsf(1.0 - normalized_bit_str);
+	float divergence = fabsf(normalized_bit_str);
 	if ( worst_divergence < divergence )
 	    worst_divergence = divergence;
     }
@@ -423,7 +423,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     for ( bitnum=0; bitnum<n_bits-1; bitnum++ )
     {
 	float normalized_bit_str = bit_strengths[bitnum] / v;
-	float divergence = fabs(1.0 - normalized_bit_str);
+	float divergence = fabsf(1.0 - normalized_bit_str);
 	if ( worst_divergence < divergence )
 	    worst_divergence = divergence;
     }
@@ -548,7 +548,7 @@ fsk_detect_carrier(fsk_plan *fskp, float *samples, unsigned int nsamples,
     bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
     memcpy(fskp->fftin, samples, nsamples * sizeof(float));
     fftwf_execute(fskp->fftplan);
-    float magscalar = 1.0 / ((float)nsamples/2.0);
+    float magscalar = 1.0f / ((float)nsamples/2.0f);
     float max_mag = 0.0;
     int max_mag_band = -1;
     int i = 1;	/* start detection at the first non-DC band */

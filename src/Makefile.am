@@ -17,7 +17,7 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-AM_CFLAGS = -Wall # -Werror
+AM_CFLAGS = -Wall # -Werror -Wdouble-promotion
 
 AM_CPPFLAGS = $(DEPS_CFLAGS)
 

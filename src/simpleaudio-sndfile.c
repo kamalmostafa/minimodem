@@ -61,12 +61,12 @@ sa_sndfile_read( simpleaudio *sa, void *buf, size_t nframes )
 	return -1;
     }
 
-    if ( sa->rxnoise != 0.0 ) {
+    if ( sa->rxnoise != 0.0f ) {
 	int i;
 	float *fbuf = buf;
 	float f = sa->rxnoise * 2;
 	for ( i=0; i<nframes; i++ )
-	    fbuf[i] += (drand48() - 0.5) * f;
+	    fbuf[i] += (rand()/RAND_MAX - 0.5f) * f;
     }
 
     // fprintf(stderr, "sf_read: nframes=%ld n=%d\n", nframes, n);

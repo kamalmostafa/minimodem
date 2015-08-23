@@ -125,7 +125,7 @@ static void fsk_transmit_stdin(
 	)
 {
     size_t sample_rate = simpleaudio_get_rate(sa_out);
-    size_t bit_nsamples = sample_rate / data_rate + 0.5;
+    size_t bit_nsamples = sample_rate / data_rate + 0.5f;
 
     tx_sa_out = sa_out;
     tx_bfsk_mark_f = bfsk_mark_f;
@@ -134,7 +134,7 @@ static void fsk_transmit_stdin(
     // one-shot
     struct itimerval itv = {
 	{0, 0},						// it_interval
-	{0, 1000000/(float)(data_rate+data_rate*0.03) }	// it_value
+	{0, 1000000/(float)(data_rate+data_rate*0.03f)}	// it_value
     };
 
     struct itimerval itv_zero = {
@@ -251,21 +251,21 @@ report_no_carrier( fsk_plan *fskp,
 		nbits_decoded * sample_rate / (float)carrier_nsamples;
     fprintf(stderr, "\n### NOCARRIER ndata=%u confidence=%.3f ampl=%.3f bps=%.2f",
 	    nframes_decoded,
-	    confidence_total / nframes_decoded,
-	    amplitude_total / nframes_decoded,
-	    throughput_rate);
+	    (double)(confidence_total / nframes_decoded),
+	    (double)(amplitude_total / nframes_decoded),
+	    (double)(throughput_rate));
 #if 0
     fprintf(stderr, " bits*sr=%llu rate*nsamp=%llu",
 	    (unsigned long long)(nbits_decoded * sample_rate + 0.5),
 	    (unsigned long long)(bfsk_data_rate * carrier_nsamples) );
 #endif
-    if ( (unsigned long long)(nbits_decoded * sample_rate + 0.5) == (unsigned long long)(bfsk_data_rate * carrier_nsamples) ) {
+    if ( (unsigned long long)(nbits_decoded * sample_rate + 0.5f) == (unsigned long long)(bfsk_data_rate * carrier_nsamples) ) {
 	fprintf(stderr, " (rate perfect) ###\n");
     } else {
 	float throughput_skew = (throughput_rate - bfsk_data_rate)
 			    / bfsk_data_rate;
 	fprintf(stderr, " (%.1f%% %s) ###\n",
-		fabs(throughput_skew) * 100.0,
+		(double)(fabsf(throughput_skew) * 100.0f),
 		signbit(throughput_skew) ? "slow" : "fast"
 		);
     }
@@ -444,7 +444,7 @@ build_expect_bits_string( char *expect_bits_string,
 	char start_bit_value = invert_start_stop ? '1' : '0';
 	char stop_bit_value = invert_start_stop ? '0' : '1';
 	int j = 0;
-	if ( bfsk_nstopbits != 0.0 )
+	if ( bfsk_nstopbits != 0.0f )
 	    expect_bits_string[j++] = stop_bit_value;
 	int i;
 	// Nb. only integer number of start bits works (for rx)
@@ -456,7 +456,7 @@ build_expect_bits_string( char *expect_bits_string,
 	    else
 		expect_bits_string[j] = 'd';
 	}
-	if ( bfsk_nstopbits != 0.0 )
+	if ( bfsk_nstopbits != 0.0f )
 	    expect_bits_string[j++] = stop_bit_value;
 	expect_bits_string[j] = 0;
 
@@ -660,7 +660,7 @@ main( int argc, char*argv[] )
 			    tx_amplitude = FLT_EPSILON;
 			else
 			    tx_amplitude = atof(optarg);
-			assert( tx_amplitude > 0.0 );
+			assert( tx_amplitude > 0.0f );
 			break;
 	    case 'M':
 			bfsk_mark_f = atof(optarg);
@@ -798,7 +798,7 @@ main( int argc, char*argv[] )
 	    fprintf(stderr, "E: callerid --tx mode is not supported.\n");
 	    return 1;
 	}
-	if ( carrier_autodetect_threshold > 0.0 )
+	if ( carrier_autodetect_threshold > 0.0f )
 	    fprintf(stderr, "W: callerid with --auto-carrier is not recommended.\n");
 	bfsk_databits_decode = databits_decode_callerid;
 	bfsk_data_rate = 1200;
@@ -826,7 +826,7 @@ main( int argc, char*argv[] )
 	if ( bfsk_n_data_bits == 0 )
 	    bfsk_n_data_bits = 8;
     }
-    if ( bfsk_data_rate == 0.0 )
+    if ( bfsk_data_rate == 0.0f )
 	usage();
 
 
@@ -964,7 +964,7 @@ main( int argc, char*argv[] )
 
     sample_rate = simpleaudio_get_rate(sa);
 
-    if ( rxnoise_factor != 0.0 )
+    if ( rxnoise_factor != 0.0f )
 	simpleaudio_set_rxnoise(sa, rxnoise_factor);
 
     /*
@@ -1035,19 +1035,19 @@ main( int argc, char*argv[] )
     // for encodings without start/stop bits:
     //     MUST be <= 0.5 or we may accidentally skip a bit
     //
-    assert( fsk_frame_overscan >= 0.0 && fsk_frame_overscan < 1.0 );
+    assert( fsk_frame_overscan >= 0.0f && fsk_frame_overscan < 1.0f );
 
     // ensure that we overscan at least a single sample
     unsigned int nsamples_overscan
-			= nsamples_per_bit * fsk_frame_overscan + 0.5;
-    if ( fsk_frame_overscan > 0.0 && nsamples_overscan == 0 )
+			= nsamples_per_bit * fsk_frame_overscan + 0.5f;
+    if ( fsk_frame_overscan > 0.0f && nsamples_overscan == 0 )
 	nsamples_overscan = 1;
     debug_log("fsk_frame_overscan=%f nsamples_overscan=%u\n",
 	    fsk_frame_overscan, nsamples_overscan);
 
     // n databits plus bfsk_startbit start bits plus bfsk_nstopbit stop bits:
     float frame_n_bits = bfsk_n_data_bits + bfsk_nstartbits + bfsk_nstopbits;
-    unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5;
+    unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5f;
 
     char expect_data_string_buffer[64];
     if (expect_data_string == NULL) {
@@ -1115,7 +1115,7 @@ main( int argc, char*argv[] )
 
 	/* Auto-detect carrier frequency */
 	static int carrier_band = -1;
-	if ( carrier_autodetect_threshold > 0.0 && carrier_band < 0 ) {
+	if ( carrier_autodetect_threshold > 0.0f && carrier_band < 0 ) {
 	    unsigned int i;
 	    float nsamples_per_scan = nsamples_per_bit;
 	    if ( nsamples_per_scan > fskp->fftsize )
@@ -1137,7 +1137,7 @@ main( int argc, char*argv[] )
 	    }
 
 	    // default negative shift -- reasonable?
-	    int b_shift = - (float)(autodetect_shift + fskp->band_width/2.0)
+	    int b_shift = - (float)(autodetect_shift + fskp->band_width/2.0f)
 						/ fskp->band_width;
 	    if ( bfsk_inverted_freqs )
 		b_shift *= -1;
@@ -1172,7 +1172,7 @@ main( int argc, char*argv[] )
 	// 2. allows us to track slightly slow signals
 	unsigned int try_max_nsamples;
 	if ( carrier )
-	    try_max_nsamples = nsamples_per_bit * 0.75 + 0.5;
+	    try_max_nsamples = nsamples_per_bit * 0.75f + 0.5f;
 	else
 	    try_max_nsamples = nsamples_per_bit;
 	try_max_nsamples += nsamples_overscan;
@@ -1212,7 +1212,7 @@ main( int argc, char*argv[] )
 
 	int do_refine_frame = 0;
 
-	if ( confidence < peak_confidence * 0.75 ) {
+	if ( confidence < peak_confidence * 0.75f ) {
 	    do_refine_frame = 1;
 	    debug_log(" ... do_refine_frame rescan (confidence %.3f << %.3f peak)\n", confidence, peak_confidence);
 	    peak_confidence = 0;
@@ -1220,7 +1220,7 @@ main( int argc, char*argv[] )
 
 	// no-confidence if amplitude drops abruptly to < 25% of the
 	// track_amplitude, which follows amplitude with hysteresis
-	if ( amplitude < track_amplitude * 0.25 ) {
+	if ( amplitude < track_amplitude * 0.25f ) {
 	    confidence = 0;
 	}
 
@@ -1273,12 +1273,12 @@ main( int argc, char*argv[] )
 	    if ( !quiet_mode ) {
 		if ( bfsk_data_rate >= 100 )
 		    fprintf(stderr, "### CARRIER %u @ %.1f Hz ",
-			    (unsigned int)(bfsk_data_rate + 0.5),
-			    fskp->b_mark * fskp->band_width);
+			    (unsigned int)(bfsk_data_rate + 0.5f),
+			    (double)(fskp->b_mark * fskp->band_width));
 		else
 		    fprintf(stderr, "### CARRIER %.2f @ %.1f Hz ",
-			    bfsk_data_rate,
-			    fskp->b_mark * fskp->band_width);
+			    (double)(bfsk_data_rate),
+			    (double)(fskp->b_mark * fskp->band_width));
 	    }
 
 	    if ( !quiet_mode )
@@ -1349,7 +1349,7 @@ main( int argc, char*argv[] )
 		    frame_start_sample, advance);
 
 	// chop off the prev_stop bit
-	if ( bfsk_nstopbits != 0.0 )
+	if ( bfsk_nstopbits != 0.0f )
 	    bits = bits >> 1;
 
 
