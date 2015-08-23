@@ -470,8 +470,8 @@ main( int argc, char*argv[] )
     int quiet_mode = 0;
     int output_print_filter = 0;
     float band_width = 0;
-    unsigned int bfsk_mark_f = 0;
-    unsigned int bfsk_space_f = 0;
+    float bfsk_mark_f = 0;
+    float bfsk_space_f = 0;
     unsigned int bfsk_inverted_freqs = 0;
     int bfsk_nstartbits = -1;
     float bfsk_nstopbits = -1;
@@ -662,11 +662,11 @@ main( int argc, char*argv[] )
 			assert( tx_amplitude > 0.0 );
 			break;
 	    case 'M':
-			bfsk_mark_f = atoi(optarg);
+			bfsk_mark_f = atof(optarg);
 			assert( bfsk_mark_f > 0 );
 			break;
 	    case 'S':
-			bfsk_space_f = atoi(optarg);
+			bfsk_space_f = atof(optarg);
 			assert( bfsk_space_f > 0 );
 			break;
 	    case MINIMODEM_OPT_STARTBITS:
