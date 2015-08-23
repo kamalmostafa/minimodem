@@ -1,3 +1,22 @@
+minimodem (0.22-1) unstable; urgency=medium
+
+  [ Kamal Mostafa ]
+
+  * minimodem --binary-raw {nbits}: raw binary bits output mode
+  * fix non-integer mark/space frequency handling
+  * eliminate all instances of implicit double-promotion
+
+  [Nick Moriarty ]
+
+  * minimodem --tx-carrier: output a carrier while waiting for data
+  * Fix ALSA latency (causing ALSA not to block).
+
+  [ Kevin Zheng ]
+
+  * Untrack automatically generated files
+
+ -- Kamal Mostafa <kamal@whence.com>  Sun, 23 Aug 2015 10:34:55 -0700
+
 minimodem (0.21-1) unstable; urgency=medium
 
   [ Marcos Vives Del Sol ]
