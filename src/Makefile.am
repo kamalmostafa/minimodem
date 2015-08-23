@@ -19,7 +19,7 @@
 
 AM_CFLAGS = -Wall # -Werror
 
-INCLUDES = $(DEPS_CFLAGS)
+AM_CPPFLAGS = $(DEPS_CFLAGS)
 
 
 bin_PROGRAMS = minimodem
