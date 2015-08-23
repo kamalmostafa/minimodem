@@ -290,7 +290,8 @@ benchmarks()
 
     int ret;
     ret = system("sed -n -e '/^model name/{p;q}' -e '/^cpu model/{p;q}' /proc/cpuinfo");
-    ret = ret;	// don't care, hush compiler.
+    if ( ret )
+	;	// don't care, hush compiler.
 
     fflush(stdout);
 
