@@ -1,3 +1,9 @@
+minimodem (0.22.1-1) unstable; urgency=medium
+
+  * Do not enable tx-carrier for non-interactive --file sessions
+
+ -- Kamal Mostafa <kamal@whence.com>  Mon, 24 Aug 2015 13:51:57 -0700
+
 minimodem (0.22-1) unstable; urgency=medium
 
   [ Kamal Mostafa ]
