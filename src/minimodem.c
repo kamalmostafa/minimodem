@@ -142,7 +142,7 @@ static void fsk_transmit_stdin(
 	{0, 0}						// it_value
     };
 
-    int block_input = !( tx_interactive && txcarrier );
+    int block_input = tx_interactive && !txcarrier;
     if ( block_input )
 	signal(SIGALRM, tx_stop_transmit_sighandler);
 
