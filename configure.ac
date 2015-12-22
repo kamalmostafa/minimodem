@@ -27,61 +27,57 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CC
 # AC_PROG_RANLIB
 
+# Library Checks
+AC_SEARCH_LIBS([lroundf], [m])
 
-# Configure dependency libs
-
-AC_CHECK_LIB([m],[lroundf])
-
-#   fftw3f
-deps_packages+=" fftw3f"
+deps_packages="fftw3f"
 
 #   ALSA
-AC_ARG_WITH([alsa],
-    AS_HELP_STRING([--without-alsa], [build without ALSA support]))
-AS_IF([test "x$with_alsa" == "xno"],
-        # then
-	use_alsa=0,
-	# else
-	use_alsa=1
-	deps_packages+=" alsa")
-AC_DEFINE_UNQUOTED(USE_ALSA, $use_alsa,
-	[Define to 1 to enable ALSA support])
+AC_ARG_WITH([alsa], [AS_HELP_STRING([--without-alsa],
+            [build without ALSA support])])
+AS_IF([test "x$with_alsa" == "xno"], [
+    use_alsa=0
+], [
+    use_alsa=1
+    deps_packages="$deps_packages alsa"
+])
+AC_DEFINE_UNQUOTED([USE_ALSA], [$use_alsa],
+                   [Define to 1 to enable ALSA support])
 
 #   pulseaudio
-AC_ARG_WITH([pulseaudio],
-    AS_HELP_STRING([--without-pulseaudio], [build without pulseaudio support]))
-AS_IF([test "x$with_pulseaudio" == "xno"],
-        # then
-	use_pulseaudio=0,
-	# else
+AC_ARG_WITH([pulseaudio], AS_HELP_STRING([--without-pulseaudio],
+            [build without pulseaudio support]))
+AS_IF([test "x$with_pulseaudio" == "xno"], [
+	use_pulseaudio=0
+], [
 	use_pulseaudio=1
-	deps_packages+=" libpulse-simple")
-AC_DEFINE_UNQUOTED(USE_PULSEAUDIO, $use_pulseaudio,
-	[Define to 1 to enable pulseaudio support])
+	deps_packages="$deps_packages libpulse-simple"
+])
+AC_DEFINE_UNQUOTED([USE_PULSEAUDIO], [$use_pulseaudio],
+                   [Define to 1 to enable pulseaudio support])
 
 #   sndfile
-AC_ARG_WITH([sndfile],
-    AS_HELP_STRING([--without-sndfile], [build without sndfile support]))
-AS_IF([test "x$with_sndfile" == "xno"],
-        # then
-	use_sndfile=0,
-	# else
-	use_sndfile=1
-	deps_packages+=" sndfile")
-AC_DEFINE_UNQUOTED(USE_SNDFILE, $use_sndfile,
-	[Define to 1 to enable sndfile support])
+AC_ARG_WITH([sndfile], AS_HELP_STRING([--without-sndfile],
+            [build without sndfile support]))
+AS_IF([test "x$with_sndfile" == "xno"], [
+	use_sndfile=0
+], [
+    use_sndfile=1
+	deps_packages="$deps_packages sndfile"
+])
+AC_DEFINE_UNQUOTED([USE_SNDFILE], [$use_sndfile],
+                   [Define to 1 to enable sndfile support])
 
 #   benchmarks
-AC_ARG_WITH([benchmarks],
-    AS_HELP_STRING([--disable-benchmarks], [build without internal benchmarks]))
-AS_IF([test "x$with_benchmarks" == "xno"],
-        # then
-	use_benchmarks=0,
-	# else
-	use_benchmarks=1)
-AC_DEFINE_UNQUOTED(USE_BENCHMARKS, $use_benchmarks,
-	[Define to 1 to enable internal benchmarks])
-
+AC_ARG_WITH([benchmarks], AS_HELP_STRING([--disable-benchmarks],
+            [build without internal benchmarks]))
+AS_IF([test "x$with_benchmarks" == "xno"], [
+	use_benchmarks=0
+], [
+	use_benchmarks=1
+])
+AC_DEFINE_UNQUOTED([USE_BENCHMARKS], [$use_benchmarks],
+                   [Define to 1 to enable internal benchmarks])
 
 AC_MSG_RESULT([
 PKG_NAME PKG_VERSION configuration summary:
