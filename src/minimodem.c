@@ -409,6 +409,7 @@ usage()
     "		    1200       Bell202     1200 bps --ascii\n"
     "		     300       Bell103      300 bps --ascii\n"
     "		    rtty       RTTY       45.45 bps --baudot --stopbits=1.5\n"
+    "		     tdd       TTY/TDD    45.45 bps --baudot --stopbits=2.0\n"
     "		    same       NOAA SAME 520.83 bps --sync-byte=0xAB ...\n"
     "		callerid       Bell202 CID 1200 bps\n"
     "     uic{-train,-ground}       UIC-751-3 Train/Ground 600 bps\n"
@@ -781,6 +782,16 @@ main( int argc, char*argv[] )
 	    bfsk_n_data_bits = 5;
 	if ( bfsk_nstopbits < 0 )
 	    bfsk_nstopbits = 1.5;
+    } else if ( strncasecmp(modem_mode, "tdd",3)==0 ) {
+	bfsk_databits_decode = databits_decode_baudot;
+	bfsk_databits_encode = databits_encode_baudot;
+	bfsk_data_rate = 45.45;
+	if ( bfsk_n_data_bits == 0 )
+	    bfsk_n_data_bits = 5;
+	if ( bfsk_nstopbits < 0 )
+	    bfsk_nstopbits = 2.0;
+	bfsk_mark_f = 1400;
+	bfsk_space_f = 1800;
     } else if ( strncasecmp(modem_mode, "same",5)==0 ) {
 	// http://www.nws.noaa.gov/nwr/nwrsame.htm
 	bfsk_data_rate = 520.0 + 5/6.0;
