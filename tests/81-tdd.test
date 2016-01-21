@@ -1,0 +1,1 @@
+exec ./self-test testdata-baudot.txt tdd
