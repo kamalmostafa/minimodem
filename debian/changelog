@@ -1,3 +1,11 @@
+minimodem (0.23-1) unstable; urgency=medium
+
+  [ Rodrigo Menezes ]
+
+  * TTY/TDD support
+
+ -- Kamal Mostafa <kamal@whence.com>  Fri, 19 Feb 2016 13:05:07 -0800
+
 minimodem (0.22.1-1) unstable; urgency=medium
 
   * Do not enable tx-carrier for non-interactive --file sessions
