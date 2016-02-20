@@ -782,7 +782,7 @@ main( int argc, char*argv[] )
 	    bfsk_n_data_bits = 5;
 	if ( bfsk_nstopbits < 0 )
 	    bfsk_nstopbits = 1.5;
-    } else if ( strncasecmp(modem_mode, "tdd",3)==0 ) {
+    } else if ( strncasecmp(modem_mode, "tdd",4)==0 ) {
 	bfsk_databits_decode = databits_decode_baudot;
 	bfsk_databits_encode = databits_encode_baudot;
 	bfsk_data_rate = 45.45;
