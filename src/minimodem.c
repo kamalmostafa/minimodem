@@ -1374,7 +1374,7 @@ main( int argc, char*argv[] )
 	if (bfsk_msb_first) {
 		bits = bit_reverse(bits, bfsk_n_data_bits);
 	}
-	debug_log("Input: %08x%08x - Databits: %i - Shift: %i\n", (unsigned int)(bits >> 32), (unsigned int)bits, bfsk_n_data_bits, bfsk_nstartbits);
+	debug_log("Input: %08x%08x - Databits: %u - Shift: %i\n", (unsigned int)(bits >> 32), (unsigned int)bits, bfsk_n_data_bits, bfsk_nstartbits);
 
 	unsigned int dataout_size = 4096;
 	char dataoutbuf[4096];
