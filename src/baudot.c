@@ -194,7 +194,7 @@ baudot_encode_table[0x60][2] = {
  * 1 LTRS state
  * 2 FIGS state
  */
-static int baudot_charset = 0;		// FIXME
+static unsigned int baudot_charset = 0;		// FIXME
 
 
 void
