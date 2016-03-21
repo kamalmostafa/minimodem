@@ -265,7 +265,7 @@ baudot_encode( unsigned int *databits_outp, char char_out )
 
     unsigned char charset_mask = baudot_encode_table[ind][1];
 
-    debug_log("I: (baudot_charset==%u)   input character '%c' 0x%02x charset_mask=%u\n", baudot_charset, char_out, char_out, charset_mask);
+    debug_log("I: (baudot_charset==%d)   input character '%c' 0x%02x charset_mask=%u\n", baudot_charset, char_out, char_out, charset_mask);
 
     if ( (baudot_charset & charset_mask ) == 0 ) {
 	if ( charset_mask == 0 ) {
@@ -292,7 +292,7 @@ baudot_encode( unsigned int *databits_outp, char char_out )
     if ( !( baudot_charset == 1 || baudot_charset == 2 ) ) {
 	fprintf(stderr, "E: baudot input character failed '%c' 0x%02x\n",
 		char_out, char_out);
-	fprintf(stderr, "E: baudot_charset==%u\n", baudot_charset);
+	fprintf(stderr, "E: baudot_charset==%d\n", baudot_charset);
 	assert(0);
     }
 
