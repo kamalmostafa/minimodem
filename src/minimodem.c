@@ -1111,7 +1111,7 @@ main( int argc, char*argv[] )
 	    assert ( samples_nvalid + read_nsamples <= samplebuf_size );
 	    ssize_t r;
 	    r = simpleaudio_read(sa, samples_readptr, read_nsamples);
-	    debug_log("simpleaudio_read(samplebuf+%zd, n=%zu) returns %zd\n",
+	    debug_log("simpleaudio_read(samplebuf+%td, n=%zu) returns %zd\n",
 		    samples_readptr - samplebuf, read_nsamples, r);
 	    if ( r < 0 ) {
 		fprintf(stderr, "simpleaudio_read: error\n");
