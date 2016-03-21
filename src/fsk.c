@@ -481,7 +481,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 	if ( t < 0 )
 	    continue;
 
-	float c, ampl_out;
+	float c, ampl_out = 0.0;
 	unsigned long long bits_out = 0;
 	debug_log("try fsk_frame_analyze at t=%d\n", t);
 	c = fsk_frame_analyze(fskp, samples+t, samples_per_bit,
