@@ -62,7 +62,7 @@ fsk_plan_new(
 	errno = EINVAL;
 	return NULL;
     }
-    debug_log("### b_mark=%u b_space=%u fftsize=%u\n",
+    debug_log("### b_mark=%u b_space=%u fftsize=%d\n",
 	    fskp->b_mark, fskp->b_space, fskp->fftsize);
 
 
@@ -202,7 +202,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	assert( expect_bits[bitnum] == '1' || expect_bits[bitnum] == '0' );
 
 	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5f);
-	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
+	debug_log( " bit# %2d @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
 		&bit_values[bitnum],
 		&bit_sig_mags[bitnum],
@@ -247,7 +247,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
 	if ( expect_bits[bitnum] != 'd' )
 	    continue;
 	bit_begin_sample = (float)(samples_per_bit * bitnum + 0.5f);
-	debug_log( " bit# %2u @ %7u: ", bitnum, bit_begin_sample);
+	debug_log( " bit# %2d @ %7u: ", bitnum, bit_begin_sample);
 	fsk_bit_analyze(fskp, samples+bit_begin_sample, bit_nsamples,
 		&bit_values[bitnum],
 		&bit_sig_mags[bitnum],
@@ -440,7 +440,7 @@ fsk_frame_analyze( fsk_plan *fskp, float *samples, float samples_per_bit,
     for ( bitnum=0; bitnum<n_bits; bitnum++ )
 	*bits_outp |= (unsigned long long) bit_values[bitnum] << bitnum;
 
-    debug_log("    frame algo=%u confidence=%f ampl=%f\n",
+    debug_log("    frame algo=%d confidence=%f ampl=%f\n",
 	    CONFIDENCE_ALGO, confidence, *ampl_outp);
     return confidence;
 }
@@ -526,7 +526,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     debug_log("FSK_FRAME bits='");
     for ( j=0; j<expect_n_bits; j++ )
 	debug_log("%c", ( ( *bits_outp >> j ) & 1 ) ? '1' : '0' );
-    debug_log("' datum='%c' (0x%02x)   c=%f  a=%f  t=%d\n",
+    debug_log("' datum='%c' (0x%02x)   c=%f  a=%f  t=%u\n",
 	    isprint(bitchar)||isspace(bitchar) ? bitchar : '.',
 	    bitchar,
 	    confidence, best_a, best_t);
