@@ -474,7 +474,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
     int j;
     for ( j=0; ; j++ )
     {
-	int up = j%2 ? 1 : -1;
+	int up = ( j % 2 ) ? 1 : -1;
 	int t = try_first_sample + up*((j+1)/2)*try_step_nsamples;
 	if ( t >= (int)try_max_nsamples )
 	    break;
@@ -525,7 +525,7 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 
     debug_log("FSK_FRAME bits='");
     for ( j=0; j<expect_n_bits; j++ )
-	debug_log("%c", ( *bits_outp >> j ) & 1 ? '1' : '0' );
+	debug_log("%c", ( ( *bits_outp >> j ) & 1 ) ? '1' : '0' );
     debug_log("' datum='%c' (0x%02x)   c=%f  a=%f  t=%d\n",
 	    isprint(bitchar)||isspace(bitchar) ? bitchar : '.',
 	    bitchar,
