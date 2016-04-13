@@ -142,6 +142,9 @@ static void fsk_transmit_stdin(
 	{0, 0}						// it_value
     };
 
+    // arbitrary chosen timeout value: 1/25 of a second
+    unsigned int idle_carrier_usec = (1000000/25);
+
     int block_input = tx_interactive && !txcarrier;
     if ( block_input )
 	signal(SIGALRM, tx_stop_transmit_sighandler);
@@ -211,10 +214,10 @@ static void fsk_transmit_stdin(
         else
         {
 	    tx_transmitting = 1;
-	    unsigned int j;
             /* emit idle tone (mark) */
-            for ( j=0; j<tx_leader_bits_len; j++ )
-                simpleaudio_tone(sa_out, invert_start_stop ? bfsk_space_f : bfsk_mark_f, sample_rate/50);
+	    simpleaudio_tone(sa_out,
+		    invert_start_stop ? bfsk_space_f : bfsk_mark_f,
+		    idle_carrier_usec * sample_rate / 1000000);
 	}
 
 	if ( block_input )
