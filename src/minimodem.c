@@ -163,6 +163,14 @@ static void fsk_transmit_stdin(
         FD_ZERO(&fdset);
         FD_SET(fd, &fdset);
         struct timeval tv_idletimeout = { 0, 0 };
+
+	if ( !tx_interactive ) {
+	    // When stdin blocks we "emit idle tone", for a duration of
+	    // idle_carrier_usec.  If !tx_interactive (i.e. writing to an
+	    // audio file) make the select timeout the same duration.
+	    tv_idletimeout.tv_usec = idle_carrier_usec;
+	}
+
         if( block_input || select(fd+1, &fdset, NULL, NULL, &tv_idletimeout) )
         {
 	    n_read = read(fd, &buf, sizeof(buf));
