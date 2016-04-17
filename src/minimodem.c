@@ -52,6 +52,7 @@ int		tx_trailer_bits_len = 2;
 simpleaudio	*tx_sa_out;
 float		tx_bfsk_mark_f;
 unsigned int	tx_bit_nsamples;
+unsigned int	tx_flush_nsamples;
 
 void
 tx_stop_transmit_sighandler( int sig )
@@ -62,9 +63,8 @@ tx_stop_transmit_sighandler( int sig )
     for ( j=0; j<tx_trailer_bits_len; j++ )
 	simpleaudio_tone(tx_sa_out, tx_bfsk_mark_f, tx_bit_nsamples);
 
-    // 0.5 sec of zero samples to flush - FIXME lame
-    size_t sample_rate = simpleaudio_get_rate(tx_sa_out);
-    simpleaudio_tone(tx_sa_out, 0, sample_rate/2);
+    if ( tx_flush_nsamples )
+	simpleaudio_tone(tx_sa_out, 0, tx_flush_nsamples);
 
     tx_transmitting = 0;
 }
@@ -130,6 +130,10 @@ static void fsk_transmit_stdin(
     tx_sa_out = sa_out;
     tx_bfsk_mark_f = bfsk_mark_f;
     tx_bit_nsamples = bit_nsamples;
+    if ( tx_interactive )
+	tx_flush_nsamples = sample_rate/2; // 0.5 sec of zero samples to flush
+    else
+	tx_flush_nsamples = 0;
 
     // one-shot
     struct itimerval itv = {
