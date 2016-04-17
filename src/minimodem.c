@@ -162,8 +162,8 @@ static void fsk_transmit_stdin(
     {
         FD_ZERO(&fdset);
         FD_SET(fd, &fdset);
-        struct timeval tv_zero = { 0, 0 };
-        if( block_input || select(fd+1, &fdset, NULL, NULL, &tv_zero) )
+        struct timeval tv_idletimeout = { 0, 0 };
+        if( block_input || select(fd+1, &fdset, NULL, NULL, &tv_idletimeout) )
         {
 	    n_read = read(fd, &buf, sizeof(buf));
 	    if( n_read <= 0 ) //Includes EOF (0) and errors (-1)
