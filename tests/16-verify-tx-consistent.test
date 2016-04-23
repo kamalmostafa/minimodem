@@ -1,0 +1,54 @@
+#!/bin/bash
+
+MINIMODEM="${MINIMODEM-./minimodem}"
+[ -f "$MINIMODEM" ] || {
+    MINIMODEM="../src/minimodem"
+    [ -f "$MINIMODEM" ] || {
+	echo "E: cannot find minimodem in ./ or ../src/" 1>&2
+	exit 1
+    }
+}
+
+minimodem_tx_args="1200 $1"
+
+textfile="testdata-ascii.txt"
+
+TMPF="/tmp/minimodem-test-$$"
+trap "rm -f $TMPF.*" 0
+
+set -e
+
+$MINIMODEM --tx --file $TMPF.1.wav $minimodem_tx_args < "$textfile"
+sum1=$(md5sum -b < $TMPF.1.wav)
+echo "$sum1 $TMPF.1.wav"
+
+sleep 1
+
+$MINIMODEM --tx --file $TMPF.2.wav $minimodem_tx_args < "$textfile"
+sum2=$(md5sum -b < $TMPF.2.wav)
+echo "$sum2 $TMPF.2.wav"
+
+sleep 1
+
+$MINIMODEM --tx --file $TMPF.3.wav $minimodem_tx_args < "$textfile"
+sum3=$(md5sum -b < $TMPF.3.wav)
+echo "$sum3 $TMPF.3.wav"
+
+[ "$sum1" == "$sum2" ] || {
+    echo -e "TX-NOT-CONSISTENT"
+    exit 1
+}
+
+[ "$sum1" == "$sum3" ] || {
+    echo -e "TX-NOT-CONSISTENT"
+    exit 1
+}
+
+stats="$sum1"
+
+result="OK     "
+exitcode=0
+
+echo -e "$result $stats"
+
+exit $exitcode
