@@ -200,6 +200,15 @@ sa_sndfile_open_stream(
         return 0;
     }
 
+    // Disable the insertion of this questionable "PEAK chunk" header thing.
+    // Relates only to writing SF_FORMAT_FLOAT .wav and .aiff files
+    // (minimodem --tx --float-samples).  When left enabled, this adds some
+    // wonky bytes to the header which change from run to run (different every
+    // wall-clock second.  WTF?
+    // http://www.mega-nerd.com/libsndfile/command.html#SFC_SET_ADD_PEAK_CHUNK
+    /* Turn off the PEAK chunk. */
+    sf_command(s, SFC_SET_ADD_PEAK_CHUNK, NULL, SF_FALSE);
+
     /* good or bad to override these? */
     sa->rate = sfinfo.samplerate;
     sa->channels = sfinfo.channels;
