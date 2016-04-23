@@ -1,3 +1,21 @@
+minimodem (0.24-1) unstable; urgency=medium
+
+  [ Chris Osborn ]
+
+  * Limit carrier/idle generation for input with delays
+
+  [ Kamal Mostafa ]
+
+  * Fix --tx float consistency: disable .wav "PEAK chunk" header
+  * Do not emit 0.5 sec flush for audio file output
+  * debian: bump standards-version=3.9.7 and debhelper-compat-version=9
+
+  [ Colin Ian King ]
+
+  * multiple static analysis and warnings fixes
+
+ -- Kamal Mostafa <kamal@whence.com>  Sat, 23 Apr 2016 10:35:44 -0700
+
 minimodem (0.23-1) unstable; urgency=medium
 
   [ Rodrigo Menezes ]
