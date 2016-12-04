@@ -46,6 +46,7 @@
 char *program_name = "";
 
 int		tx_transmitting = 0;
+int		tx_print_eot = 0;
 int		tx_leader_bits_len = 2;
 int		tx_trailer_bits_len = 2;
 
@@ -67,6 +68,8 @@ tx_stop_transmit_sighandler( int sig )
 	simpleaudio_tone(tx_sa_out, 0, tx_flush_nsamples);
 
     tx_transmitting = 0;
+    if ( tx_print_eot )
+	fprintf(stderr, "### EOT\n");
 }
 
 
@@ -418,6 +421,7 @@ usage()
     "		    --binary-output\n"
     "		    --binary-raw {nbits}\n"
     "		    --print-filter\n"
+    "		    --print-eot\n"
     "		    --tx-carrier\n"
     "		{baudmode}\n"
     "	    any_number_N       Bell-like      N bps --ascii\n"
@@ -577,6 +581,7 @@ main( int argc, char*argv[] )
 	MINIMODEM_OPT_BINARY_RAW,
 	MINIMODEM_OPT_PRINT_FILTER,
 	MINIMODEM_OPT_XRXNOISE,
+	MINIMODEM_OPT_PRINT_EOT,
 	MINIMODEM_OPT_TXCARRIER
     };
 
@@ -616,6 +621,7 @@ main( int argc, char*argv[] )
 	    { "binary-output",	0, 0, MINIMODEM_OPT_BINARY_OUTPUT },
 	    { "binary-raw",	1, 0, MINIMODEM_OPT_BINARY_RAW },
 	    { "print-filter",	0, 0, MINIMODEM_OPT_PRINT_FILTER },
+	    { "print-eot",	0, 0, MINIMODEM_OPT_PRINT_EOT },
 	    { "Xrxnoise",	1, 0, MINIMODEM_OPT_XRXNOISE },
 	    { "tx-carrier",      0, 0, MINIMODEM_OPT_TXCARRIER },
 	    { 0 }
@@ -748,6 +754,9 @@ main( int argc, char*argv[] )
 			break;
 	    case MINIMODEM_OPT_TXCARRIER:
 			txcarrier = 1;
+			break;
+	    case MINIMODEM_OPT_PRINT_EOT:
+			tx_print_eot = 1;
 			break;
 	    default:
 			usage();
