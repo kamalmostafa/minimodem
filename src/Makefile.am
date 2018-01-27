@@ -35,6 +35,7 @@ SIMPLEAUDIO_SRC = \
 	simple-tone-generator.c \
 	simpleaudio-pulse.c	\
 	simpleaudio-alsa.c	\
+	simpleaudio-sndio.c	\
 	simpleaudio-benchmark.c	\
 	simpleaudio-sndfile.c
 
