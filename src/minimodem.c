@@ -414,6 +414,7 @@ usage()
     "		    -R, --samplerate {rate}\n"
     "		    -V, --version\n"
     "		    -A, --alsa[=plughw:X,Y]\n"
+    "		    -s, --sndio[=device]\n"
     "		    --lut={tx_sin_table_len}\n"
     "		    --float-samples\n"
     "		    --rx-one\n"
@@ -550,10 +551,10 @@ main( int argc, char*argv[] )
     bfsk_databits_encode = databits_encode_ascii8;
 
     /* validate the default system audio mechanism */
-#if !(USE_PULSEAUDIO || USE_ALSA)
+#if !(USE_SNDIO || USE_PULSEAUDIO || USE_ALSA)
 # define _MINIMODEM_NO_SYSTEM_AUDIO
 # if !USE_SNDFILE
-#  error At least one of {USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE} must be enabled!
+#  error At least one of {USE_SNDIO,USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE} must be enabled!
 # endif
 #endif
 
@@ -613,6 +614,7 @@ main( int argc, char*argv[] )
 	    { "sync-byte",	1, 0, MINIMODEM_OPT_SYNC_BYTE },
 	    { "quiet",		0, 0, 'q' },
 	    { "alsa",		2, 0, 'A' },
+	    { "sndio",		2, 0, 's' },
 	    { "samplerate",	1, 0, 'R' },
 	    { "lut",		1, 0, MINIMODEM_OPT_LUT },
 	    { "float-samples",	0, 0, MINIMODEM_OPT_FLOAT_SAMPLES },
@@ -626,7 +628,7 @@ main( int argc, char*argv[] )
 	    { "tx-carrier",      0, 0, MINIMODEM_OPT_TXCARRIER },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:l:ai875f:b:v:M:S:T:qA::R:",
+	c = getopt_long(argc, argv, "Vtrc:l:ai875f:b:v:M:S:T:qs::A::R:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -724,6 +726,16 @@ main( int argc, char*argv[] )
 			    sa_backend_device = optarg;
 #else
 			fprintf(stderr, "E: This build of minimodem was configured without alsa support.\n");
+			exit(1);
+#endif
+			break;
+	    case 's':
+#if USE_SNDIO
+			sa_backend = SA_BACKEND_SNDIO;
+			if ( optarg )
+			    sa_backend_device = optarg;
+#else
+			fprintf(stderr, "E: This build of minimodem was configured without sndio support.\n");
 			exit(1);
 #endif
 			break;

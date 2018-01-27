@@ -80,7 +80,9 @@ simpleaudio_open_stream(
 #endif
 
 	case SA_BACKEND_SYSDEFAULT:
-#if USE_PULSEAUDIO
+#if USE_SNDIO
+	    sa->backend = &simpleaudio_backend_sndio;
+#elif USE_PULSEAUDIO
 	    sa->backend = &simpleaudio_backend_pulseaudio;
 #elif USE_ALSA
 	    sa->backend = &simpleaudio_backend_alsa;
@@ -99,6 +101,12 @@ simpleaudio_open_stream(
 #if USE_PULSEAUDIO
 	case SA_BACKEND_PULSEAUDIO:
 	    sa->backend = &simpleaudio_backend_pulseaudio;
+	    break;
+#endif
+
+#if USE_SNDIO
+	case SA_BACKEND_SNDIO:
+	    sa->backend = &simpleaudio_backend_sndio;
 	    break;
 #endif
 

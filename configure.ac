@@ -39,6 +39,19 @@ AS_IF([test "x$with_pulseaudio" == "xno"], [
 AC_DEFINE_UNQUOTED([USE_PULSEAUDIO], [$use_pulseaudio],
                    [Define to 1 to enable pulseaudio support])
 
+#   sndio
+AC_ARG_WITH([sndio], AS_HELP_STRING([--without-sndio],
+            [build without sndio support]))
+AS_IF([test "x$with_sndio" == "xno"], [
+    use_sndio=0
+], [
+    use_sndio=1
+    AC_LANG_PUSH(C)
+    AC_CHECK_LIB(sndio, sio_start)
+])
+AC_DEFINE_UNQUOTED([USE_SNDIO], [$use_sndio],
+                   [Define to 1 to enable sndio support])
+
 #   sndfile
 AC_ARG_WITH([sndfile], AS_HELP_STRING([--without-sndfile],
             [build without sndfile support]))
@@ -68,6 +81,7 @@ option summary:
     benchmarks     $with_benchmarks ($use_benchmarks)
     pulseaudio     $with_pulseaudio ($use_pulseaudio)
     sndfile        $with_sndfile ($use_sndfile)
+    sndio          $with_sndio ($use_sndio)
 ])
 
 # Checks for libraries.
