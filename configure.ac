@@ -18,7 +18,7 @@ deps_packages="fftw3f"
 #   ALSA
 AC_ARG_WITH([alsa], [AS_HELP_STRING([--without-alsa],
             [build without ALSA support])])
-AS_IF([test "x$with_alsa" == "xno"], [
+AS_IF([test "x$with_alsa" = "xno"], [
     use_alsa=0
 ], [
     use_alsa=1
@@ -30,7 +30,7 @@ AC_DEFINE_UNQUOTED([USE_ALSA], [$use_alsa],
 #   pulseaudio
 AC_ARG_WITH([pulseaudio], AS_HELP_STRING([--without-pulseaudio],
             [build without pulseaudio support]))
-AS_IF([test "x$with_pulseaudio" == "xno"], [
+AS_IF([test "x$with_pulseaudio" = "xno"], [
     use_pulseaudio=0
 ], [
     use_pulseaudio=1
@@ -42,7 +42,7 @@ AC_DEFINE_UNQUOTED([USE_PULSEAUDIO], [$use_pulseaudio],
 #   sndfile
 AC_ARG_WITH([sndfile], AS_HELP_STRING([--without-sndfile],
             [build without sndfile support]))
-AS_IF([test "x$with_sndfile" == "xno"], [
+AS_IF([test "x$with_sndfile" = "xno"], [
     use_sndfile=0
 ], [
     use_sndfile=1
@@ -54,7 +54,7 @@ AC_DEFINE_UNQUOTED([USE_SNDFILE], [$use_sndfile],
 #   benchmarks
 AC_ARG_WITH([benchmarks], AS_HELP_STRING([--disable-benchmarks],
             [build without internal benchmarks]))
-AS_IF([test "x$with_benchmarks" == "xno"], [
+AS_IF([test "x$with_benchmarks" = "xno"], [
     use_benchmarks=0
 ], [
     use_benchmarks=1
