@@ -42,7 +42,7 @@ AC_DEFINE_UNQUOTED([USE_PULSEAUDIO], [$use_pulseaudio],
 #   sndio
 AC_ARG_WITH([sndio], AS_HELP_STRING([--without-sndio],
             [build without sndio support]))
-AS_IF([test "x$with_sndio" == "xno"], [
+AS_IF([test "x$with_sndio" = "xno"], [
     use_sndio=0
 ], [
     use_sndio=1
