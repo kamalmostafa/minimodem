@@ -92,18 +92,21 @@ sa_sndio_open_stream(
 		par.bits = 16;
 		par.sig = 1;
 		par.le = SIO_LE_NATIVE;
-		par.rate = rate;
-		par.xrun = SIO_IGNORE;
-		if ( SA_STREAM_RECORD )
-		    par.rchan = channels;
-		else
-		    par.pchan = channels;
 		break;
+	// FIXME: Add support for SA_SAMPLE_FORMAT_FLOAT
         default:
 		assert(0);
     }
 
     par.bps = SIO_BPS(par.bits);
+    par.rate = rate;
+    par.xrun = SIO_IGNORE;
+
+    if ( SA_STREAM_RECORD )
+        par.rchan = channels;
+    else
+        par.pchan = channels;
+
     sio_setpar(hdl, &par);
     sio_start(hdl);
 
