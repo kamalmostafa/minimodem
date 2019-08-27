@@ -1,0 +1,15 @@
+language: c
+os:
+  - linux
+  - osx
+env:
+  - HOMEBREW_NO_INSTALL_CLEANUP=true
+install:
+  - if [ $TRAVIS_OS_NAME == 'linux' ]; then ./install-dependencies-linux.sh; fi
+  - if [ $TRAVIS_OS_NAME == 'osx' ]; then ./install-dependencies-macos.sh; fi
+script:
+  - autoreconf -i
+  - if [ $TRAVIS_OS_NAME == 'linux' ]; then ./configure; fi
+  - if [ $TRAVIS_OS_NAME == 'osx' ]; then ./configure --without-alsa --without-pulseaudio; fi
+  - make
+  - ./src/minimodem --benchmarks
