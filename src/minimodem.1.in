@@ -117,6 +117,13 @@ ASCII  8\-N\-1
 .B \-5, \-\-baudot
 Baudot 5\-N\-1.5
 .TP
+.B \-u, \-\-usos {0|1} (default: 1)
+Enable or disable USOS (UnShift on Space) for baudot. USOS is a
+convention whereby a SPACE also implies a switch to LETTERS character
+set.  This switch can be used to disable USOS so that streams not
+adhering to this convention can be decoded correctly (e.g. German
+DWD's RTTY maritime weather report and forecast).
+.TP
 .B \-f, \-\-file filename.wav
 encode or decode an audio file (extension sets audio format)
 .TP
