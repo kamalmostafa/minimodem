@@ -196,6 +196,11 @@ baudot_encode_table[0x60][2] = {
  */
 static unsigned int baudot_charset = 0;		// FIXME
 
+/*
+ * UnShift on space
+ */
+unsigned int baudot_usos = 1;
+
 
 void
 baudot_reset()
@@ -222,7 +227,7 @@ baudot_decode( char *char_outp, unsigned char databits )
     } else if ( databits == BAUDOT_LTRS ) {
 	baudot_charset = 1;
 	stuff_char = 0;
-    } else if ( databits == BAUDOT_SPACE ) {	/* RX un-shift on space */
+    } else if ( databits == BAUDOT_SPACE && baudot_usos ) {	/* RX un-shift on space */
 	baudot_charset = 1;
     }
     if ( stuff_char ) {
@@ -299,7 +304,7 @@ baudot_encode( unsigned int *databits_outp, char char_out )
     databits_outp[n++] = baudot_encode_table[ind][0];
 
     /* TX un-shift on space */
-    if ( char_out == ' ' )
+    if ( char_out == ' ' && baudot_usos )
 	baudot_charset = 1;
 
     return n;

@@ -42,6 +42,7 @@
 #include "simpleaudio.h"
 #include "fsk.h"
 #include "databits.h"
+#include "baudot.h"
 
 char *program_name = "";
 
@@ -401,6 +402,7 @@ usage()
     "		    -8, --ascii		ASCII  8-N-1\n"
     "		    -7,			ASCII  7-N-1\n"
     "		    -5, --baudot	Baudot 5-N-1\n"
+    "		    -u, --usos {0|1}\n"
     "		    -f, --file {filename.flac}\n"
     "		    -b, --bandwidth {rx_bandwidth}\n"
     "		    -v, --volume {amplitude or 'E'}\n"
@@ -602,6 +604,7 @@ main( int argc, char*argv[] )
 	    { "ascii",		0, 0, '8' },
 	    { "",		0, 0, '7' },
 	    { "baudot",		0, 0, '5' },
+	    { "usos",  		1, 0, 'u' },
 	    { "msb-first",	0, 0, MINIMODEM_OPT_MSBFIRST },
 	    { "file",		1, 0, 'f' },
 	    { "bandwidth",	1, 0, 'b' },
@@ -628,7 +631,7 @@ main( int argc, char*argv[] )
 	    { "tx-carrier",      0, 0, MINIMODEM_OPT_TXCARRIER },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:l:ai875f:b:v:M:S:T:qs::A::R:",
+	c = getopt_long(argc, argv, "Vtrc:l:ai875u:f:b:v:M:S:T:qs::A::R:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -671,6 +674,9 @@ main( int argc, char*argv[] )
 			bfsk_n_data_bits = 5;
 			bfsk_databits_decode = databits_decode_baudot;
 			bfsk_databits_encode = databits_encode_baudot;
+			break;
+	    case 'u':
+			baudot_usos = atoi(optarg);
 			break;
 	    case MINIMODEM_OPT_MSBFIRST:
 			bfsk_msb_first = 1;

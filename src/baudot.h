@@ -17,6 +17,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+extern int baudot_usos;
 
 void
 baudot_reset();
