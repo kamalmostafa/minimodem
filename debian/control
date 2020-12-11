@@ -2,7 +2,7 @@ Source: minimodem
 Section: comm
 Priority: optional
 Maintainer: Kamal Mostafa <kamal@whence.com>
-Build-Depends: debhelper (>= 9), libfftw3-dev, libpulse-dev, libasound2-dev [linux-any], libsndfile1-dev
+Build-Depends: debhelper (>= 9), libfftw3-dev, libpulse-dev, libasound2-dev [linux-any], libsndfile1-dev, libsndio-dev
 Standards-Version: 3.9.7
 Homepage: http://www.whence.com/minimodem
 Vcs-Git: https://github.com/kamalmostafa/minimodem.git
