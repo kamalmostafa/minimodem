@@ -4,7 +4,7 @@ Upstream-Contact: Kamal Mostafa <kamal@whence.com>
 Source: http://www.whence.com/minimodem
 
 Files: *
-Copyright: 2011-2016 Kamal Mostafa <kamal@whence.com>
+Copyright: 2011-2020 Kamal Mostafa <kamal@whence.com>
 License: GPL-3.0+
 
 Files: src/*uic*
@@ -12,7 +12,7 @@ Copyright: 2014 Marcos Vives Del Sol <socram8888@gmail.com>
 License: GPL-3.0+
 
 Files: debian/*
-Copyright: 2011-2016 Kamal Mostafa <kamal@whence.com>
+Copyright: 2011-2020 Kamal Mostafa <kamal@whence.com>
 License: GPL-3.0+
 
 License: GPL-3.0+
