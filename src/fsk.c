@@ -460,6 +460,8 @@ fsk_find_frame( fsk_plan *fskp, float *samples, unsigned int frame_nsamples,
 {
     int expect_n_bits = strlen(expect_bits_string);
 
+    assert( expect_n_bits <= 64 );	// protect fsk_frame_analyze()
+
     float samples_per_bit = (float)frame_nsamples / expect_n_bits;
 
     // try_step_nsamples = 1;	// pedantic TEST

@@ -39,6 +39,8 @@ bit_window(unsigned long long value,
 	unsigned int bits)
 {
 	unsigned long long mask = (1ULL << bits) - 1;
+	if ( mask == 0 )	// handle bits==64
+	    return (value >> offset);
 	value = (value >> offset) & mask;
 	return value;
 }

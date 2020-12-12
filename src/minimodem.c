@@ -935,6 +935,13 @@ main( int argc, char*argv[] )
     if ( bfsk_nstopbits < 0 )
 	bfsk_nstopbits = 1.0;
 
+    // n databits plus bfsk_startbit start bits plus bfsk_nstopbit stop bits:
+    unsigned int bfsk_frame_n_bits = bfsk_n_data_bits + bfsk_nstartbits + bfsk_nstopbits;
+    if ( bfsk_frame_n_bits > 64 ) {
+	fprintf(stderr, "E: total number of bits per frame must be <= 64.\n");
+	exit(1);
+    }
+
     // do not transmit any leader tone if no start bits
     if ( bfsk_nstartbits == 0 )
 	tx_leader_bits_len = 0;
@@ -1098,8 +1105,7 @@ main( int argc, char*argv[] )
     debug_log("fsk_frame_overscan=%f nsamples_overscan=%u\n",
 	    fsk_frame_overscan, nsamples_overscan);
 
-    // n databits plus bfsk_startbit start bits plus bfsk_nstopbit stop bits:
-    float frame_n_bits = bfsk_n_data_bits + bfsk_nstartbits + bfsk_nstopbits;
+    float frame_n_bits = bfsk_frame_n_bits;
     unsigned int frame_nsamples = nsamples_per_bit * frame_n_bits + 0.5f;
 
     char expect_data_string_buffer[64];
