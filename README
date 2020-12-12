@@ -1,6 +1,8 @@
 minimodem - general-purpose software audio FSK modem
 Copyright (C) 2011-2020 Kamal Mostafa <kamal@whence.com>
 
+http://www.whence.com/minimodem
+
 Minimodem is a command-line program which decodes (or generates) audio
 modem tones at any specified baud rate, using various framing protocols.
 It acts a general-purpose software FSK modem, and includes support for
