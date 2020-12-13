@@ -29,6 +29,7 @@
 #else
 # define USE_PULSEAUDIO 1
 # define USE_ALSA 1
+# define USE_SNDIO 1
 #endif
 
 simpleaudio *
@@ -80,12 +81,12 @@ simpleaudio_open_stream(
 #endif
 
 	case SA_BACKEND_SYSDEFAULT:
-#if USE_SNDIO
-	    sa->backend = &simpleaudio_backend_sndio;
-#elif USE_PULSEAUDIO
+#if USE_PULSEAUDIO
 	    sa->backend = &simpleaudio_backend_pulseaudio;
 #elif USE_ALSA
 	    sa->backend = &simpleaudio_backend_alsa;
+#elif USE_SNDIO
+	    sa->backend = &simpleaudio_backend_sndio;
 #else
 	    fprintf(stderr, "simpleaudio_open_stream: no SA_BACKEND_SYSDEFAULT was configured\n");
 	    goto err_out;
