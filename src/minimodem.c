@@ -874,6 +874,11 @@ main( int argc, char*argv[] )
 	bfsk_nstopbits = 0;
 	expect_data_string = "11110010ddddddddddddddddddddddddddddddddddddddd";
 	expect_n_bits = 47;
+    } else if ( strncasecmp(modem_mode, "V.21", 4) == 0 ) {
+	bfsk_data_rate = 300;
+	bfsk_mark_f = 980;
+	bfsk_space_f = 1180;
+	bfsk_n_data_bits = 8;
     } else {
 	bfsk_data_rate = atof(modem_mode);
 	if ( bfsk_n_data_bits == 0 )
@@ -906,7 +911,6 @@ main( int argc, char*argv[] )
     } else if ( bfsk_data_rate >= 100 ) {
 	/*
 	 * Bell 103:     baud=300 mark=1270 space=1070
-	 * ITU-T V.21:   baud=300 mark=1280 space=1080
 	 */
 	autodetect_shift = 200;
 	if ( bfsk_mark_f == 0 )

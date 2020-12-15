@@ -64,6 +64,9 @@ default mark and space tone frequencies.
 .B     300
 : Bell103 300 bps \-\-ascii
 .TP
+.B     V.21
+: ITU-T V.21 300 bps \-\-ascii (V.21 mark/space frequencies)
+.TP
 .B    rtty
 : RTTY 45.45 bps \-\-baudot \-\-stopbits 1.5
 .TP
