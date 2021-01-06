@@ -1,0 +1,35 @@
+name: test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu
+          - macos
+    runs-on: ${{ matrix.os }}-latest
+    env:
+      OS: ${{ matrix.os }}
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: install dependencies
+      run: 'if [[ "$OS" == "ubuntu" ]]; then ./install-dependencies-linux.sh; fi'
+    - name: install dependencies
+      run: 'if [[ "$OS" == "macos" ]]; then ./install-dependencies-macos.sh; fi'
+
+    - name: autoreconf
+      run: autoreconf -i
+    - name: ./configure
+      run: 'if [[ "$OS" == "ubuntu" ]]; then ./configure; fi'
+    - name: ./configure
+      run: 'if [[ "$OS" == "macos" ]]; then ./configure --without-alsa --without-pulseaudio --without-sndio; fi'
+    - name: make
+      run: make
+
+    - name: make check
+      run: make check
