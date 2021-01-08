@@ -1,0 +1,88 @@
+name: test and release binaries
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu
+          - macos
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v2
+
+    - name: install dependencies
+      if: ${{ matrix.os == 'ubuntu' }}
+      run: ./install-dependencies-linux.sh
+    - name: install dependencies
+      if: ${{ matrix.os == 'macos' }}
+      run: ./install-dependencies-macos.sh
+
+    - name: autoreconf
+      run: autoreconf -i
+    - name: ./configure
+      if: ${{ matrix.os == 'ubuntu' }}
+      run: ./configure
+    - name: ./configure
+      if: ${{ matrix.os == 'macos' }}
+      run: ./configure --without-alsa --without-pulseaudio --without-sndio
+    - name: make
+      run: make
+
+    - name: make check
+      run: make check
+
+    - name: ls src/minimodem
+      run: ls -lh src/minimodem
+    - name: upload binary
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.os }}-binary
+        path: src/minimodem
+
+  release:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: minimodem ${{ github.ref }}
+
+      - name: collect binaries from previous steps
+        uses: actions/download-artifact@v2
+      - name: tree
+        run: |
+          ls -lh ubuntu-binary/minimodem
+          ls -lh macos-binary/minimodem
+
+      - name: add ubuntu binary to release
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ubuntu-binary/minimodem
+          asset_name: minimodem-ubuntu
+          asset_content_type: application/octet-stream
+      - name: add macos binary to release
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: macos-binary/minimodem
+          asset_name: minimodem-macos
+          asset_content_type: application/octet-stream
