@@ -1206,6 +1206,7 @@ main( int argc, char*argv[] )
 		b_shift *= -1;
 	    /* only accept a carrier as b_mark if it will not result
 	     * in a b_space band which is "too low". */
+
 	    int b_space = carrier_band + b_shift;
 	    if ( b_space < 1 || b_space >= fskp->nbands ) {
 		debug_log("autodetected space band out of range\n" );
@@ -1337,11 +1338,21 @@ main( int argc, char*argv[] )
 		if ( bfsk_data_rate >= 100 )
 		    fprintf(stderr, "### CARRIER %u @ %.1f Hz ",
 			    (unsigned int)(bfsk_data_rate + 0.5f),
+#ifdef USE_FFT
 			    (double)(fskp->b_mark * fskp->band_width));
+#endif
+#ifdef USE_GOERTZEL
+			    (double)(fskp->f_mark));
+#endif
 		else
 		    fprintf(stderr, "### CARRIER %.2f @ %.1f Hz ",
 			    (double)(bfsk_data_rate),
+#ifdef USE_FFT
 			    (double)(fskp->b_mark * fskp->band_width));
+#endif
+#ifdef USE_GOERTZEL
+			    (double)(fskp->f_mark));
+#endif
 	    }
 
 	    if ( !quiet_mode )
