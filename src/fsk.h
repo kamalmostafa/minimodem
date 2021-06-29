@@ -19,7 +19,8 @@
 
 
 
-#define USE_FFT		// leave this enabled; its presently the only choice
+//#define USE_FFT		// leave this enabled; its presently the only choice
+#define USE_GOERTZEL
 
 #ifdef USE_FFT
 #include <fftw3.h>
@@ -43,6 +44,14 @@ struct fsk_plan {
 	float		*fftin;
 	fftwf_complex	*fftout;
 #endif
+
+#ifdef USE_GOERTZEL
+	unsigned int	nbands;
+	float		band_width;
+	int		fftsize;
+	float		*fftin;
+#endif
+
 };
 
 
