@@ -30,6 +30,26 @@
 #include "fsk.h"
 
 
+float goertzelFilter(float * const input, int length, float fs)
+{
+    float omega = 2 * M_PI * fs;
+    float cr = cos(omega);
+    float coeff = 2 * cr;
+
+    float sprev = 0;
+    float sprev2 = 0;
+    for (int i = 0; i < length; i++)
+    {
+        float s = input[i] + coeff * sprev - sprev2;
+        sprev2 = sprev;
+        sprev = s;
+    }
+
+    float power = sprev2 * sprev2 + sprev * sprev - coeff * sprev * sprev2;
+
+    return power;
+}
+
 fsk_plan *
 fsk_plan_new(
 	float		sample_rate,
@@ -45,6 +65,15 @@ fsk_plan_new(
     fskp->sample_rate = sample_rate;
     fskp->f_mark = f_mark;
     fskp->f_space = f_space;
+
+#ifdef USE_GOERTZEL
+    fskp->band_width = filter_bw;
+
+    float fft_half_bw = fskp->band_width / 2.0f;
+    fskp->fftsize = (sample_rate + fft_half_bw) / fskp->band_width;
+    fskp->nbands = fskp->fftsize / 2 + 1;
+    fskp->fftin  = malloc(fskp->fftsize * sizeof(float));
+#endif
 
 #ifdef USE_FFT
     fskp->band_width = filter_bw;
@@ -97,13 +126,21 @@ fsk_plan_new(
 void
 fsk_plan_destroy( fsk_plan *fskp )
 {
+#ifdef USE_GOERTZEL
+    free(fskp->fftin);
+#endif
+
+#ifdef USE_FFT
     fftwf_free(fskp->fftin);
     fftwf_free(fskp->fftout);
     fftwf_destroy_plan(fskp->fftplan);
+#endif
+
+
     free(fskp);
 }
 
-
+#ifdef USE_FFT
 static inline float
 band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
 {
@@ -112,7 +149,15 @@ band_mag( fftwf_complex * const cplx, unsigned int band, float scalar )
     float mag = hypotf(re, im) * scalar;
     return mag;
 }
+#endif
 
+#ifdef USE_GOERTZEL
+static inline float
+band_mag( float * const input, int length, float fs, float scalar )
+{
+    return goertzelFilter(input, length, fs) * scalar;
+}
+#endif
 
 static void
 fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
@@ -153,10 +198,17 @@ fsk_bit_analyze( fsk_plan *fskp, float *samples, unsigned int bit_nsamples,
     }
 #endif
 
+#ifdef USE_GOERTZEL
+    float mag_mark  = band_mag(fskp->fftin, fskp->fftsize, fskp->f_mark/fskp->sample_rate,  magscalar);
+    float mag_space = band_mag(fskp->fftin, fskp->fftsize, fskp->f_space/fskp->sample_rate, magscalar);
+#endif
 
+#ifdef USE_FFT
     fftwf_execute(fskp->fftplan);
     float mag_mark  = band_mag(fskp->fftout, fskp->b_mark,  magscalar);
     float mag_space = band_mag(fskp->fftout, fskp->b_space, magscalar);
+#endif
+
     // mark==1, space==0
     if ( mag_mark > mag_space ) {
 	*bit_outp = 1;
@@ -549,7 +601,9 @@ fsk_detect_carrier(fsk_plan *fskp, float *samples, unsigned int nsamples,
     unsigned int pa_nchannels = 1;	// FIXME
     bzero(fskp->fftin, (fskp->fftsize * sizeof(float) * pa_nchannels));
     memcpy(fskp->fftin, samples, nsamples * sizeof(float));
+#ifdef USE_FFT
     fftwf_execute(fskp->fftplan);
+#endif
     float magscalar = 1.0f / ((float)nsamples/2.0f);
     float max_mag = 0.0;
     int max_mag_band = -1;
@@ -566,7 +620,15 @@ fsk_detect_carrier(fsk_plan *fskp, float *samples, unsigned int nsamples,
 	 nbands = fskp->nbands:
 #endif
     for ( ; i<nbands; i++ ) {
+#ifdef USE_GOERTZEL
+	float fft_half_bw = fskp->band_width / 2.0f;
+	float freq = ((float)i * fskp->band_width) - fft_half_bw;
+	float fs = freq / fskp->sample_rate;
+	float mag = band_mag(fskp->fftin, fskp->fftsize, fs,  magscalar);
+#endif
+#ifdef USE_FFT
 	float mag = band_mag(fskp->fftout, i,  magscalar);
+#endif
 	if ( mag < min_mag_threshold )
 	    continue;
 	if ( max_mag < mag ) {
@@ -590,9 +652,10 @@ fsk_set_tones_by_bandshift( fsk_plan *fskp, unsigned int b_mark, int b_shift )
     int b_space = b_mark + b_shift;
     assert( b_space >= 0 );
     assert( b_space < fskp->nbands ); 
-
+#ifdef USE_FFT
     fskp->b_mark = b_mark;
     fskp->b_space = b_space;
+#endif
     fskp->f_mark = b_mark * fskp->band_width;
     fskp->f_space = b_space * fskp->band_width;
 }
