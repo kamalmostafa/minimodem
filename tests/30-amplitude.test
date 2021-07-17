@@ -10,7 +10,22 @@ function try_tx_rx_ampl
     a="$1"
     echo -n "$a "
     let count++
-    ./self-test testdata-ascii.txt --volume $a $flags -- $flags || let fail++
+    stats=$(./self-test testdata-ascii.txt --volume $a $flags -- $flags) || let fail++
+    echo "$stats"
+
+    ## Verify that the rx amplitude is ~= to the tx volume
+    rx_ampl=${stats##*ampl=}; rx_ampl=${rx_ampl%% *}
+    [ $a == "E" ] && a="0.0"	 # check Epsilon against rx_ampl 0.0
+
+    result1=$(echo "$rx_ampl > ($a - 0.01)" | bc -l)
+    result2=$(echo "$rx_ampl < ($a + 0.01)" | bc -l)
+    #echo "$rx_ampl > ($a - 0.01)   ==>  $result1"
+    #echo "$rx_ampl < ($a + 0.01)   ==>  $result2"
+
+    ## special case int samples, where rx_ampl will be clamped to max ~ 1.0
+    result0=$(echo "$a > 1.0 && $rx_ampl > 1.00 && $rx_ampl < 1.02" | bc -l)
+
+    [ $result0 -eq 1 -o $result1 -eq 1 -a $result2 -eq 1 ] || { echo "FAIL: rx amplitude does not match tx volume"; let fail++; }
 }
 
 for ampl in 3.50 1.00 0.30 0.01 " E  "
