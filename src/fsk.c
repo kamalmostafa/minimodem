@@ -45,9 +45,9 @@ float goertzelFilter(float * const input, int length, float fs)
         sprev = s;
     }
 
-    float power = sprev2 * sprev2 + sprev * sprev - coeff * sprev * sprev2;
+    float power2 = sprev2 * sprev2 + sprev * sprev - coeff * sprev * sprev2;
 
-    return power;
+    return sqrt(power2);
 }
 
 fsk_plan *
