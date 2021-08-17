@@ -32,22 +32,25 @@
 
 float goertzelFilter(float * const input, int length, float fs)
 {
-    float omega = 2 * M_PI * fs;
-    float cr = cos(omega);
-    float coeff = 2 * cr;
+    // FIXME use of doubles here allows for confidence=inf, but seems
+    // like a high price to pay for that.
+    double omega = 2 * M_PI * fs;
+    double cr = cos(omega);
+    double coeff = 2 * cr;
 
-    float sprev = 0;
-    float sprev2 = 0;
+    double sprev = 0;
+    double sprev2 = 0;
     for (int i = 0; i < length; i++)
     {
-        float s = input[i] + coeff * sprev - sprev2;
+        double s = input[i] + coeff * sprev - sprev2;
         sprev2 = sprev;
         sprev = s;
     }
 
     float power2 = sprev2 * sprev2 + sprev * sprev - coeff * sprev * sprev2;
+    // fprintf(stderr, "=== = length=%d fs=%f omega=%lf  coeff=%lf  power2=%lf\n", length, fs, omega, coeff, power2);
 
-    return sqrt(power2);
+    return sqrtf(power2);
 }
 
 fsk_plan *
