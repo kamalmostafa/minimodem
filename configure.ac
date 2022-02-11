@@ -71,8 +71,6 @@ AS_IF([test "x$with_stdio" = "xno"], [
     use_stdio=0
 ], [
     use_stdio=1
-    #//TODO Try to remove this dependency
-    deps_packages="$deps_packages sndfile"
 ])
 AC_DEFINE_UNQUOTED([USE_STDIO], [$use_stdio],
                    [Define to 1 to enable stdio support])

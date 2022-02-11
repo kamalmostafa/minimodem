@@ -28,8 +28,6 @@
 #include <string.h>
 #include <assert.h>
 
-#include <sndfile.h>
-
 #include "simpleaudio.h"
 #include "simpleaudio_internal.h"
 
@@ -42,22 +40,20 @@
 static ssize_t
 sa_stdio_read( simpleaudio *sa, void *buf, size_t nframes )
 {
-    SNDFILE *s = (SNDFILE *)sa->backend_handle;
     int n;
     switch ( sa->format ) {
 	case SA_SAMPLE_FORMAT_FLOAT:
-		n = sf_readf_float(s, buf, nframes);
+                n = fread(buf, 4, nframes, stdin);
 		break;
 	case SA_SAMPLE_FORMAT_S16:
-		n = sf_readf_short(s, buf, nframes);
+                n = fread(buf, 2, nframes, stdin);
 		break;
 	default:
 		assert(0);
 		break;
     }
     if ( n < 0 ) {
-	fprintf(stderr, "sf_read: ");
-	sf_perror(s);
+	fprintf(stderr, "read error");
 	return -1;
     }
 
@@ -73,27 +69,28 @@ sa_stdio_read( simpleaudio *sa, void *buf, size_t nframes )
     return n;
 }
 
+int total = 0;
 
 static ssize_t
 sa_stdio_write( simpleaudio *sa, void *buf, size_t nframes )
 {
     // fprintf(stderr, "sf_write: nframes=%ld\n", nframes);
-    SNDFILE *s = (SNDFILE *)sa->backend_handle;
     int n;
     switch ( sa->format ) {
 	case SA_SAMPLE_FORMAT_FLOAT:
-		n = sf_writef_float(s, buf, nframes);
+                n = fwrite(buf, 4, nframes, stdout);
 		break;
 	case SA_SAMPLE_FORMAT_S16:
-		n = sf_writef_short(s, buf, nframes);
+                n = fwrite(buf, 2, nframes, stdout);
 		break;
 	default:
 		assert(0);
 		break;
     }
+    total += n;
+    //fprintf(stderr, "wrote %d / %ld  ( %d )\n", n, nframes, total);
     if ( n < 0 ) {
-	fprintf(stderr, "sf_write: ");
-	sf_perror(s);
+	fprintf(stderr, "write error");
 	return -1;
     }
     return n;
@@ -103,7 +100,8 @@ sa_stdio_write( simpleaudio *sa, void *buf, size_t nframes )
 static void
 sa_stdio_close( simpleaudio *sa )
 {
-    sf_close(sa->backend_handle);
+    // This is probably safe even when reading, right?
+    fflush(stdout);
 }
 
 static int
@@ -115,50 +113,11 @@ sa_stdio_open_stream(
 		unsigned int rate, unsigned int channels,
 		char *app_name, char *stream_name )
 {
-    int sf_format;
-    switch ( sa->format ) {
-	case SA_SAMPLE_FORMAT_FLOAT:
-		sf_format = SF_FORMAT_FLOAT;
-		break;
-	case SA_SAMPLE_FORMAT_S16:
-		sf_format = SF_FORMAT_PCM_16;
-		break;
-	default:
-		assert(0);
-    }
-
-    /* setting for SA_STREAM_PLAYBACK (file write) */
-    SF_INFO sfinfo = {
-	.format = sf_format,
-	.samplerate = rate,
-	.channels = channels,
-    };
-
-    /* Create the recording stream from stdin or stdout */
-    SNDFILE *s;
-    s = sf_open_fd(sa_stream_direction == SA_STREAM_RECORD ? 0 : 1,
-	    sa_stream_direction == SA_STREAM_RECORD ? SFM_READ : SFM_WRITE,
-	    &sfinfo,
-            0);
-    if ( !s ) {
-	sf_perror(s);
-        return 0;
-    }
-
-    // Disable the insertion of this questionable "PEAK chunk" header thing.
-    // Relates only to writing SF_FORMAT_FLOAT .wav and .aiff files
-    // (minimodem --tx --float-samples).  When left enabled, this adds some
-    // wonky bytes to the header which change from run to run (different every
-    // wall-clock second.  WTF?
-    // http://www.mega-nerd.com/libsndfile/command.html#SFC_SET_ADD_PEAK_CHUNK
-    /* Turn off the PEAK chunk. */
-    sf_command(s, SFC_SET_ADD_PEAK_CHUNK, NULL, SF_FALSE);
-
     /* good or bad to override these? */
-    sa->rate = sfinfo.samplerate;
-    sa->channels = sfinfo.channels;
+    sa->rate = rate;
+    sa->channels = channels;
 
-    sa->backend_handle = s;
+    sa->backend_handle = NULL;
     sa->backend_framesize = sa->channels * sa->samplesize; 
 
     return 1;
