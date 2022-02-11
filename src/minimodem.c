@@ -404,6 +404,7 @@ usage()
     "		    -5, --baudot	Baudot 5-N-1\n"
     "		    -u, --usos {0|1}\n"
     "		    -f, --file {filename.flac}\n"
+    "		    -O, --stdio\n"
     "		    -b, --bandwidth {rx_bandwidth}\n"
     "		    -v, --volume {amplitude or 'E'}\n"
     "		    -M, --mark {mark_freq}\n"
@@ -555,8 +556,8 @@ main( int argc, char*argv[] )
     /* validate the default system audio mechanism */
 #if !(USE_SNDIO || USE_PULSEAUDIO || USE_ALSA)
 # define _MINIMODEM_NO_SYSTEM_AUDIO
-# if !USE_SNDFILE
-#  error At least one of {USE_SNDIO,USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE} must be enabled!
+# if !(USE_SNDFILE || USE_STDIO)
+#  error At least one of {USE_SNDIO,USE_PULSEAUDIO,USE_ALSA,USE_SNDFILE,USE_STDIO} must be enabled!
 # endif
 #endif
 
@@ -607,6 +608,7 @@ main( int argc, char*argv[] )
 	    { "usos",  		1, 0, 'u' },
 	    { "msb-first",	0, 0, MINIMODEM_OPT_MSBFIRST },
 	    { "file",		1, 0, 'f' },
+	    { "stdio",		0, 0, 'O' },
 	    { "bandwidth",	1, 0, 'b' },
 	    { "volume",		1, 0, 'v' },
 	    { "mark",		1, 0, 'M' },
@@ -631,7 +633,7 @@ main( int argc, char*argv[] )
 	    { "tx-carrier",      0, 0, MINIMODEM_OPT_TXCARRIER },
 	    { 0 }
 	};
-	c = getopt_long(argc, argv, "Vtrc:l:ai875u:f:b:v:M:S:T:qs::A::R:",
+	c = getopt_long(argc, argv, "Vtrc:l:ai875u:f:Ob:v:M:S:T:qs::A::R:",
 		long_options, &option_index);
 	if ( c == -1 )
 	    break;
@@ -663,6 +665,14 @@ main( int argc, char*argv[] )
 			break;
 	    case 'f':
 			filename = optarg;
+			break;
+	    case 'O':
+#if USE_STDIO
+			sa_backend = SA_BACKEND_STDIO;
+#else
+			fprintf(stderr, "E: This build of minimodem was configured without stdio support.\n");
+			exit(1);
+#endif
 			break;
 	    case '8':
 			bfsk_n_data_bits = 8;

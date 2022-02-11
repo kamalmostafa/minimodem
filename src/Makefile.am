@@ -37,7 +37,8 @@ SIMPLEAUDIO_SRC = \
 	simpleaudio-alsa.c	\
 	simpleaudio-sndio.c	\
 	simpleaudio-benchmark.c	\
-	simpleaudio-sndfile.c
+	simpleaudio-sndfile.c   \
+        simpleaudio-stdio.c
 
 FSK_SRC = fsk.h fsk.c
 
