@@ -36,7 +36,6 @@
  * stdio backend for simpleaudio
  */
 
-
 static ssize_t
 sa_stdio_read( simpleaudio *sa, void *buf, size_t nframes )
 {
@@ -69,8 +68,6 @@ sa_stdio_read( simpleaudio *sa, void *buf, size_t nframes )
     return n;
 }
 
-int total = 0;
-
 static ssize_t
 sa_stdio_write( simpleaudio *sa, void *buf, size_t nframes )
 {
@@ -87,8 +84,6 @@ sa_stdio_write( simpleaudio *sa, void *buf, size_t nframes )
 		assert(0);
 		break;
     }
-    total += n;
-    //fprintf(stderr, "wrote %d / %ld  ( %d )\n", n, nframes, total);
     if ( n < 0 ) {
 	fprintf(stderr, "write error");
 	return -1;

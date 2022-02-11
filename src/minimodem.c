@@ -669,6 +669,8 @@ main( int argc, char*argv[] )
 	    case 'O':
 #if USE_STDIO
 			sa_backend = SA_BACKEND_STDIO;
+                        // Apparently the receiver wants floats, so I'mma just output floats
+                        sample_format = SA_SAMPLE_FORMAT_FLOAT;
 #else
 			fprintf(stderr, "E: This build of minimodem was configured without stdio support.\n");
 			exit(1);
