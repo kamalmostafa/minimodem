@@ -64,6 +64,17 @@ AS_IF([test "x$with_sndfile" = "xno"], [
 AC_DEFINE_UNQUOTED([USE_SNDFILE], [$use_sndfile],
                    [Define to 1 to enable sndfile support])
 
+#   stdio
+AC_ARG_WITH([stdio], AS_HELP_STRING([--without-stdio],
+            [build without stdio support]))
+AS_IF([test "x$with_stdio" = "xno"], [
+    use_stdio=0
+], [
+    use_stdio=1
+])
+AC_DEFINE_UNQUOTED([USE_STDIO], [$use_stdio],
+                   [Define to 1 to enable stdio support])
+
 #   benchmarks
 AC_ARG_WITH([benchmarks], AS_HELP_STRING([--disable-benchmarks],
             [build without internal benchmarks]))
@@ -81,6 +92,7 @@ option summary:
     benchmarks     $with_benchmarks ($use_benchmarks)
     pulseaudio     $with_pulseaudio ($use_pulseaudio)
     sndfile        $with_sndfile ($use_sndfile)
+    stdio          $with_stdio ($use_stdio)
     sndio          $with_sndio ($use_sndio)
 ])
 

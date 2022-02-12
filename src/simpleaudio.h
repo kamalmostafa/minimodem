@@ -35,6 +35,7 @@ typedef struct simpleaudio simpleaudio;
 typedef enum {
 	SA_BACKEND_SYSDEFAULT=0,
 	SA_BACKEND_FILE,
+	SA_BACKEND_STDIO,
 	SA_BACKEND_BENCHMARK,
 	SA_BACKEND_ALSA,
 	SA_BACKEND_PULSEAUDIO,

@@ -74,6 +74,12 @@ simpleaudio_open_stream(
 	    break;
 #endif
 
+#if USE_STDIO
+	case SA_BACKEND_STDIO:
+	    sa->backend = &simpleaudio_backend_stdio;
+	    break;
+#endif
+
 #if USE_BENCHMARKS
 	case SA_BACKEND_BENCHMARK:
 	    sa->backend = &simpleaudio_backend_benchmark;

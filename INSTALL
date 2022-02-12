@@ -12,7 +12,8 @@ without warranty of any kind.
 Basic Installation
 ==================
 
-   Briefly, the shell commands `./configure; make; make install' should
+   Briefly, the shell commands `./install-dependencies-linux.sh;
+autoreconf --install; ./configure; make; make install' should
 configure, build, and install this package.  The following
 more-detailed instructions are generic; see the `README' file for
 instructions specific to this package.  Some packages provide this
