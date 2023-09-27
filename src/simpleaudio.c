@@ -26,10 +26,6 @@
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
-#else
-# define USE_PULSEAUDIO 1
-# define USE_ALSA 1
-# define USE_SNDIO 1
 #endif
 
 simpleaudio *

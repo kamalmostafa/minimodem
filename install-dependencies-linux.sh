@@ -1,8 +1,12 @@
 #!/bin/bash
-set -e
-set -x
-set -o pipefail
 
-sudo $(which apt) update
-sudo $(which apt) install libsndfile1-dev fftw3-dev libasound2-dev libpulse-dev libsndio-dev
-sudo $(which apt) install pkg-config automake
+# Step 1. Update repository
+sudo apt-get update
+
+# Step 2. Setup libraries
+sudo apt-get install libfftw3-devel
+sudo apt-get install libsndfile-devel libasound2-devel libpulse-devel libsndio-devel
+
+# Step 3. Build tools
+sudo apt-get install make ninja-build pkg-config python3
+sudo python3 -m pip install -U meson
